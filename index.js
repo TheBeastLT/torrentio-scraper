@@ -18,7 +18,11 @@ server.post('/scrape', function(req, res) {
 server.listen(7000, async function () {
   await connect();
   console.log('Scraper started');
-  const shows = await horribleSubs.allShows();
-  console.log(shows)
+  // const shows = await horribleSubs.allShows();
+  // console.log(shows);
+  // const showInfo = await horribleSubs.showData('/shows/one-piece');
+  // console.log(showInfo)
+  // const latestEntries = await horribleSubs.getLatestEntries();
+  // console.log(latestEntries);
   //scrape();
 });
