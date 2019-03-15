@@ -10,7 +10,7 @@ const { torrentFiles } = require('../lib/torrent');
 const repository = require('../lib/repository');
 const { getImdbId } = require('../lib/metadata');
 
-const NAME = 'thepiratebay';
+const NAME = 'ThePirateBay';
 const CSV_FILE_PATH = '/tmp/tpb_dump.csv';
 
 const limiter = new Bottleneck({maxConcurrent: 40});

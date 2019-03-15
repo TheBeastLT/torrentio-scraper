@@ -1,10 +1,11 @@
 const express = require("express");
 const server = express();
+const { init } = require('./lib/torrent');
 const { connect } = require('./lib/repository');
 const tpbDump = require('./scrapers/piratebay_dump');
-const horribleSubs = require('./scrapers/api/horriblesubs');
+const horribleSubsScraper = require('./scrapers/horiblesubs_scraper');
 
-const providers = [tpbDump];
+const providers = [horribleSubsScraper];
 
 async function scrape() {
   providers.forEach((provider) => provider.scrape());
@@ -17,12 +18,7 @@ server.post('/scrape', function(req, res) {
 
 server.listen(7000, async function () {
   await connect();
+  await init();
   console.log('Scraper started');
-  // const shows = await horribleSubs.allShows();
-  // console.log(shows);
-  // const showInfo = await horribleSubs.showData('/shows/one-piece');
-  // console.log(showInfo)
-  // const latestEntries = await horribleSubs.getLatestEntries();
-  // console.log(latestEntries);
-  //scrape();
+  scrape();
 });
