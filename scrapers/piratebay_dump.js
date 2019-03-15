@@ -8,7 +8,7 @@ const { parse } = require('parse-torrent-title');
 const pirata = require('./api/thepiratebay');
 const { torrentFiles } = require('../lib/torrent');
 const repository = require('../lib/repository');
-const { getImdbId } = require('../lib/metadata');
+const { getImdbId, escapeTitle } = require('../lib/metadata');
 
 const NAME = 'ThePirateBay';
 const CSV_FILE_PATH = '/tmp/tpb_dump.csv';
@@ -16,21 +16,6 @@ const CSV_FILE_PATH = '/tmp/tpb_dump.csv';
 const limiter = new Bottleneck({maxConcurrent: 40});
 
 async function scrape() {
-  const title = 'Я'
-      + '+(2014)_1280x720-raroch.mp4'
-      .replace(/^"|"$/g, '')
-      .normalize('NFKD') // normalize non-ASCII characters
-      .replace(/[\u0300-\u036F]/g, '')
-      .replace(/&\w{2,6};/g, ' ')
-      .replace(/\s+/g, ' ')
-      .replace(/[\W\s]+/, ' ');
-  const titleInfo = parse(title);
-  const imdbId = await getImdbId({
-    name: titleInfo.title.toLowerCase(),
-    year: titleInfo.year
-  });
-
-
   const lastScraped = await repository.getProvider({ name: NAME });
   const lastDump = await pirata.dumps().then((dumps) => dumps.sort((a, b) => b.updatedAt - a.updatedAt)[0]);
 
@@ -49,10 +34,16 @@ async function scrape() {
         infoHash: Buffer.from(row[1], 'base64').toString('hex'),
         title: row[2]
             .replace(/^"|"$/g, '')
+            .replace(/&amp;/g, '&')
             .replace(/&\w{2,6};/g, ' ')
             .replace(/\s+/g, ' '),
         size: parseInt(row[3], 10)
       };
+
+      if (lastScraped.lastScraped && lastScraped.lastScraped > torrent.uploadDate) {
+        // torrent was already scraped previously, skipping
+        return;
+      }
 
       if (!limiter.empty()) {
         lr.pause()
@@ -68,7 +59,7 @@ async function scrape() {
     });
     lr.on('end', () => {
         fs.unlink(CSV_FILE_PATH);
-      updateProvider({ name: NAME, lastScraped: lastDump.updatedAt.toDate() });
+        updateProvider({ name: NAME, lastScraped: lastDump.updatedAt });
         console.log(`finished to scrape tpb dump: ${JSON.stringify(lastDump)}!`);
     });
   }
@@ -116,14 +107,20 @@ async function processTorrentRecord(record) {
   console.log(`imdbId search: ${torrentFound.name}`);
   const titleInfo = parse(torrentFound.name);
   const imdbId = await getImdbId({
-    name: titleInfo.title.toLowerCase(),
+    name: escapeTitle(titleInfo.title).toLowerCase(),
     year: titleInfo.year,
     type: type
   }).catch(() => undefined);
 
   if (!imdbId) {
     console.log(`imdbId not found: ${torrentFound.name}`);
-    repository.createFailedImdbTorrent(record);
+    repository.updateTorrent({
+      infoHash: record.infoHash,
+      provider: NAME,
+      title: torrentFound.name,
+      uploadDate: record.uploadDate,
+      seeders: torrentFound.seeders,
+    });
     return;
   }
 
