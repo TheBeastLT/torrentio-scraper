@@ -6,9 +6,11 @@ const LineByLineReader = require('line-by-line');
 const fs = require('fs');
 const { parse } = require('parse-torrent-title');
 const pirata = require('./api/thepiratebay');
-const { torrentFiles } = require('../lib/torrent');
+const bing = require('nodejs-bing');
+const { Type } = require('../lib/types');
 const repository = require('../lib/repository');
 const { getImdbId, escapeTitle } = require('../lib/metadata');
+const { parseTorrentFiles } = require('../lib/torrentFiles');
 
 const NAME = 'ThePirateBay';
 const CSV_FILE_PATH = '/tmp/tpb_dump.csv';
@@ -17,18 +19,27 @@ const limiter = new Bottleneck({maxConcurrent: 40});
 
 async function scrape() {
   const lastScraped = await repository.getProvider({ name: NAME });
-  const lastDump = await pirata.dumps().then((dumps) => dumps.sort((a, b) => b.updatedAt - a.updatedAt)[0]);
+  const lastDump = { updatedAt: 2147000000 };
+  //const lastDump = await pirata.dumps().then((dumps) => dumps.sort((a, b) => b.updatedAt - a.updatedAt)[0]);
 
   if (!lastScraped.lastScraped || lastScraped.lastScraped < lastDump.updatedAt) {
     console.log(`starting to scrape tpb dump: ${JSON.stringify(lastDump)}`);
     //await downloadDump(lastDump);
 
+    let entriesProcessed = 0;
     const lr = new LineByLineReader(CSV_FILE_PATH);
     lr.on('line', (line) => {
       if (line.includes("#ADDED")) {
         return;
       }
+      if (entriesProcessed % 1000 === 0) {
+        console.log(`Processed ${entriesProcessed} entries`);
+      }
       const row = line.match(/(?<=^|;)(".*"|[^;]+)(?=;|$)/g);
+      if (row.length !== 4) {
+        console.log(`Invalid row: ${line}`);
+        return;
+      }
       const torrent = {
         uploadDate: moment(row[0], 'YYYY-MMM-DD HH:mm:ss').toDate(),
         infoHash: Buffer.from(row[1], 'base64').toString('hex'),
@@ -50,9 +61,10 @@ async function scrape() {
       }
 
       limiter.schedule(() => processTorrentRecord(torrent)
-            .catch((error) => console.log(`failed ${torrent.title} due: ${error}`)))
-            .then(() => limiter.empty())
-            .then((empty) => empty && lr.resume());
+          .catch((error) => console.log(`failed ${torrent.title} due: ${error}`)))
+          .then(() => limiter.empty())
+          .then((empty) => empty && lr.resume())
+          .then(() => entriesProcessed++);
     });
     lr.on('error', (err) => {
         console.log(err);
@@ -77,80 +89,90 @@ const seriesCategories = [
   pirata.Categories.VIDEO.TV_SHOWS_HD
 ];
 async function processTorrentRecord(record) {
-  const persisted = await repository.getSkipTorrent(record)
-      .catch(() => repository.getTorrent(record)).catch(() => undefined);
-  if (persisted) {
+  const alreadyExists = await repository.getSkipTorrent(record)
+      .catch(() => repository.getTorrent(record))
+      .catch(() => undefined);
+  if (alreadyExists) {
      return;
   }
 
-  let page = 0;
-  let torrentFound;
-  while (!torrentFound && page < 5) {
-    const torrents = await pirata.search(record.title.replace(/[\W\s]+/, ' '), { page: page });
-    torrentFound = torrents.
-    filter(torrent => torrent.magnetLink.toLowerCase().includes(record.infoHash))[0];
-    page = torrents.length === 0 ? 1000 : page + 1;
-  }
+  const torrentFound = await findTorrent(record);
 
   if (!torrentFound) {
-    console.log(`not found: ${JSON.stringify(record)}`);
+    //console.log(`not found: ${JSON.stringify(record)}`);
     repository.createSkipTorrent(record);
     return;
   }
   if (!allowedCategories.includes(torrentFound.subcategory)) {
-    console.log(`wrong category: ${torrentFound.name}`);
+    //console.log(`wrong category: ${torrentFound.name}`);
     repository.createSkipTorrent(record);
     return;
   }
 
-  const type = seriesCategories.includes(torrentFound.subcategory) ? 'series' : 'movie';
-  console.log(`imdbId search: ${torrentFound.name}`);
+  const type = seriesCategories.includes(torrentFound.subcategory) ? Type.SERIES : Type.MOVIE;
   const titleInfo = parse(torrentFound.name);
   const imdbId = await getImdbId({
     name: escapeTitle(titleInfo.title).toLowerCase(),
     year: titleInfo.year,
     type: type
-  }).catch(() => undefined);
+  }).catch((error) => undefined);
+  const torrent = {
+    infoHash: record.infoHash,
+    provider: NAME,
+    title: torrentFound.name,
+    size: record.size,
+    type: type,
+    uploadDate: record.uploadDate,
+    seeders: torrentFound.seeders,
+  };
 
   if (!imdbId) {
     console.log(`imdbId not found: ${torrentFound.name}`);
-    repository.updateTorrent({
-      infoHash: record.infoHash,
-      provider: NAME,
-      title: torrentFound.name,
-      uploadDate: record.uploadDate,
-      seeders: torrentFound.seeders,
-    });
+    repository.createFailedImdbTorrent(torrent);
     return;
   }
 
-  if (type === 'movie' || titleInfo.episode) {
-    repository.updateTorrent({
-      infoHash: record.infoHash,
-      provider: NAME,
-      title: torrentFound.name,
-      imdbId: imdbId,
-      uploadDate: record.uploadDate,
-      seeders: torrentFound.seeders,
-    });
-    return;
-  }
-
-  const files = await torrentFiles(record).catch(() => []);
+  const files = await parseTorrentFiles(torrent, imdbId);
   if (!files || !files.length) {
     console.log(`no video files found: ${torrentFound.name}`);
     return;
   }
 
-  repository.updateTorrent({
-    infoHash: record.infoHash,
-    provider: NAME,
-    title: torrentFound.name,
-    imdbId: imdbId,
-    uploadDate: record.uploadDate,
-    seeders: torrentFound.seeders,
-    files: files
-  })
+  repository.createTorrent(torrent)
+      .then(() => files.forEach(file => repository.createFile(file)));
+  console.log(`Created entry for ${torrentFound.name}`);
+}
+
+async function findTorrent(record) {
+  return findTorrentInSource(record)
+      .catch((error) => findTorrentViaBing(record));
+}
+
+async function findTorrentInSource(record) {
+  let page = 0;
+  let torrentFound;
+  while (!torrentFound && page < 5) {
+    const torrents = await pirata.search(record.title.replace(/[\W\s]+/, ' '), { page: page });
+    torrentFound = torrents.filter(torrent => torrent.magnetLink.toLowerCase().includes(record.infoHash))[0];
+    page = torrents.length === 0 ? 1000 : page + 1;
+  }
+  if (!torrentFound) {
+    return Promise.reject(new Error(`Failed to find torrent ${record.title}`));
+  }
+  return Promise.resolve(torrentFound);
+}
+
+async function findTorrentViaBing(record) {
+  return bing.web(`${record.infoHash}`)
+      .then((results) => results
+          .find(result => result.description.includes('Direct download via magnet link') || result.description.includes('Get this torrent')))
+      .then((result) => {
+        if (!result) {
+          throw new Error(`Failed to find torrent ${record.title}`);
+        }
+        return result.link.match(/torrent\/(\w+)\//)[1];
+      })
+      .then((torrentId) => pirata.torrent(torrentId))
 }
 
 function downloadDump(dump) {

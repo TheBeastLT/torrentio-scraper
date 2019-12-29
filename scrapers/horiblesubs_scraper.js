@@ -4,6 +4,7 @@ const Bottleneck = require('bottleneck');
 const { parse } = require('parse-torrent-title');
 const decode = require('magnet-uri');
 const horriblesubs = require('./api/horriblesubs');
+const { Type } = require('../lib/types');
 const { torrentFiles, currentSeeders } = require('../lib/torrent');
 const repository = require('../lib/repository');
 const { getImdbId, getMetadata } = require('../lib/metadata');
@@ -72,7 +73,7 @@ async function _constructSingleEntry(metadata, single, mirror) {
     infoHash: mirror.infoHash,
     provider: NAME,
     title: title,
-    type: 'anime',
+    type: Type.ANIME,
     imdbId: metadata.imdbId,
     uploadDate: single.uploadDate,
     seeders: seeders,

@@ -2,9 +2,14 @@ const cheerio = require('cheerio');
 const needle = require('needle');
 const moment = require('moment');
 
-const defaultProxies = ['https://pirateproxy.sh', 'https://thepiratebay.org'];
+const defaultProxies = [
+    'https://thepiratebay.org',
+  'https://thepiratebay.vip',
+  'https://proxybay.pro',
+  'https://ukpiratebayproxy.com',
+  'https://thepiratebayproxy.info'];
 const dumpUrl = '/static/dump/csv/';
-const defaultTimeout = 5000;
+const defaultTimeout = 30000;
 
 const errors = {
   REQUEST_ERROR: { code: 'REQUEST_ERROR' },
@@ -76,6 +81,18 @@ Categories = {
   }
 };
 
+function torrent(torrentId, config = {}, retries = 2) {
+  if (!torrentId || retries === 0) {
+    return Promise.reject(new Error(`Failed ${torrentId} search`));
+  }
+  const proxyList = config.proxyList || defaultProxies;
+
+  return raceFirstSuccessful(proxyList
+      .map((proxyUrl) => singleRequest(`${proxyUrl}/torrent/${torrentId}`, config)))
+      .then((body) => parseTorrentPage(body))
+      .catch((err) => torrent(torrentId, config, retries - 1));
+}
+
 function search(keyword, config = {}, retries = 2) {
   if (!keyword || retries === 0) {
     return Promise.reject(new Error(`Failed ${keyword} search`));
@@ -87,7 +104,7 @@ function search(keyword, config = {}, retries = 2) {
   return raceFirstSuccessful(proxyList
       .map((proxyUrl) => singleRequest(`${proxyUrl}/search/${keyword}/${page}/99/${category}`, config)))
       .then((body) => parseBody(body))
-      .catch(() => search(keyword, config, retries - 1));
+      .catch((err) => search(keyword, config, retries - 1));
 }
 
 function dumps(config = {}, retries = 2) {
@@ -109,26 +126,23 @@ function dumps(config = {}, retries = 2) {
 function singleRequest(requestUrl, config = {}) {
   const timeout = config.timeout || defaultTimeout;
 
-  return new Promise(((resolve, reject) => {
-    needle.get(requestUrl,
-        { open_timeout: timeout, follow: 2 },
-        (err, res, body) => {
-          if (err || !body) {
-            reject(err || errors.REQUEST_ERROR);
-          } else if (body.includes('Access Denied') && !body.includes('<title>The Pirate Bay')) {
-            console.log(`Access Denied: ${url}`);
-            reject(new Error(`Access Denied: ${url}`));
-          } else if (body.includes('502: Bad gateway') ||
+  return needle('get', requestUrl, { open_timeout: timeout, follow: 2 })
+      .then((response) =>  {
+        const body = response.body;
+        if (!body) {
+          throw new Error(`No body: ${requestUrl}`);
+        } else if (body.includes('Access Denied') && !body.includes('<title>The Pirate Bay')) {
+          console.log(`Access Denied: ${requestUrl}`);
+          throw new Error(`Access Denied: ${requestUrl}`);
+        } else if (body.includes('502: Bad gateway') ||
             body.includes('403 Forbidden') ||
             body.includes('Database maintenance') ||
             body.includes('Origin DNS error') ||
-            !body.includes('<title>The Pirate Bay')) {
-            reject(errors.REQUEST_ERROR);
-          }
-
-          resolve(body);
-        });
-  }));
+            !(body.includes('<title>The Pirate Bay') || body.includes('TPB</title>') || body.includes(dumpUrl))) {
+          throw new Error(`Invalid body contents: ${requestUrl}`);
+        }
+        return body;
+      });
 }
 
 function parseBody(body) {
@@ -143,7 +157,7 @@ function parseBody(body) {
 
     $('table[id=\'searchResult\'] tr').each(function() {
       const name = $(this).find('.detLink').text();
-      if (!name) {
+      if (!name || name === 'Do NOT download any torrent before hiding your IP with a VPN.') {
         return;
       }
       torrents.push({
@@ -152,11 +166,49 @@ function parseBody(body) {
         leechers: parseInt($(this).find('td[align=\'right\']').eq(1).text(), 10),
         magnetLink: $(this).find('a[title=\'Download this torrent using magnet\']').attr('href'),
         category: parseInt($(this).find('a[title=\'More from this category\']').eq(0).attr('href').match(/\d+$/)[0], 10),
-        subcategory: parseInt($(this).find('a[title=\'More from this category\']').eq(1).attr('href').match(/\d+$/)[0], 10)
+        subcategory: parseInt($(this).find('a[title=\'More from this category\']').eq(1).attr('href').match(/\d+$/)[0], 10),
+        size: parseSize($(this).find('.detDesc').text().match(/(?:,\s?Size\s)(.+),/)[1])
       });
     });
     resolve(torrents);
   });
+}
+
+function parseTorrentPage(body) {
+  return new Promise((resolve, reject) => {
+    const $ = cheerio.load(body);
+
+    if (!$) {
+      reject(new Error(errors.PARSER_ERROR));
+    }
+
+    const torrent = {
+        name: $('div[id=\'title\']').text().trim(),
+        seeders: parseInt($('dl[class=\'col2\']').find('dd').eq(2).text(), 10),
+        leechers: parseInt($('dl[class=\'col2\']').find('dd').eq(3).text(), 10),
+        magnetLink: $('div[id=\'details\']').find('a[title=\'Get this torrent\']').attr('href'),
+        category: Categories.VIDEO.ALL,
+        subcategory: parseInt($('dl[class=\'col1\']').find('a[title=\'More from this category\']').eq(0).attr('href').match(/\d+$/)[0], 10),
+        size: parseSize($('dl[class=\'col1\']').find('dd').eq(2).text().match(/(\d+)(?:.?Bytes)/)[1])
+    };
+    resolve(torrent);
+  });
+}
+
+function parseSize(sizeText) {
+  if (!sizeText) {
+    return undefined;
+  }
+  if (sizeText.includes('GiB')) {
+    return Math.floor(parseFloat(sizeText.trim()) * 1024 * 1024 * 1024);
+  }
+  if (sizeText.includes('MiB')) {
+    return Math.floor(parseFloat(sizeText.trim()) * 1024 * 1024);
+  }
+  if (sizeText.includes('KiB')) {
+    return Math.floor(parseFloat(sizeText.trim()) * 1024);
+  }
+  return Math.floor(parseFloat(sizeText));
 }
 
 function raceFirstSuccessful(promises) {
@@ -176,4 +228,4 @@ function raceFirstSuccessful(promises) {
   );
 }
 
-module.exports = { search, dumps, Categories };
+module.exports = { torrent, search, dumps, Categories };
