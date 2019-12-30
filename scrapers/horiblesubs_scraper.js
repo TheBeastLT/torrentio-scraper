@@ -39,11 +39,12 @@ async function _scrapeAllShows() {
 
 async function initMapping() {
   console.log(`${NAME}: initiating kitsu mapping...`);
+  const currentMapping = require('../horrible_subs_mapping');
+  const mappings = Object.values(currentMapping);
   const shows = await horriblesubs.allShows()
-    .then((shows) => Promise.all(shows.map((show) => limiter.schedule(() => enrichShow(show)))))
-    .then((shows) => shows.reduce((map, show) => (map[show.showId] = show, map), {}));
-  const kitsuIds = Object.values(shows).map((show) => show.kitsu_id);
-  console.log(JSON.stringify(kitsuIds));
+      .then((shows) => shows.filter((show) => !mappings.find((mapping) => mapping.title === show.title)))
+      .then((shows) => Promise.all(shows.map((show) => limiter.schedule(() => enrichShow(show)))))
+      .then((shows) => shows.reduce((map, show) => (map[show.title] = show, map), currentMapping));
 
   fs.writeFile("./horrible_subs_mapping.json", JSON.stringify(shows), 'utf8', function (err) {
     if (err) {
@@ -57,8 +58,7 @@ async function enrichShow(show) {
   console.log(`${NAME}: getting show info for ${show.title}...`);
   const showId = await horriblesubs._getShowId(show.url)
     .catch((error) => show.title);
-  const slug = show.url.replace(/^.*\//, '');
-  const metadata = await getKitsuId(slug)
+  const metadata = await getKitsuId(show.title)
     .then((kitsuId) => getKitsuMetadata(kitsuId))
     .catch((error) => {
       console.log(`Failed getting kitsu meta: ${error.message}`);
@@ -74,11 +74,6 @@ async function enrichShow(show) {
     imdb_id: metadata.imdb_id
   }
 }
-
-const hardcodedShows = {
-  '199': 'tt2098220',
-  '347': 'tt0388629'
-};
 
 async function _parseShowData(showData) {
   console.log(`${NAME}: scrapping ${showData.title} data...`);
