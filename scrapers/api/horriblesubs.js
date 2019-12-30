@@ -40,8 +40,11 @@ async function getLatestEntries(config = {}) {
 function _getContent(endpoint, config = {},) {
   const baseUrl = config.proxyUrl || defaultUrl;
   const timeout = config.timeout || defaultTimeout;
+  const url = endpoint.startsWith('http')
+      ? endpoint.replace(/https?:\/\/[^/]+/, baseUrl)
+      : `${baseUrl}${endpoint}`;
 
-  return needle('get', `${baseUrl}${endpoint}`, { open_timeout: timeout, follow: 2 })
+  return needle('get', url, { open_timeout: timeout, follow: 2 })
       .then((response) => response.body)
       .then((body) => cheerio.load(body));
 }
@@ -115,5 +118,5 @@ function _parseDate(date) {
   return moment(date, 'MM/DD/YYYY').toDate();
 }
 
-module.exports = { allShows, showData, getLatestEntries };
+module.exports = { allShows, showData, getLatestEntries, _getShowId };
 

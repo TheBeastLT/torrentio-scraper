@@ -5,7 +5,7 @@ const { connect } = require('./lib/repository');
 const tpbDump = require('./scrapers/piratebay_dump');
 const horribleSubsScraper = require('./scrapers/horiblesubs_scraper');
 
-const providers = [tpbDump];
+const providers = [horribleSubsScraper];
 
 async function scrape() {
   providers.forEach((provider) => provider.scrape());

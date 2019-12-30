@@ -1,4 +1,5 @@
 const moment = require('moment');
+const fs = require('fs');
 const needle = require('needle');
 const Bottleneck = require('bottleneck');
 const { parse } = require('parse-torrent-title');
@@ -7,11 +8,11 @@ const horriblesubs = require('./api/horriblesubs');
 const { Type } = require('../lib/types');
 const { torrentFiles, currentSeeders } = require('../lib/torrent');
 const repository = require('../lib/repository');
-const { getImdbId, getMetadata } = require('../lib/metadata');
+const { getImdbId, getMetadata, getKitsuId, getKitsuMetadata } = require('../lib/metadata');
 
 const NAME = 'HorribleSubs';
 
-const limiter = new Bottleneck({maxConcurrent: 1});
+const limiter = new Bottleneck({maxConcurrent: 5});
 const entryLimiter = new Bottleneck({maxConcurrent: 20});
 
 async function scrape() {
@@ -24,15 +25,54 @@ async function scrape() {
 }
 
 async function _scrapeAllShows() {
-  console.log(`${NAME}: getting all shows...`);
-  const shows = await horriblesubs.allShows();
+  initMapping();
+  // console.log(`${NAME}: getting all shows...`);
+  // const shows = await horriblesubs.allShows();
 
-  Promise.all(shows
-      .slice(0, 20)
-      //.filter(show => show.url.includes('piece'))
-      .map((show) => limiter.schedule(() => horriblesubs.showData(show)
-      .then((showData) => _parseShowData(showData))
-      .catch((err) => console.log(err)))));
+  // Promise.all(shows
+  //     .slice(0, 20)
+  //     //.filter(show => show.url.includes('piece'))
+  //     .map((show) => limiter.schedule(() => horriblesubs.showData(show)
+  //     .then((showData) => _parseShowData(showData))
+  //     .catch((err) => console.log(err)))));
+}
+
+async function initMapping() {
+  console.log(`${NAME}: initiating kitsu mapping...`);
+  const shows = await horriblesubs.allShows()
+    .then((shows) => Promise.all(shows.map((show) => limiter.schedule(() => enrichShow(show)))))
+    .then((shows) => shows.reduce((map, show) => (map[show.showId] = show, map), {}));
+  const kitsuIds = Object.values(shows).map((show) => show.kitsu_id);
+  console.log(JSON.stringify(kitsuIds));
+
+  fs.writeFile("./horrible_subs_mapping.json", JSON.stringify(shows), 'utf8', function (err) {
+    if (err) {
+      console.log("An error occurred while writing JSON Object to File.");
+    }
+  });
+  console.log(`${NAME}: finished kitsu mapping`);
+}
+
+async function enrichShow(show) {
+  console.log(`${NAME}: getting show info for ${show.title}...`);
+  const showId = await horriblesubs._getShowId(show.url)
+    .catch((error) => show.title);
+  const slug = show.url.replace(/^.*\//, '');
+  const metadata = await getKitsuId(slug)
+    .then((kitsuId) => getKitsuMetadata(kitsuId))
+    .catch((error) => {
+      console.log(`Failed getting kitsu meta: ${error.message}`);
+      return {};
+    });
+
+  return {
+    showId: showId,
+    ...show,
+    kitsu_id: metadata.kitsu_id,
+    kitsuTitle: metadata.name,
+    kitsuSlug: metadata.slug,
+    imdb_id: metadata.imdb_id
+  }
 }
 
 const hardcodedShows = {
