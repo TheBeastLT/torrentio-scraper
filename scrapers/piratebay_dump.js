@@ -20,6 +20,7 @@ const limiter = new Bottleneck({maxConcurrent: 40});
 async function scrape() {
   const lastScraped = await repository.getProvider({ name: NAME });
   const lastDump = { updatedAt: 2147000000 };
+  const checkPoint = moment('2019-03-30 00:00:00', 'YYYY-MMM-DD HH:mm:ss').toDate();
   //const lastDump = await pirata.dumps().then((dumps) => dumps.sort((a, b) => b.updatedAt - a.updatedAt)[0]);
 
   if (!lastScraped.lastScraped || lastScraped.lastScraped < lastDump.updatedAt) {
@@ -50,6 +51,11 @@ async function scrape() {
             .replace(/\s+/g, ' '),
         size: parseInt(row[3], 10)
       };
+
+      if (torrent.uploadDate > checkPoint) {
+        entriesProcessed++;
+        return;
+      }
 
       if (lastScraped.lastScraped && lastScraped.lastScraped > torrent.uploadDate) {
         // torrent was already scraped previously, skipping
@@ -177,7 +183,7 @@ async function findTorrentViaBing(record) {
 
 function downloadDump(dump) {
   console.log('downloading dump file...');
-  return needle('get', dump.url, { open_timeout: 2000, output: '/home/paulius/Downloads/tpb_dump.gz' })
+  return needle('get', dump.url, { open_timeout: 2000, output: '/tmp/tpb_dump.gz' })
       .then((response) => response.body)
       .then((body) => { console.log('unzipping dump file...'); return ungzip(body); })
       .then((unzipped) => { console.log('writing dump file...'); return fs.promises.writeFile(CSV_FILE_PATH, unzipped); })
