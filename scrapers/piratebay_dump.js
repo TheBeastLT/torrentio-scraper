@@ -20,7 +20,7 @@ const limiter = new Bottleneck({maxConcurrent: 40});
 async function scrape() {
   const lastScraped = await repository.getProvider({ name: NAME });
   const lastDump = { updatedAt: 2147000000 };
-  const checkPoint = moment('2019-03-30 00:00:00', 'YYYY-MMM-DD HH:mm:ss').toDate();
+  const checkPoint = moment('2016-06-17 00:00:00', 'YYYY-MMM-DD HH:mm:ss').toDate();
   //const lastDump = await pirata.dumps().then((dumps) => dumps.sort((a, b) => b.updatedAt - a.updatedAt)[0]);
 
   if (!lastScraped.lastScraped || lastScraped.lastScraped < lastDump.updatedAt) {
