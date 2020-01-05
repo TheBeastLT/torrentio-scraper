@@ -4,9 +4,9 @@ const moment = require('moment');
 
 const defaultProxies = [
     'https://thepiratebay.org',
-  'https://piratebays.life',
-  'https://piratebays.icu/',
-  'https://piratebays.cool'];
+  'https://piratebays.icu',
+  'https://piratebays.cool',
+  'https://piratebays.life'];
 const dumpUrl = '/static/dump/csv/';
 const defaultTimeout = 30000;
 

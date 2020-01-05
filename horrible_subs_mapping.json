@@ -185,7 +185,7 @@
   },
   "Bokura wa Minna Kawaisou": {
     "showId": "46",
-    "kitsu_id": "8536"
+    "kitsu_id": "8094"
   },
   "Bonjour Sweet Love Patisserie": {
     "showId": "47",
@@ -385,7 +385,7 @@
   },
   "Denpa Kyoushi": {
     "showId": "96",
-    "kitsu_id": "8791"
+    "kitsu_id": "10235"
   },
   "Detective Conan": {
     "showId": "97",
@@ -764,7 +764,7 @@
   },
   "Highschool DxD BorN": {
     "showId": "190",
-    "kitsu_id": "11598"
+    "kitsu_id": "8514"
   },
   "Hiiro no Kakera": {
     "showId": "191",
@@ -1036,7 +1036,7 @@
   },
   "Kyoukai no Rinne": {
     "showId": "258",
-    "kitsu_id": "8461"
+    "kitsu_id": [ "10018", "11366", "12561" ]
   },
   "Kyoukai Senjou no Horizon S2": {
     "showId": "259",
@@ -1596,7 +1596,7 @@
   },
   "Rokujouma no Shinryakusha": {
     "showId": "398",
-    "kitsu_id": "9063"
+    "kitsu_id": "8336"
   },
   "Rowdy Sumo Wrestler Matsutaro": {
     "showId": "399",
@@ -1740,7 +1740,7 @@
   },
   "Seraph of the End S2": {
     "showId": "434",
-    "kitsu_id": "10881"
+    "kitsu_id": "10082"
   },
   "Servant x Service": {
     "showId": "435",
@@ -2380,7 +2380,7 @@
   },
   "Mobile Suit Gundam Thunderbolt": {
     "showId": "602",
-    "kitsu_id": "11476"
+    "kitsu_id": ["11476", "12755"]
   },
   "Durarara!!": {
     "showId": "603",
@@ -2696,7 +2696,7 @@
   },
   "Big Order": {
     "showId": "688",
-    "kitsu_id": "10672"
+    "kitsu_id": "11455"
   },
   "Cardfight!! Vanguard G Stride Gate": {
     "showId": "689",
@@ -2712,7 +2712,7 @@
   },
   "Yowamushi Pedal Re RIDE": {
     "showId": "691",
-    "kitsu_id": "7693"
+    "kitsu_id": "8657"
   },
   "Yowamushi Pedal Re ROAD": {
     "showId": "691",
@@ -2900,7 +2900,7 @@
   },
   "Mob Pyscho 100 OVA": {
     "showId": "741",
-    "kitsu_id": "42416"
+    "kitsu_id": "41073"
   },
   "Mahou Shoujo Naria Girls": {
     "showId": "742",
@@ -3020,7 +3020,7 @@
   },
   "Nobunaga no Shinobi": {
     "showId": "773",
-    "kitsu_id": "11871"
+    "kitsu_id": [ "11871", "13303", "14207" ]
   },
   "Zutto Mae kara Suki deshita": {
     "showId": "774",
@@ -3152,7 +3152,7 @@
   },
   "Shelter": {
     "showId": "807",
-    "kitsu_id": "9215"
+    "imdb_id": "tt6443118"
   },
   "3-Nen D-Gumi Glass no Kamen": {
     "showId": "808",
@@ -3380,7 +3380,7 @@
   },
   "THE iDOLM@STER CINDERELLA GIRLS Theater (TV)": {
     "showId": "866",
-    "kitsu_id": "12671"
+    "kitsu_id": [ "12671","13895", "41377",  "42229" ]
   },
   "THE iDOLM@STER CINDERELLA GIRLS Theater (Web)": {
     "showId": "866",
@@ -3812,7 +3812,7 @@
   },
   "Yuki Yuna wa Yusha de Aru - Washio Sumi no Shou": {
     "showId": "976",
-    "kitsu_id": "12678"
+    "kitsu_id": [ "12678", "14029" ]
   },
   "ID-0": {
     "showId": "978",
@@ -3860,7 +3860,7 @@
   },
   "Houseki no Kuni": {
     "showId": "989",
-    "kitsu_id": "8774"
+    "kitsu_id": "13521"
   },
   "Kekkai Sensen & Beyond": {
     "showId": "990",
@@ -3868,7 +3868,7 @@
   },
   "Hozuki no Reitetsu S2": {
     "showId": "991",
-    "kitsu_id": "13226"
+    "kitsu_id": [ "13226", "14157" ]
   },
   "Cardfight!! Vanguard G Z": {
     "showId": "992",
@@ -4080,7 +4080,7 @@
   },
   "Beatless": {
     "showId": "1047",
-    "kitsu_id": "13939"
+    "kitsu_id": [ "13939", "41407" ]
   },
   "Zoku Touken Ranbu - Hanamaru": {
     "showId": "1048",
@@ -4140,7 +4140,7 @@
   },
   "Souten no Ken Re-Genesis": {
     "showId": "1062",
-    "kitsu_id": "13983"
+    "kitsu_id": [ "13983", "41953" ]
   },
   "Gundam Build Divers": {
     "showId": "1063",
@@ -4256,7 +4256,7 @@
   },
   "Chi's Sweet Adventure S2": {
     "showId": "1089",
-    "kitsu_id": "12154"
+    "kitsu_id": "13906"
   },
   "Golden Kamuy": {
     "showId": "1090",
@@ -4372,7 +4372,7 @@
   },
   "Ongaku Shoujo": {
     "showId": "1119",
-    "kitsu_id": "10422"
+    "kitsu_id": "41066"
   },
   "Yami Shibai - Japanese Ghost Stories 6": {
     "showId": "1121",
@@ -4864,7 +4864,7 @@
   },
   "Fairy Gone": {
     "showId": "1250",
-    "kitsu_id": "42130"
+    "kitsu_id": [ "42130", "42358" ]
   },
   "Shoumetsu Toshi": {
     "showId": "1251",
