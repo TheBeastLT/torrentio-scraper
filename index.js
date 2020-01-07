@@ -2,10 +2,10 @@ require('dotenv').config();
 const express = require("express");
 const server = express();
 const { connect } = require('./lib/repository');
-const tpbDump = require('./scrapers/piratebay_dump');
-const horribleSubsScraper = require('./scrapers/horiblesubs_scraper');
+const thepiratebayScraper = require('./scrapers/thepiratebay/thepiratebay_scraper');
+const horribleSubsScraper = require('./scrapers/horriblesubs/horriblesubs_scraper');
 
-const providers = [tpbDump];
+const providers = [horribleSubsScraper];
 
 async function scrape() {
   providers.forEach((provider) => provider.scrape());

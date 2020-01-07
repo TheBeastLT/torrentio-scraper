@@ -1,11 +1,11 @@
 require('dotenv').config();
-const repository = require('../../lib/repository');
-const { parseTorrentFiles } = require('../../lib/torrentFiles');
-const { Type } = require('../../lib/types');
+const repository = require('../lib/repository');
+const { parseTorrentFiles } = require('../lib/torrentFiles');
+const { Type } = require('../lib/types');
 
 async function addMissingEpisodes() {
   const torrent = { infoHash: '0ec780c2c7f8d5b38e61827f0b53c77c3d22f955' };
-  const torrentFiles = await require('../../lib/torrent').torrentFiles(torrent);
+  const torrentFiles = await require('../lib/torrent').torrentFiles(torrent);
   const storedFiles = await repository.getFiles(torrent)
       .then((files) => files.reduce((map, next) => (map[next.fileIndex] = next, map), {}));
   const imdbId = Object.values(storedFiles)[0].imdbId;

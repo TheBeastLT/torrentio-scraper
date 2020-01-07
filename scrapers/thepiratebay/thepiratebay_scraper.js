@@ -5,12 +5,12 @@ const { ungzip } = require('node-gzip');
 const LineByLineReader = require('line-by-line');
 const fs = require('fs');
 const { parse } = require('parse-torrent-title');
-const pirata = require('./api/thepiratebay');
+const thepiratebay = require('./thepiratebay_api.js');
 const bing = require('nodejs-bing');
-const { Type } = require('../lib/types');
-const repository = require('../lib/repository');
-const { getImdbId, escapeTitle } = require('../lib/metadata');
-const { parseTorrentFiles } = require('../lib/torrentFiles');
+const { Type } = require('../../lib/types');
+const repository = require('../../lib/repository');
+const { getImdbId, escapeTitle } = require('../../lib/metadata');
+const { parseTorrentFiles } = require('../../lib/torrentFiles');
 
 const NAME = 'ThePirateBay';
 const CSV_FILE_PATH = '/tmp/tpb_dump.csv';
@@ -21,7 +21,7 @@ async function scrape() {
   const lastScraped = await repository.getProvider({ name: NAME });
   const lastDump = { updatedAt: 2147000000 };
   const checkPoint = moment('2016-06-17 00:00:00', 'YYYY-MMM-DD HH:mm:ss').toDate();
-  //const lastDump = await pirata.dumps().then((dumps) => dumps.sort((a, b) => b.updatedAt - a.updatedAt)[0]);
+  //const lastDump = await thepiratebay.dumps().then((dumps) => dumps.sort((a, b) => b.updatedAt - a.updatedAt)[0]);
 
   if (!lastScraped.lastScraped || lastScraped.lastScraped < lastDump.updatedAt) {
     console.log(`starting to scrape tpb dump: ${JSON.stringify(lastDump)}`);
@@ -83,16 +83,16 @@ async function scrape() {
   }
 }
 const allowedCategories = [
-  pirata.Categories.VIDEO.MOVIES,
-  pirata.Categories.VIDEO.MOVIES_HD,
-  pirata.Categories.VIDEO.MOVIES_DVDR,
-  pirata.Categories.VIDEO.MOVIES_3D,
-  pirata.Categories.VIDEO.TV_SHOWS,
-  pirata.Categories.VIDEO.TV_SHOWS_HD
+  thepiratebay.Categories.VIDEO.MOVIES,
+  thepiratebay.Categories.VIDEO.MOVIES_HD,
+  thepiratebay.Categories.VIDEO.MOVIES_DVDR,
+  thepiratebay.Categories.VIDEO.MOVIES_3D,
+  thepiratebay.Categories.VIDEO.TV_SHOWS,
+  thepiratebay.Categories.VIDEO.TV_SHOWS_HD
 ];
 const seriesCategories = [
-  pirata.Categories.VIDEO.TV_SHOWS,
-  pirata.Categories.VIDEO.TV_SHOWS_HD
+  thepiratebay.Categories.VIDEO.TV_SHOWS,
+  thepiratebay.Categories.VIDEO.TV_SHOWS_HD
 ];
 async function processTorrentRecord(record) {
   const alreadyExists = await repository.getSkipTorrent(record)
@@ -132,7 +132,7 @@ async function processTorrentRecord(record) {
     seeders: torrentFound.seeders,
   };
 
-  if (!imdbId) {
+  if (!imdbId && !titleInfo.complete) {
     console.log(`imdbId not found: ${torrentFound.name}`);
     repository.createFailedImdbTorrent(torrent);
     return;
@@ -145,8 +145,8 @@ async function processTorrentRecord(record) {
   }
 
   repository.createTorrent(torrent)
-      .then(() => files.forEach(file => repository.createFile(file)));
-  console.log(`Created entry for ${torrentFound.name}`);
+      .then(() => files.forEach(file => repository.createFile(file)))
+      .then(() => console.log(`Created entry for ${torrentFound.name}`));
 }
 
 async function findTorrent(record) {
@@ -158,7 +158,7 @@ async function findTorrentInSource(record) {
   let page = 0;
   let torrentFound;
   while (!torrentFound && page < 5) {
-    const torrents = await pirata.search(record.title.replace(/[\W\s]+/, ' '), { page: page });
+    const torrents = await thepiratebay.search(record.title.replace(/[\W\s]+/, ' '), { page: page });
     torrentFound = torrents.filter(torrent => torrent.magnetLink.toLowerCase().includes(record.infoHash))[0];
     page = torrents.length === 0 ? 1000 : page + 1;
   }
@@ -178,10 +178,19 @@ async function findTorrentViaBing(record) {
         }
         return result.link.match(/torrent\/(\w+)\//)[1];
       })
-      .then((torrentId) => pirata.torrent(torrentId))
+      .then((torrentId) => thepiratebay.torrent(torrentId))
 }
 
 function downloadDump(dump) {
+  try {
+    if (fs.existsSync(CSV_FILE_PATH)) {
+      console.log('dump file already exist...');
+      return;
+    }
+  } catch(err) {
+    console.error(err)
+  }
+
   console.log('downloading dump file...');
   return needle('get', dump.url, { open_timeout: 2000, output: '/tmp/tpb_dump.gz' })
       .then((response) => response.body)

@@ -156,7 +156,8 @@ function parseBody(body) {
 
     $('table[id=\'searchResult\'] tr').each(function() {
       const name = $(this).find('.detLink').text();
-      if (!name || name === 'Do NOT download any torrent before hiding your IP with a VPN.') {
+      const sizeMatcher = $(this).find('.detDesc').text().match(/(?:,\s?Size\s)(.+),/);
+      if (!name || !sizeMatcher) {
         return;
       }
       torrents.push({
@@ -166,7 +167,7 @@ function parseBody(body) {
         magnetLink: $(this).find('a[title=\'Download this torrent using magnet\']').attr('href'),
         category: parseInt($(this).find('a[title=\'More from this category\']').eq(0).attr('href').match(/\d+$/)[0], 10),
         subcategory: parseInt($(this).find('a[title=\'More from this category\']').eq(1).attr('href').match(/\d+$/)[0], 10),
-        size: parseSize($(this).find('.detDesc').text().match(/(?:,\s?Size\s)(.+),/)[1])
+        size: parseSize(sizeMatcher[1])
       });
     });
     resolve(torrents);
