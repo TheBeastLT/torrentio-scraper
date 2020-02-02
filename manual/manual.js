@@ -25,14 +25,46 @@ async function addMissingEpisodes() {
 }
 
 async function findAllFiles() {
+  /* Test cases */
+  /* Anime Season and absolute episodes */
   const torrent = {
     infoHash: '6b95e5cfde9aaa71970a14f6bb6b9de19e2cbfa1',
     title: '[OMDA] Bleach + Filmes + Ovas (480p-720p x264 AAC-MP3) [rich_jc]',
     type: Type.SERIES
   };
   const imdbId = 'tt0434665';
+  /* Season and concat episodes */
+  // const torrent = {
+  //   infoHash: '235e8ed73b6cc9679b0842c39e17223c47b51f68',
+  //   title: 'Daria - The Complete Animated Series [2010] DVDRip',
+  //   type: Type.SERIES
+  // };
+  // const imdbId = 'tt0118298';
+  /* Series Season and absolute episodes */
+  // const torrent = {
+  //   infoHash: '16b4560beb05397c0eeb35487a997caf789243ea',
+  //   title: 'Seinfeld - Complete Collection',
+  //   type: Type.SERIES
+  // };
+  // const imdbId = 'tt0098904';
+  /* Series Season and episodes */
+  // const torrent = {
+  //   infoHash: 'd0f120c1bbfb988eb35b648e1c78ca3e5d45ef39',
+  //   title: 'Seinfeld Complete Series-720p WEBrip EN-SUB x264-[MULVAcoded]',
+  //   type: Type.SERIES
+  // };
+  // const imdbId = 'tt0098904';
+  /* Anime single absolute episode */
+  // const torrent = {
+  //   infoHash: 'e81e12880980086c476aa8bfdd22bed9d41b1dfe',
+  //   title: '[Vision] Naruto Shippuuden - 451 (1080p x264 AAC) [rich_jc].mp4',
+  //   size: 467361138,
+  //   type: Type.SERIES
+  // };
+  // const imdbId = 'tt0988824';
 
-  return parseTorrentFiles(torrent, imdbId).then((files) => console.log(files));
+  return parseTorrentFiles(torrent, imdbId)
+      .then((files) => console.log(files));
 }
 
 //addMissingEpisodes().then(() => console.log('Finished'));

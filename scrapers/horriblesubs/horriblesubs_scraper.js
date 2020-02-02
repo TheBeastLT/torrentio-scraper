@@ -28,7 +28,7 @@ async function _scrapeAllShows() {
   const shows = await horriblesubs.allShows();
 
   return Promise.all(shows
-      .slice(0, 20)
+      .slice(0, 6)
       .map((show) => limiter.schedule(() => horriblesubs.showData(show)
           .then((showData) => _parseShowData(showData))
           .catch((err) => console.log(err)))));
@@ -86,7 +86,7 @@ async function _parseShowData(showData) {
           .map((mirror) => ({
             provider: NAME,
             ...mirror,
-            title: `${episodeInfo.title} ${episodeInfo.episode} [${mirror.resolution}]`,
+            title: `${episodeInfo.title} - ${episodeInfo.episode} [${mirror.resolution}]`,
             size: 300000000,
             type: Type.ANIME,
             uploadDate: episodeInfo.uploadDate,
@@ -95,15 +95,26 @@ async function _parseShowData(showData) {
       .map((incompleteTorrent) => entryLimiter.schedule(() => checkIfExists(incompleteTorrent)
           .then((torrent) => torrent && updateCurrentSeeders(torrent))
           .then((torrent) => torrent && parseTorrentFiles(torrent, undefined, kitsuId)
-              .then((files) => verifyFiles(files))
+              .then((files) => verifyFiles(torrent, files))
               .then((files) => repository.createTorrent(torrent)
                   .then(() => files.forEach(file => repository.createFile(file)))
                   .then(() => console.log(`Created entry for ${torrent.title}`)))))))
       .then(() => console.log(`${NAME}: finished scrapping ${showData.title} data`));
 }
 
-function verifyFiles(files) {
+async function verifyFiles(torrent, files) {
   if (files && files.length) {
+    const existingFiles = await repository.getFiles({ infoHash: files[0].infoHash })
+        .then((existing) => existing.reduce((map, file) => (map[file.fileIndex] = file, map), {}))
+        .catch(() => undefined);
+    if (existingFiles && Object.keys(existingFiles).length) {
+      return files
+          .map(file => ({
+            ...file,
+            id: existingFiles[file.fileIndex] && existingFiles[file.fileIndex].id,
+            size: existingFiles[file.fileIndex] && existingFiles[file.fileIndex].size || file.size
+          }))
+    }
     return files;
   }
   throw new Error(`No video files found for: ${torrent.title}`);
