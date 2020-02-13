@@ -1036,7 +1036,11 @@
   },
   "Kyoukai no Rinne": {
     "showId": "258",
-    "kitsu_id": [ "10018", "11366", "12561" ]
+    "kitsu_id": [
+      "10018",
+      "11366",
+      "12561"
+    ]
   },
   "Kyoukai Senjou no Horizon S2": {
     "showId": "259",
@@ -2380,7 +2384,10 @@
   },
   "Mobile Suit Gundam Thunderbolt": {
     "showId": "602",
-    "kitsu_id": ["11476", "12755"]
+    "kitsu_id": [
+      "11476",
+      "12755"
+    ]
   },
   "Durarara!!": {
     "showId": "603",
@@ -3020,7 +3027,11 @@
   },
   "Nobunaga no Shinobi": {
     "showId": "773",
-    "kitsu_id": [ "11871", "13303", "14207" ]
+    "kitsu_id": [
+      "11871",
+      "13303",
+      "14207"
+    ]
   },
   "Zutto Mae kara Suki deshita": {
     "showId": "774",
@@ -3380,7 +3391,12 @@
   },
   "THE iDOLM@STER CINDERELLA GIRLS Theater (TV)": {
     "showId": "866",
-    "kitsu_id": [ "12671","13895", "41377",  "42229" ]
+    "kitsu_id": [
+      "12671",
+      "13895",
+      "41377",
+      "42229"
+    ]
   },
   "THE iDOLM@STER CINDERELLA GIRLS Theater (Web)": {
     "showId": "866",
@@ -3812,7 +3828,10 @@
   },
   "Yuki Yuna wa Yusha de Aru - Washio Sumi no Shou": {
     "showId": "976",
-    "kitsu_id": [ "12678", "14029" ]
+    "kitsu_id": [
+      "12678",
+      "14029"
+    ]
   },
   "ID-0": {
     "showId": "978",
@@ -3868,7 +3887,10 @@
   },
   "Hozuki no Reitetsu S2": {
     "showId": "991",
-    "kitsu_id": [ "13226", "14157" ]
+    "kitsu_id": [
+      "13226",
+      "14157"
+    ]
   },
   "Cardfight!! Vanguard G Z": {
     "showId": "992",
@@ -4080,7 +4102,10 @@
   },
   "Beatless": {
     "showId": "1047",
-    "kitsu_id": [ "13939", "41407" ]
+    "kitsu_id": [
+      "13939",
+      "41407"
+    ]
   },
   "Zoku Touken Ranbu - Hanamaru": {
     "showId": "1048",
@@ -4140,7 +4165,10 @@
   },
   "Souten no Ken Re-Genesis": {
     "showId": "1062",
-    "kitsu_id": [ "13983", "41953" ]
+    "kitsu_id": [
+      "13983",
+      "41953"
+    ]
   },
   "Gundam Build Divers": {
     "showId": "1063",
@@ -4864,7 +4892,10 @@
   },
   "Fairy Gone": {
     "showId": "1250",
-    "kitsu_id": [ "42130", "42358" ]
+    "kitsu_id": [
+      "42130",
+      "42358"
+    ]
   },
   "Shoumetsu Toshi": {
     "showId": "1251",
@@ -5212,5 +5243,156 @@
   },
   "Thunderbolt Fantasy - Bewitching Melody of the West": {
     "showId": "1342"
+  },
+  "A3! Season Spring & Summer": {
+    "showId": "1378",
+    "kitsu_id": "42146"
+  },
+  "ARP Backstage Pass": {
+    "showId": "1379",
+    "kitsu_id": "42879"
+  },
+  "BanG Dream! S3": {
+    "showId": "1354",
+    "kitsu_id": "41290"
+  },
+  "Boku no Tonari ni Ankoku Hakaishin ga Imasu": {
+    "showId": "1374",
+    "kitsu_id": "42100"
+  },
+  "Darwin's Game": {
+    "showId": "1344",
+    "kitsu_id": "42260"
+  },
+  "Eizouken ni wa Te wo Dasu na!": {
+    "showId": "1347",
+    "kitsu_id": "42343"
+  },
+  "Haikyuu!! Riku vs Kuu": {
+    "showId": "1372",
+    "kitsu_id": "42502"
+  },
+  "Haikyuu!! S4": {
+    "showId": "1369",
+    "kitsu_id": "42059"
+  },
+  "Hatena Illusion": {
+    "showId": "1360",
+    "kitsu_id": "13704"
+  },
+  "Heya Camp": {
+    "showId": "1351",
+    "kitsu_id": "41978"
+  },
+  "Housekishou Richard-shi no Nazo Kantei": {
+    "showId": "1366",
+    "kitsu_id": "42488"
+  },
+  "ID INVADED": {
+    "showId": "1348",
+    "kitsu_id": "42436"
+  },
+  "Infinite Dendrogram": {
+    "showId": "1362",
+    "kitsu_id": "42131"
+  },
+  "Isekai Quartet S2": {
+    "showId": "1380",
+    "kitsu_id": "42410"
+  },
+  "Ishuzoku Reviewers": {
+    "showId": "1375",
+    "kitsu_id": "42744"
+  },
+  "Itai no wa Iya nano de Bougyoryoku ni Kyokufuri Shitai to Omoimasu": {
+    "showId": "1357",
+    "kitsu_id": "42043"
+  },
+  "Jibaku Shounen Hanako-kun": {
+    "showId": "1365",
+    "kitsu_id": "42322"
+  },
+  "Koisuru Asteroid": {
+    "showId": "1345",
+    "kitsu_id": "42470"
+  },
+  "Kyochuu Rettou Movie": {
+    "showId": "1371",
+    "kitsu_id": "42941"
+  },
+  "Kyokou Suiri": {
+    "showId": "1377",
+    "kitsu_id": "42117"
+  },
+  "Magia Record": {
+    "showId": "1346",
+    "kitsu_id": "42016"
+  },
+  "Majutsushi Orphen Hagure Tabi": {
+    "showId": "1355",
+    "kitsu_id": "42329"
+  },
+  "Murenase! Seton Gakuen": {
+    "showId": "1352",
+    "kitsu_id": "42601"
+  },
+  "Nanabun no Nijyuuni": {
+    "showId": "1376",
+    "kitsu_id": "42456"
+  },
+  "Nekopara": {
+    "showId": "1359",
+    "kitsu_id": "13121"
+  },
+  "number24": {
+    "showId": "1356",
+    "kitsu_id": "42209"
+  },
+  "Oda Cinnamon Nobunaga": {
+    "showId": "1373",
+    "kitsu_id": "42911"
+  },
+  "Oshi ga Budoukan Ittekuretara Shinu": {
+    "showId": "1363",
+    "kitsu_id": "41309"
+  },
+  "Pet": {
+    "showId": "1350",
+    "kitsu_id": "41089"
+  },
+  "Plunderer": {
+    "showId": "1358",
+    "kitsu_id": "40600"
+  },
+  "Re Zero kara Hajimeru Isekai Seikatsu - Director's Cut": {
+    "showId": "660"
+  },
+  "Rikei ga Koi ni Ochita no de Shoumei shitemita": {
+    "showId": "1368",
+    "kitsu_id": "42297"
+  },
+  "Runway de Waratte": {
+    "showId": "1370",
+    "kitsu_id": "42552"
+  },
+  "Show By Rock!! Mashumairesh!!": {
+    "showId": "1361",
+    "kitsu_id": "42885"
+  },
+  "Somali to Mori no Kamisama": {
+    "showId": "1349",
+    "kitsu_id": "42201"
+  },
+  "Toaru Kagaku no Railgun T": {
+    "showId": "1367",
+    "kitsu_id": "41979"
+  },
+  "Uchi Tama - Uchi no Tama Shirimasen ka": {
+    "showId": "1364",
+    "kitsu_id": "42397"
+  },
+  "Yatogame-chan Kansatsu Nikki S2": {
+    "showId": "1353",
+    "kitsu_id": "42398"
   }
 }

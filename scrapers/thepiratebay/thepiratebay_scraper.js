@@ -15,7 +15,7 @@ const { parseTorrentFiles } = require('../../lib/torrentFiles');
 const NAME = 'ThePirateBay';
 const CSV_FILE_PATH = '/tmp/tpb_dump.csv';
 
-const limiter = new Bottleneck({maxConcurrent: 40});
+const limiter = new Bottleneck({ maxConcurrent: 40 });
 
 async function scrape() {
   const lastScraped = await repository.getProvider({ name: NAME });
@@ -73,15 +73,16 @@ async function scrape() {
           .then(() => entriesProcessed++);
     });
     lr.on('error', (err) => {
-        console.log(err);
+      console.log(err);
     });
     lr.on('end', () => {
-        fs.unlink(CSV_FILE_PATH);
-        updateProvider({ name: NAME, lastScraped: lastDump.updatedAt });
-        console.log(`finished to scrape tpb dump: ${JSON.stringify(lastDump)}!`);
+      fs.unlink(CSV_FILE_PATH);
+      updateProvider({ name: NAME, lastScraped: lastDump.updatedAt });
+      console.log(`finished to scrape tpb dump: ${JSON.stringify(lastDump)}!`);
     });
   }
 }
+
 const allowedCategories = [
   thepiratebay.Categories.VIDEO.MOVIES,
   thepiratebay.Categories.VIDEO.MOVIES_HD,
@@ -94,12 +95,13 @@ const seriesCategories = [
   thepiratebay.Categories.VIDEO.TV_SHOWS,
   thepiratebay.Categories.VIDEO.TV_SHOWS_HD
 ];
+
 async function processTorrentRecord(record) {
   const alreadyExists = await repository.getSkipTorrent(record)
       .catch(() => repository.getTorrent(record))
       .catch(() => undefined);
   if (alreadyExists) {
-     return;
+    return;
   }
 
   const torrentFound = await findTorrent(record);
@@ -128,17 +130,18 @@ async function processTorrentRecord(record) {
     title: torrentFound.name,
     size: record.size,
     type: type,
+    imdbId: imdbId,
     uploadDate: record.uploadDate,
     seeders: torrentFound.seeders,
   };
 
-  if (!imdbId && !titleInfo.complete) {
+  if (!torrent.imdbId && !titleInfo.complete) {
     console.log(`imdbId not found: ${torrentFound.name}`);
     repository.createFailedImdbTorrent(torrent);
     return;
   }
 
-  const files = await parseTorrentFiles(torrent, imdbId);
+  const files = await parseTorrentFiles(torrent);
   if (!files || !files.length) {
     console.log(`no video files found: ${torrentFound.name}`);
     return;
@@ -171,7 +174,8 @@ async function findTorrentInSource(record) {
 async function findTorrentViaBing(record) {
   return bing.web(`${record.infoHash}`)
       .then((results) => results
-          .find(result => result.description.includes('Direct download via magnet link') || result.description.includes('Get this torrent')))
+          .find(result => result.description.includes('Direct download via magnet link') || result.description.includes(
+              'Get this torrent')))
       .then((result) => {
         if (!result) {
           throw new Error(`Failed to find torrent ${record.title}`);
@@ -187,15 +191,21 @@ function downloadDump(dump) {
       console.log('dump file already exist...');
       return;
     }
-  } catch(err) {
+  } catch (err) {
     console.error(err)
   }
 
   console.log('downloading dump file...');
   return needle('get', dump.url, { open_timeout: 2000, output: '/tmp/tpb_dump.gz' })
       .then((response) => response.body)
-      .then((body) => { console.log('unzipping dump file...'); return ungzip(body); })
-      .then((unzipped) => { console.log('writing dump file...'); return fs.promises.writeFile(CSV_FILE_PATH, unzipped); })
+      .then((body) => {
+        console.log('unzipping dump file...');
+        return ungzip(body);
+      })
+      .then((unzipped) => {
+        console.log('writing dump file...');
+        return fs.promises.writeFile(CSV_FILE_PATH, unzipped);
+      })
 }
 
 module.exports = { scrape };

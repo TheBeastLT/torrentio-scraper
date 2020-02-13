@@ -63,10 +63,10 @@ async function enrichShow(show) {
 
   return {
     showId: showId,
+    kitsu_id: metadata.kitsuId,
     ...show,
-    kitsu_id: metadata.kitsu_id,
-    kitsuTitle: metadata.name,
-    imdb_id: metadata.imdb_id
+    kitsuTitle: metadata.title,
+    imdb_id: metadata.imdbId
   }
 }
 
@@ -89,12 +89,13 @@ async function _parseShowData(showData) {
             title: `${episodeInfo.title} - ${episodeInfo.episode} [${mirror.resolution}]`,
             size: 300000000,
             type: Type.ANIME,
+            kitsuId: kitsuId,
             uploadDate: episodeInfo.uploadDate,
           })))
       .reduce((a, b) => a.concat(b), [])
       .map((incompleteTorrent) => entryLimiter.schedule(() => checkIfExists(incompleteTorrent)
           .then((torrent) => torrent && updateCurrentSeeders(torrent))
-          .then((torrent) => torrent && parseTorrentFiles(torrent, undefined, kitsuId)
+          .then((torrent) => torrent && parseTorrentFiles(torrent)
               .then((files) => verifyFiles(torrent, files))
               .then((files) => repository.createTorrent(torrent)
                   .then(() => files.forEach(file => repository.createFile(file)))
