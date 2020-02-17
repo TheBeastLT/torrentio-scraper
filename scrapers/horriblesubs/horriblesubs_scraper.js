@@ -1,6 +1,7 @@
 const fs = require('fs');
 const Bottleneck = require('bottleneck');
 const { parse } = require('parse-torrent-title');
+const decode = require('magnet-uri');
 const horriblesubs = require('./horriblesubs_api.js');
 const repository = require('../../lib/repository');
 const { Type } = require('../../lib/types');
@@ -12,7 +13,7 @@ const showMappings = require('./horriblesubs_mapping.json');
 const NAME = 'HorribleSubs';
 
 const limiter = new Bottleneck({ maxConcurrent: 5 });
-const entryLimiter = new Bottleneck({ maxConcurrent: 20 });
+const entryLimiter = new Bottleneck({ maxConcurrent: 10 });
 
 async function scrape() {
   const lastScraped = await repository.getProvider({ name: NAME });
@@ -28,7 +29,7 @@ async function _scrapeAllShows() {
   const shows = await horriblesubs.allShows();
 
   return Promise.all(shows
-      .slice(0, 6)
+      .slice(0, 5)
       .map((show) => limiter.schedule(() => horriblesubs.showData(show)
           .then((showData) => _parseShowData(showData))
           .catch((err) => console.log(err)))));
@@ -86,6 +87,8 @@ async function _parseShowData(showData) {
           .map((mirror) => ({
             provider: NAME,
             ...mirror,
+            infoHash: decode(mirror.magnetLink).infoHash,
+            trackers: decode(mirror.magnetLink).tr.join(','),
             title: `${episodeInfo.title} - ${episodeInfo.episode} [${mirror.resolution}]`,
             size: 300000000,
             type: Type.ANIME,

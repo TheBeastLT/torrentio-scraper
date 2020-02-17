@@ -1,7 +1,6 @@
 const cheerio = require('cheerio');
 const needle = require('needle');
 const moment = require('moment');
-const decode = require('magnet-uri');
 
 const defaultUrl = 'https://horriblesubs.info';
 const defaultTimeout = 5000;
@@ -18,10 +17,10 @@ function allShows(config = {}) {
 
 async function showData(showInfo, config = {}) {
   const showEndpoint = (showInfo.url || showInfo).match(/\/show.+/)[0];
+  const title = showInfo.title;
   const showId = await _getShowId(showEndpoint);
-  const packEntries = await _getAllEntries(showId, 'batch', config);
-  const singleEntries = await _getAllEntries(showId, 'show', config);
-  const title = showInfo.title || singleEntries[0] && singleEntries[0].title;
+  const packEntries = await _getShowEntries(showId, title, 'batch', config);
+  const singleEntries = await _getShowEntries(showId, title, 'show', config);
 
   return {
     title: title,
@@ -55,12 +54,17 @@ function _getShowId(showEndpoint) {
       .then($ => $('div.entry-content').find('script').html().match(/var hs_showid = (\d+)/)[1]);
 }
 
+function _getShowEntries(animeId, animeTitle, type, config) {
+  return _getAllEntries(animeId, type, config)
+      .then((entries) => entries.filter((entry) => entry.title === animeTitle));
+}
+
 function _getAllEntries(animeId, type, config, page = 0, autoExtend = true) {
   const entriesEndpoint = `/api.php?method=getshows&type=${type}&showid=${animeId}&nextid=${page}`;
   return _getEntries(entriesEndpoint, config)
-      .then((entries) => !autoExtend || entries.length < 12 ? entries :
+      .then((entries) => !autoExtend || !entries.length ? entries :
           _getAllEntries(animeId, type, config, page + 1)
-              .then((nextEntries) => entries.concat(nextEntries)))
+              .then((nextEntries) => entries.concat(nextEntries)));
 }
 
 function _getEntries(endpoint, config) {
@@ -74,11 +78,10 @@ function _getEntries(endpoint, config) {
             mirrors: $(element).find('div[class="rls-links-container"]').children()
                 .map((indexLink, elementLink) => ({
                   resolution: $(elementLink).attr('id').match(/\d+p$/)[0],
-                  infoHash: decode($(elementLink).find('a[title="Magnet Link"]').attr('href')).infoHash,
                   magnetLink: $(elementLink).find('a[title="Magnet Link"]').attr('href'),
                   torrentLink: $(elementLink).find('a[title="Torrent Link"]').attr('href')
                 })).get()
-          })).get())
+          })).get());
 }
 
 function _getAllLatestEntries(config, page = 0) {
@@ -93,7 +96,7 @@ function _getAllLatestEntries(config, page = 0) {
       .then((entries) => entries.length < 12
           ? entries
           : _getAllLatestEntries(config, page + 1)
-              .then((nextEntries) => entries.concat(nextEntries)))
+              .then((nextEntries) => entries.concat(nextEntries)));
 }
 
 async function _findLatestEntry(entry, config) {
