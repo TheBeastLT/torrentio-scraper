@@ -27,6 +27,27 @@ async function addMissingEpisodes() {
       .forEach((file) => repository.createFile(file));
 }
 
+async function updateMovieCollections() {
+  const collectionFiles = await repository.getFilesBasedOnTitle('logy')
+      .then(files => files.filter(file => file.fileIndex === null))
+      .then(files => files.filter(file => parse(file.title).complete));
+
+  collectionFiles.map(original => repository.getTorrent({ infoHash: original.infoHash })
+      .then(torrent => parseTorrentFiles({ ...torrent, imdbId: original.imdbId }))
+      .then(files => Promise.all(files.map(file => {
+        console.log(file);
+        return repository.createFile(file)
+      })))
+      .then(createdFiled => {
+        if (createdFiled && createdFiled.length) {
+          console.log(`Updated movie collection ${original.title}`);
+          repository.deleteFile(original)
+        } else {
+          console.log(`Failed updating movie collection ${original.title}`);
+        }
+      }));
+}
+
 async function findAllFiles() {
   /* Test cases */
   /* Anime Season and absolute episodes */
@@ -93,5 +114,6 @@ async function findAllFiles() {
       .then((files) => console.log(files));
 }
 
-addMissingEpisodes().then(() => console.log('Finished'));
+//addMissingEpisodes().then(() => console.log('Finished'));
 //findAllFiles().then(() => console.log('Finished'));
+updateMovieCollections().then(() => console.log('Finished'));
