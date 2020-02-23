@@ -1,4 +1,5 @@
 require('dotenv').config();
+const { parse } = require('parse-torrent-title');
 const repository = require('../lib/repository');
 const { parseTorrentFiles } = require('../lib/torrentFiles');
 const { Type } = require('../lib/types');
@@ -18,8 +19,10 @@ async function addMissingEpisodes() {
         title: file.name,
         size: file.size,
         imdbId: imdbId,
-        imdbSeason: parseInt(file.name.match(/(\d+)[ .]?-[ .]?\d+/)[1], 10),
-        imdbEpisode: parseInt(file.name.match(/\d+[ .]?-[ .]?(\d+)/)[1], 10),
+        imdbSeason: parse(file.name).season,
+        imdbEpisode: parse(file.name).episode,
+        // imdbSeason: parseInt(file.name.match(/(\d+)[ .]?-[ .]?\d+/)[1], 10),
+        // imdbEpisode: parseInt(file.name.match(/\d+[ .]?-[ .]?(\d+)/)[1], 10),
       }))
       .forEach((file) => repository.createFile(file));
 }
@@ -70,10 +73,25 @@ async function findAllFiles() {
   //   type: Type.SERIES,
   //   imdbId: 'tt3444938'
   // };
+  /* Not all seasons available so Date based episode */
+  // const torrent = {
+  //   infoHash: 'DCD5ACF85F4203FE14428A890528B2EDBD07B092',
+  //   title: 'The Young And The Restless - S43 E10986 - 2016-08-12',
+  //   size: 989777743,
+  //   type: Type.SERIES,
+  //   imdbId: 'tt0069658'
+  // };
+  // const torrent = {
+  //   infoHash: 'C75FBDCD62EB882746A0E58B19BADD60DE14526B',
+  //   title: 'Jimmy.Kimmel.2016.08.03.Hugh.Grant.480p.x264-mSD',
+  //   size: 618637331,
+  //   type: Type.SERIES,
+  //   imdbId: 'tt0320037'
+  // };
 
   return parseTorrentFiles(torrent)
       .then((files) => console.log(files));
 }
 
-//addMissingEpisodes().then(() => console.log('Finished'));
-findAllFiles().then(() => console.log('Finished'));
+addMissingEpisodes().then(() => console.log('Finished'));
+//findAllFiles().then(() => console.log('Finished'));

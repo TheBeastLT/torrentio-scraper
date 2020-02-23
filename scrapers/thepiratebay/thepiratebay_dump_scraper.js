@@ -4,13 +4,11 @@ const Bottleneck = require('bottleneck');
 const { ungzip } = require('node-gzip');
 const LineByLineReader = require('line-by-line');
 const fs = require('fs');
-const { parse } = require('parse-torrent-title');
 const thepiratebay = require('./thepiratebay_api.js');
 const bing = require('nodejs-bing');
 const { Type } = require('../../lib/types');
 const repository = require('../../lib/repository');
-const { getImdbId, escapeTitle } = require('../../lib/metadata');
-const { parseTorrentFiles } = require('../../lib/torrentFiles');
+const { createTorrentEntry, createSkipTorrentEntry, getStoredTorrentEntry } = require('../../lib/torrentEntries');
 
 const NAME = 'ThePirateBay';
 const CSV_FILE_PATH = '/tmp/tpb_dump.csv';
@@ -48,7 +46,8 @@ async function scrape() {
             .replace(/^"|"$/g, '')
             .replace(/&amp;/g, '&')
             .replace(/&\w{2,6};/g, ' ')
-            .replace(/\s+/g, ' '),
+            .replace(/\s+/g, ' ')
+            .trim(),
         size: parseInt(row[3], 10)
       };
 
@@ -77,7 +76,7 @@ async function scrape() {
     });
     lr.on('end', () => {
       fs.unlink(CSV_FILE_PATH);
-      updateProvider({ name: NAME, lastScraped: lastDump.updatedAt });
+      repository.updateProvider({ name: NAME, lastScraped: lastDump.updatedAt });
       console.log(`finished to scrape tpb dump: ${JSON.stringify(lastDump)}!`);
     });
   }
@@ -97,64 +96,34 @@ const seriesCategories = [
 ];
 
 async function processTorrentRecord(record) {
-  const alreadyExists = await repository.getSkipTorrent(record)
-      .catch(() => repository.getTorrent(record))
-      .catch(() => undefined);
-  if (alreadyExists) {
+  if (await getStoredTorrentEntry(record)) {
     return;
   }
 
   const torrentFound = await findTorrent(record);
 
-  if (!torrentFound) {
-    //console.log(`not found: ${JSON.stringify(record)}`);
-    repository.createSkipTorrent(record);
-    return;
-  }
-  if (!allowedCategories.includes(torrentFound.subcategory)) {
-    //console.log(`wrong category: ${torrentFound.name}`);
-    repository.createSkipTorrent(record);
-    return;
+  if (!torrentFound || !allowedCategories.includes(torrentFound.subcategory)) {
+    return createSkipTorrentEntry(record);
   }
 
-  const type = seriesCategories.includes(torrentFound.subcategory) ? Type.SERIES : Type.MOVIE;
-  const titleInfo = parse(torrentFound.name);
-  const imdbId = await getImdbId({
-    name: escapeTitle(titleInfo.title).toLowerCase(),
-    year: titleInfo.year,
-    type: type
-  }).catch((error) => undefined);
   const torrent = {
     infoHash: record.infoHash,
     provider: NAME,
+    torrentId: record.torrentId,
     title: torrentFound.name,
-    size: record.size,
-    type: type,
-    imdbId: imdbId,
-    uploadDate: record.uploadDate,
+    size: torrentFound.size,
+    type: seriesCategories.includes(torrentFound.subcategory) ? Type.SERIES : Type.MOVIE,
+    imdbId: torrentFound.imdbId,
+    uploadDate: torrentFound.uploadDate || record.uploadDate,
     seeders: torrentFound.seeders,
   };
 
-  if (!torrent.imdbId && !titleInfo.complete) {
-    console.log(`imdbId not found: ${torrentFound.name}`);
-    repository.createFailedImdbTorrent(torrent);
-    return;
-  }
-
-  const files = await parseTorrentFiles(torrent);
-  if (!files || !files.length) {
-    console.log(`no video files found: ${torrentFound.name}`);
-    return;
-  }
-
-  repository.createTorrent(torrent)
-      .then(() => files.forEach(file => repository.createFile(file)))
-      .then(() => console.log(`Created entry for ${torrentFound.name}`));
+  return createTorrentEntry(torrent);
 }
 
 async function findTorrent(record) {
   return findTorrentInSource(record)
-      .catch((error) => findTorrentViaBing(record));
+      .catch(() => findTorrentViaBing(record));
 }
 
 async function findTorrentInSource(record) {
@@ -168,7 +137,8 @@ async function findTorrentInSource(record) {
   if (!torrentFound) {
     return Promise.reject(new Error(`Failed to find torrent ${record.title}`));
   }
-  return Promise.resolve(torrentFound);
+  return Promise.resolve(torrentFound)
+      .then((torrent) => thepiratebay.torrent(torrent.torrentId));
 }
 
 async function findTorrentViaBing(record) {

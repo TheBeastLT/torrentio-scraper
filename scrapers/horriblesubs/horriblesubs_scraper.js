@@ -55,7 +55,7 @@ async function enrichShow(show) {
   console.log(`${NAME}: getting show info for ${show.title}...`);
   const showId = await horriblesubs._getShowId(show.url)
       .catch((error) => show.title);
-  const metadata = await getKitsuId(show.title)
+  const metadata = await getKitsuId({ name: show.title })
       .then((kitsuId) => getMetadata(kitsuId))
       .catch((error) => {
         console.log(`Failed getting kitsu meta: ${error.message}`);

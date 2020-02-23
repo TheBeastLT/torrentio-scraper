@@ -3,7 +3,7 @@ const needle = require('needle');
 const moment = require('moment');
 
 const defaultProxies = [
-    'https://thepiratebay.org',
+  'https://thepiratebay.org',
   'https://piratebays.icu',
   'https://piratebays.cool',
   'https://piratebays.life'];
@@ -89,6 +89,7 @@ function torrent(torrentId, config = {}, retries = 2) {
   return raceFirstSuccessful(proxyList
       .map((proxyUrl) => singleRequest(`${proxyUrl}/torrent/${torrentId}`, config)))
       .then((body) => parseTorrentPage(body))
+      .then((torrent) => ({ torrentId, ...torrent }))
       .catch((err) => torrent(torrentId, config, retries - 1));
 }
 
@@ -126,7 +127,7 @@ function singleRequest(requestUrl, config = {}) {
   const timeout = config.timeout || defaultTimeout;
 
   return needle('get', requestUrl, { open_timeout: timeout, follow: 2 })
-      .then((response) =>  {
+      .then((response) => {
         const body = response.body;
         if (!body) {
           throw new Error(`No body: ${requestUrl}`);
@@ -154,19 +155,22 @@ function parseBody(body) {
 
     const torrents = [];
 
-    $('table[id=\'searchResult\'] tr').each(function() {
+    $('table[id=\'searchResult\'] tr').each(function () {
       const name = $(this).find('.detLink').text();
       const sizeMatcher = $(this).find('.detDesc').text().match(/(?:,\s?Size\s)(.+),/);
       if (!name || !sizeMatcher) {
         return;
       }
       torrents.push({
+        torrentId: $(this).find('.detLink').attr('href').match(/torrent\/([^/]+)/)[1],
         name: name,
         seeders: parseInt($(this).find('td[align=\'right\']').eq(0).text(), 10),
         leechers: parseInt($(this).find('td[align=\'right\']').eq(1).text(), 10),
         magnetLink: $(this).find('a[title=\'Download this torrent using magnet\']').attr('href'),
-        category: parseInt($(this).find('a[title=\'More from this category\']').eq(0).attr('href').match(/\d+$/)[0], 10),
-        subcategory: parseInt($(this).find('a[title=\'More from this category\']').eq(1).attr('href').match(/\d+$/)[0], 10),
+        category: parseInt($(this).find('a[title=\'More from this category\']').eq(0).attr('href').match(/\d+$/)[0],
+            10),
+        subcategory: parseInt($(this).find('a[title=\'More from this category\']').eq(1).attr('href').match(/\d+$/)[0],
+            10),
         size: parseSize(sizeMatcher[1])
       });
     });
@@ -181,15 +185,20 @@ function parseTorrentPage(body) {
     if (!$) {
       reject(new Error(errors.PARSER_ERROR));
     }
+    const details = $('div[id=\'details\']');
+    const col1 = details.find('dl[class=\'col1\']');
+    const imdbIdMatch = col1.html().match(/imdb\.com\/title\/(tt\d+)/i);
 
     const torrent = {
-        name: $('div[id=\'title\']').text().trim(),
-        seeders: parseInt($('dl[class=\'col2\']').find('dd').eq(2).text(), 10),
-        leechers: parseInt($('dl[class=\'col2\']').find('dd').eq(3).text(), 10),
-        magnetLink: $('div[id=\'details\']').find('a[title=\'Get this torrent\']').attr('href'),
-        category: Categories.VIDEO.ALL,
-        subcategory: parseInt($('dl[class=\'col1\']').find('a[title=\'More from this category\']').eq(0).attr('href').match(/\d+$/)[0], 10),
-        size: parseSize($('dl[class=\'col1\']').find('dd').eq(2).text().match(/(\d+)(?:.?Bytes)/)[1])
+      name: $('div[id=\'title\']').text().trim(),
+      seeders: parseInt(details.find('dt:contains(\'Seeders:\')').next().text(), 10),
+      leechers: parseInt(details.find('dt:contains(\'Leechers:\')').next().text(), 10),
+      magnetLink: details.find('a[title=\'Get this torrent\']').attr('href'),
+      category: Categories.VIDEO.ALL,
+      subcategory: parseInt(col1.find('a[title=\'More from this category\']').eq(0).attr('href').match(/\d+$/)[0], 10),
+      size: parseSize(details.find('dt:contains(\'Size:\')').next().text().match(/(\d+)(?:.?Bytes)/)[1]),
+      uploadDate: new Date(details.find('dt:contains(\'Uploaded:\')').next().text()),
+      imdbId: imdbIdMatch && imdbIdMatch[1]
     };
     resolve(torrent);
   });
