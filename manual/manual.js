@@ -109,11 +109,18 @@ async function findAllFiles() {
   //   type: Type.SERIES,
   //   imdbId: 'tt0320037'
   // };
+  /* With extras exceeding season episode count */
+  // const torrent = {
+  //   infoHash: '2af56a80357b61d839328b986d1165ea8395bbc0',
+  //   title: 'Tim and Eric - Complete',
+  //   type: Type.SERIES,
+  //   imdbId: 'tt0912343'
+  // };
 
   return parseTorrentFiles(torrent)
       .then((files) => console.log(files));
 }
 
 //addMissingEpisodes().then(() => console.log('Finished'));
-//findAllFiles().then(() => console.log('Finished'));
-updateMovieCollections().then(() => console.log('Finished'));
+findAllFiles().then(() => console.log('Finished'));
+//updateMovieCollections().then(() => console.log('Finished'));
