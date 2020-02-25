@@ -48,6 +48,30 @@ async function updateMovieCollections() {
       }));
 }
 
+async function reapplyEpisodeDecomposing() {
+  const infoHash = '84fadd061f0d0bc356235b7fa6495a0f51fff311';
+  const imdbId = 'tt0988824';
+  const torrent = await repository.getTorrent({ infoHash });
+  const storedFiles = await repository.getFiles({ infoHash });
+  const fileIndexMap = storedFiles
+      .reduce((map, next) => (map[next.fileIndex] = (map[next.fileIndex] || []).concat(next), map), {});
+  const files = Object.values(fileIndexMap)
+      .map(sameIndexFiles => sameIndexFiles[0])
+      .map(file => ({ fileIndex: file.fileIndex, name: file.title, path: file.title, size: file.size }));
+
+  return parseTorrentFiles({ ...torrent, imdbId, files })
+      .then(newFiles => newFiles.map(file => {
+        const originalFile = fileIndexMap[file.fileIndex].shift();
+        originalFile.imdbSeason = file.imdbSeason;
+        originalFile.imdbEpisode = file.imdbEpisode;
+        originalFile.kitsuId = file.kitsuId;
+        originalFile.kitsuEpisode = file.kitsuEpisode;
+        return originalFile;
+      }))
+      .then(updatedFiles => Promise.all(updatedFiles.map(file => file.save())))
+      .then(() => console.log(`Updated files for ${torrent.title}`));
+}
+
 async function findAllFiles() {
   /* Test cases */
   /* Anime Season and absolute episodes */
@@ -122,5 +146,6 @@ async function findAllFiles() {
 }
 
 //addMissingEpisodes().then(() => console.log('Finished'));
-findAllFiles().then(() => console.log('Finished'));
+//findAllFiles().then(() => console.log('Finished'));
 //updateMovieCollections().then(() => console.log('Finished'));
+reapplyEpisodeDecomposing().then(() => console.log('Finished'));
