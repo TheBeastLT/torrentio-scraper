@@ -1,8 +1,11 @@
 require('dotenv').config();
+const Bottleneck = require('bottleneck');
 const { parse } = require('parse-torrent-title');
 const repository = require('../lib/repository');
 const { parseTorrentFiles } = require('../lib/torrentFiles');
 const { Type } = require('../lib/types');
+
+const limiter = new Bottleneck({ maxConcurrent: 40 });
 
 async function addMissingEpisodes() {
   const torrent = { infoHash: '0ec780c2c7f8d5b38e61827f0b53c77c3d22f955' };
@@ -48,27 +51,42 @@ async function updateMovieCollections() {
       }));
 }
 
-async function reapplyEpisodeDecomposing() {
-  const infoHash = '84fadd061f0d0bc356235b7fa6495a0f51fff311';
-  const imdbId = 'tt0988824';
+async function reapplySeriesSeasonsSavedAsMovies() {
+  return repository.getTorrentsBasedOnTitle('(?:[^a-zA-Z0-9]|^)[Ss][012]?[0-9](?:[^0-9]|$)', Type.MOVIE)
+      .then(torrents => Promise.all(torrents
+          .filter(torrent => parse(torrent.title).seasons)
+          .map(torrent => limiter.schedule(() => reapplyEpisodeDecomposing(torrent.infoHash, false)
+              .then(() => {
+                torrent.type = Type.SERIES;
+                return torrent.save();
+              })))))
+      .then(() => console.log('Finished updating multiple torrents'));
+}
+
+async function reapplyEpisodeDecomposing(infoHash, includeSourceFiles = true) {
   const torrent = await repository.getTorrent({ infoHash });
   const storedFiles = await repository.getFiles({ infoHash });
   const fileIndexMap = storedFiles
       .reduce((map, next) => (map[next.fileIndex] = (map[next.fileIndex] || []).concat(next), map), {});
-  const files = Object.values(fileIndexMap)
+  const files = includeSourceFiles && Object.values(fileIndexMap)
       .map(sameIndexFiles => sameIndexFiles[0])
       .map(file => ({ fileIndex: file.fileIndex, name: file.title, path: file.title, size: file.size }));
+  const imdbId = storedFiles[0].imdbId;
 
   return parseTorrentFiles({ ...torrent, imdbId, files })
       .then(newFiles => newFiles.map(file => {
-        const originalFile = fileIndexMap[file.fileIndex].shift();
-        originalFile.imdbSeason = file.imdbSeason;
-        originalFile.imdbEpisode = file.imdbEpisode;
-        originalFile.kitsuId = file.kitsuId;
-        originalFile.kitsuEpisode = file.kitsuEpisode;
-        return originalFile;
+        if (fileIndexMap[file.fileIndex]) {
+          const originalFile = fileIndexMap[file.fileIndex].shift();
+          originalFile.imdbSeason = file.imdbSeason;
+          originalFile.imdbEpisode = file.imdbEpisode;
+          originalFile.kitsuId = file.kitsuId;
+          originalFile.kitsuEpisode = file.kitsuEpisode;
+          return originalFile;
+        }
+        return file;
       }))
-      .then(updatedFiles => Promise.all(updatedFiles.map(file => file.save())))
+      .then(updatedFiles => Promise.all(updatedFiles
+          .map(file => file.id ? file.save() : repository.createFile(file))))
       .then(() => console.log(`Updated files for ${torrent.title}`));
 }
 
@@ -148,4 +166,5 @@ async function findAllFiles() {
 //addMissingEpisodes().then(() => console.log('Finished'));
 //findAllFiles().then(() => console.log('Finished'));
 //updateMovieCollections().then(() => console.log('Finished'));
-reapplyEpisodeDecomposing().then(() => console.log('Finished'));
+//reapplyEpisodeDecomposing().then(() => console.log('Finished'));
+reapplySeriesSeasonsSavedAsMovies().then(() => console.log('Finished'));
