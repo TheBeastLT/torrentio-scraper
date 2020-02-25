@@ -63,7 +63,6 @@ async function scrape() {
     console.log(err);
   });
   lr.on('end', () => {
-    fs.unlink(CSV_FILE_PATH);
     console.log(`finished to scrape tpb dump!`);
   });
 }
