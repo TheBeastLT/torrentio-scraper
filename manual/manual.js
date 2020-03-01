@@ -77,11 +77,13 @@ async function reapplyEpisodeDecomposing(infoHash, includeSourceFiles = true) {
       .then(newFiles => newFiles.map(file => {
         if (fileIndexMap[file.fileIndex]) {
           const originalFile = fileIndexMap[file.fileIndex].shift();
-          originalFile.imdbSeason = file.imdbSeason;
-          originalFile.imdbEpisode = file.imdbEpisode;
-          originalFile.kitsuId = file.kitsuId;
-          originalFile.kitsuEpisode = file.kitsuEpisode;
-          return originalFile;
+          if (originalFile) {
+            originalFile.imdbSeason = file.imdbSeason;
+            originalFile.imdbEpisode = file.imdbEpisode;
+            originalFile.kitsuId = file.kitsuId;
+            originalFile.kitsuEpisode = file.kitsuEpisode;
+            return originalFile;
+          }
         }
         return file;
       }))
@@ -166,5 +168,5 @@ async function findAllFiles() {
 //addMissingEpisodes().then(() => console.log('Finished'));
 //findAllFiles().then(() => console.log('Finished'));
 //updateMovieCollections().then(() => console.log('Finished'));
-//reapplyEpisodeDecomposing().then(() => console.log('Finished'));
-reapplySeriesSeasonsSavedAsMovies().then(() => console.log('Finished'));
+reapplyEpisodeDecomposing('87e7354028f2aaab56dfd0dabbab679a1b54c3c0', false).then(() => console.log('Finished'));
+//reapplySeriesSeasonsSavedAsMovies().then(() => console.log('Finished'));
