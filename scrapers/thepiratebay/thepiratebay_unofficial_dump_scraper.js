@@ -15,7 +15,7 @@ const limiter = new Bottleneck({ maxConcurrent: 40 });
 async function scrape() {
   console.log(`starting to scrape tpb dump...`);
   //const checkPoint = moment('2013-06-16 00:00:00', 'YYYY-MMM-DD HH:mm:ss').toDate();
-  const checkPoint = 951000;
+  const checkPoint = 4115000;
 
   let entriesProcessed = 0;
   const lr = new LineByLineReader(CSV_FILE_PATH);

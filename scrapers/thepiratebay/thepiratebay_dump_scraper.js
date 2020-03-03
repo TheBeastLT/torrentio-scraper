@@ -18,12 +18,12 @@ const limiter = new Bottleneck({ maxConcurrent: 40 });
 async function scrape() {
   const lastScraped = await repository.getProvider({ name: NAME });
   const lastDump = { updatedAt: 2147000000 };
-  const checkPoint = moment('2016-06-17 00:00:00', 'YYYY-MMM-DD HH:mm:ss').toDate();
+  //const checkPoint = moment('2016-06-17 00:00:00', 'YYYY-MMM-DD HH:mm:ss').toDate();
   //const lastDump = await thepiratebay.dumps().then((dumps) => dumps.sort((a, b) => b.updatedAt - a.updatedAt)[0]);
 
   if (!lastScraped.lastScraped || lastScraped.lastScraped < lastDump.updatedAt) {
     console.log(`starting to scrape tpb dump: ${JSON.stringify(lastDump)}`);
-    //await downloadDump(lastDump);
+    await downloadDump(lastDump);
 
     let entriesProcessed = 0;
     const lr = new LineByLineReader(CSV_FILE_PATH);
@@ -51,10 +51,10 @@ async function scrape() {
         size: parseInt(row[3], 10)
       };
 
-      if (torrent.uploadDate > checkPoint) {
-        entriesProcessed++;
-        return;
-      }
+      // if (torrent.uploadDate > checkPoint) {
+      //   entriesProcessed++;
+      //   return;
+      // }
 
       if (lastScraped.lastScraped && lastScraped.lastScraped > torrent.uploadDate) {
         // torrent was already scraped previously, skipping
@@ -75,8 +75,8 @@ async function scrape() {
       console.log(err);
     });
     lr.on('end', () => {
-      fs.unlink(CSV_FILE_PATH);
-      repository.updateProvider({ name: NAME, lastScraped: lastDump.updatedAt });
+      fs.unlink(CSV_FILE_PATH, (error) => console.warn(error));
+      //repository.updateProvider({ name: NAME, lastScraped: lastDump.updatedAt });
       console.log(`finished to scrape tpb dump: ${JSON.stringify(lastDump)}!`);
     });
   }
@@ -144,8 +144,8 @@ async function findTorrentInSource(record) {
 async function findTorrentViaBing(record) {
   return bing.web(`${record.infoHash}`)
       .then((results) => results
-          .find(result => result.description.includes('Direct download via magnet link') || result.description.includes(
-              'Get this torrent')))
+          .find(result => result.description.includes('Direct download via magnet link') ||
+              result.description.includes('Get this torrent')))
       .then((result) => {
         if (!result) {
           throw new Error(`Failed to find torrent ${record.title}`);

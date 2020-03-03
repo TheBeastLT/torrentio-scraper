@@ -6,7 +6,7 @@ const thepiratebayScraper = require('./scrapers/thepiratebay/thepiratebay_dump_s
 const horribleSubsScraper = require('./scrapers/horriblesubs/horriblesubs_scraper');
 const thepiratebayDumpScraper = require('./scrapers/thepiratebay/thepiratebay_unofficial_dump_scraper');
 
-const providers = [thepiratebayDumpScraper];
+const providers = [thepiratebayScraper];
 
 async function scrape() {
   providers.forEach((provider) => provider.scrape());
