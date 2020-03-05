@@ -34,6 +34,18 @@ async function _scrapeAllShows() {
           .catch((err) => console.log(err)))));
 }
 
+async function compareSearchKitsuIds() {
+  console.log(`${NAME}: initiating kitsu compare...`);
+  const shows = await horriblesubs.allShows()
+      .then((shows) => Promise.all(shows.slice(0, 1).map((show) => limiter.schedule(() => enrichShow(show)))));
+
+  const incorrect = shows.filter(
+      (show) => showMappings[show.title] && showMappings[show.title].kitsu_id !== show.kitsu_id);
+  const incorrectRatio = incorrect.length / shows.length;
+  console.log(incorrect);
+  console.log(`Ratio: ${incorrectRatio}`);
+}
+
 async function initMapping() {
   console.log(`${NAME}: initiating kitsu mapping...`);
   const shows = await horriblesubs.allShows()
@@ -81,6 +93,28 @@ async function _parseShowData(showData) {
     throw new Error(`No kitsuId found for ${showData.title}`);
   }
 
+  // sometimes horriblesubs entry contains multiple season in it, so need to split it per kitsu season entry
+  const kitsuIdsMapping = kitsuId.length && await Promise.all(kitsuId.map(kitsuId => getMetadata(kitsuId)))
+      .then((metas) => metas.reduce((map, meta) => {
+        const epOffset = Object.keys(map).length;
+        [...Array(meta.totalCount).keys()]
+            .map(ep => ep + 1)
+            .forEach(ep => map[ep + epOffset] = { kitsuId: meta.kitsuId, episode: ep, title: meta.title });
+        return map;
+      }, {})) || {};
+  const formatTitle = (episodeInfo, mirror) => {
+    const mapping = kitsuIdsMapping[episodeInfo.episode.replace(/^0+/, '')];
+    if (mapping) {
+      return `${mapping.title} - ${mapping.episode} [${mirror.resolution}]`;
+    }
+    return `${episodeInfo.title} - ${episodeInfo.episode} [${mirror.resolution}]`;
+  };
+  const getKitsuId = inputEpisode => {
+    const episodeString = inputEpisode.includes('-') && inputEpisode.split('-')[0] || inputEpisode;
+    const episode = parseInt(episodeString, 10);
+    return kitsuIdsMapping[episode] && kitsuIdsMapping[episode].kitsuId || kitsuId;
+  };
+
   return Promise.all([].concat(showData.singleEpisodes).concat(showData.packEpisodes)
       .map((episodeInfo) => episodeInfo.mirrors
           .map((mirror) => ({
@@ -88,10 +122,10 @@ async function _parseShowData(showData) {
             ...mirror,
             infoHash: decode(mirror.magnetLink).infoHash,
             trackers: decode(mirror.magnetLink).tr.join(','),
-            title: `${episodeInfo.title} - ${episodeInfo.episode} [${mirror.resolution}]`,
+            title: formatTitle(episodeInfo, mirror),
             size: 300000000,
             type: Type.ANIME,
-            kitsuId: kitsuId,
+            kitsuId: getKitsuId(episodeInfo.episode),
             uploadDate: episodeInfo.uploadDate,
           })))
       .reduce((a, b) => a.concat(b), [])
@@ -120,7 +154,7 @@ async function verifyFiles(torrent, files) {
     }
     return files;
   }
-  throw new Error(`No video files found for: ${torrent.title}`);
+  return Promise.reject(`No video files found for: ${torrent.title}`);
 }
 
 async function checkIfExists(torrent) {
