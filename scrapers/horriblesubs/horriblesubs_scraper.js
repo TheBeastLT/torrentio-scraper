@@ -19,7 +19,7 @@ async function scrape() {
 
   if (!lastScraped.lastScraped) {
     console.log(`${NAME}: no previous scrapping exist`);
-    await _scrapeAllShows()
+    //await _scrapeAllShows()
   }
 }
 

@@ -1,6 +1,7 @@
 const cheerio = require('cheerio');
 const needle = require('needle');
 const moment = require('moment');
+const decode = require('magnet-uri');
 
 const defaultProxies = [
   'https://thepiratebay.org',
@@ -10,12 +11,7 @@ const defaultProxies = [
 const dumpUrl = '/static/dump/csv/';
 const defaultTimeout = 30000;
 
-const errors = {
-  REQUEST_ERROR: { code: 'REQUEST_ERROR' },
-  PARSER_ERROR: { code: 'PARSER_ERROR' }
-};
-
-Categories = {
+const Categories = {
   AUDIO: {
     ALL: 100,
     MUSIC: 101,
@@ -99,12 +95,26 @@ function search(keyword, config = {}, retries = 2) {
   }
   const proxyList = config.proxyList || defaultProxies;
   const page = config.page || 0;
-  const category = config.cat || 0;
+  const category = config.category || 0;
 
   return raceFirstSuccessful(proxyList
       .map((proxyUrl) => singleRequest(`${proxyUrl}/search/${keyword}/${page}/99/${category}`, config)))
       .then((body) => parseBody(body))
       .catch((err) => search(keyword, config, retries - 1));
+}
+
+function browse(config = {}, retries = 2) {
+  if (retries === 0) {
+    return Promise.reject(new Error(`Failed browse request`));
+  }
+  const proxyList = config.proxyList || defaultProxies;
+  const page = config.page || 0;
+  const category = config.category || 0;
+
+  return raceFirstSuccessful(proxyList
+      .map((proxyUrl) => singleRequest(`${proxyUrl}/browse/${category}/${page}`, config)))
+      .then((body) => parseBody(body))
+      .catch((err) => browse(config, retries - 1));
 }
 
 function dumps(config = {}, retries = 2) {
@@ -150,7 +160,7 @@ function parseBody(body) {
     const $ = cheerio.load(body);
 
     if (!$) {
-      reject(new Error(errors.PARSER_ERROR));
+      reject(new Error('Failed loading body'));
     }
 
     const torrents = [];
@@ -183,7 +193,7 @@ function parseTorrentPage(body) {
     const $ = cheerio.load(body);
 
     if (!$) {
-      reject(new Error(errors.PARSER_ERROR));
+      reject(new Error('Failed loading body'));
     }
     const details = $('div[id=\'details\']');
     const col1 = details.find('dl[class=\'col1\']');
@@ -194,6 +204,7 @@ function parseTorrentPage(body) {
       seeders: parseInt(details.find('dt:contains(\'Seeders:\')').next().text(), 10),
       leechers: parseInt(details.find('dt:contains(\'Leechers:\')').next().text(), 10),
       magnetLink: details.find('a[title=\'Get this torrent\']').attr('href'),
+      infoHash: decode(details.find('a[title=\'Get this torrent\']').attr('href')).infoHash,
       category: Categories.VIDEO.ALL,
       subcategory: parseInt(col1.find('a[title=\'More from this category\']').eq(0).attr('href').match(/\d+$/)[0], 10),
       size: parseSize(details.find('dt:contains(\'Size:\')').next().text().match(/(\d+)(?:.?Bytes)/)[1]),
@@ -237,4 +248,4 @@ function raceFirstSuccessful(promises) {
   );
 }
 
-module.exports = { torrent, search, dumps, Categories };
+module.exports = { torrent, search, browse, dumps, Categories };
