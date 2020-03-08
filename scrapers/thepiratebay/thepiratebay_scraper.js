@@ -3,10 +3,15 @@ const Bottleneck = require('bottleneck');
 const thepiratebay = require('./thepiratebay_api.js');
 const { Type } = require('../../lib/types');
 const repository = require('../../lib/repository');
-const { createTorrentEntry, createSkipTorrentEntry, getStoredTorrentEntry } = require('../../lib/torrentEntries');
+const {
+  createTorrentEntry,
+  createSkipTorrentEntry,
+  getStoredTorrentEntry,
+  updateTorrentSeeders
+} = require('../../lib/torrentEntries');
 
 const NAME = 'ThePirateBay';
-const UNTIL_PAGE = 1;
+const UNTIL_PAGE = 20;
 
 const limiter = new Bottleneck({ maxConcurrent: 40 });
 
@@ -33,21 +38,27 @@ async function scrape() {
       .then(() => {
         lastScrape.lastScraped = scrapeStart;
         lastScrape.lastScrapedId = latestTorrents.length && latestTorrents[latestTorrents.length - 1].torrentId;
-        return lastScrape.save();
-      });
+        return repository.updateProvider(lastScrape);
+      })
+      .then(() => console.log(`[${moment()}] finished ${NAME} scrape`));
 }
 
-async function getLatestTorrents(page = 0) {
-  return thepiratebay.browse(({ category: thepiratebay.Categories.VIDEO.ALL, page: page }))
+async function getLatestTorrents() {
+  return Promise.all(allowedCategories.map(category => getLatestTorrentsForCategory(category)))
+      .then(entries => entries.reduce((a, b) => a.concat(b), []));
+}
+
+async function getLatestTorrentsForCategory(category, page = 0) {
+  return thepiratebay.browse(({ category, page }))
       .then(torrents => torrents.length && page < UNTIL_PAGE
-          ? getLatestTorrents(page + 1).then(nextTorrents => torrents.concat(nextTorrents))
+          ? getLatestTorrents(category, page + 1).then(nextTorrents => torrents.concat(nextTorrents))
           : torrents)
       .catch(() => []);
 }
 
 async function processTorrentRecord(record) {
   if (await getStoredTorrentEntry(record)) {
-    return;
+    return updateTorrentSeeders(record);
   }
 
   const torrentFound = await thepiratebay.torrent(record.torrentId).catch(() => undefined);

@@ -1,4 +1,5 @@
 const fs = require('fs');
+const moment = require('moment');
 const Bottleneck = require('bottleneck');
 const decode = require('magnet-uri');
 const horriblesubs = require('./horriblesubs_api.js');
@@ -10,25 +11,43 @@ const { getMetadata, getKitsuId } = require('../../lib/metadata');
 const showMappings = require('./horriblesubs_mapping.json');
 
 const NAME = 'HorribleSubs';
+const NEXT_FULL_SCRAPE_OFFSET = 3 * 24 * 60 * 60; // 3 days;
 
 const limiter = new Bottleneck({ maxConcurrent: 5 });
 const entryLimiter = new Bottleneck({ maxConcurrent: 10 });
 
 async function scrape() {
-  const lastScraped = await repository.getProvider({ name: NAME });
+  const scrapeStart = moment();
+  const lastScrape = await repository.getProvider({ name: NAME });
+  const lastScraped = lastScrape.lastScraped && moment.unix(lastScrape.lastScraped);
 
-  if (!lastScraped.lastScraped) {
-    console.log(`${NAME}: no previous scrapping exist`);
-    //await _scrapeAllShows()
+  if (!lastScraped || lastScraped.add(NEXT_FULL_SCRAPE_OFFSET, 'seconds') < scrapeStart) {
+    console.log(`[${scrapeStart}] scrapping all ${NAME} shows...`);
+    return _scrapeAllShows()
+        .then(() => {
+          lastScrape.lastScraped = scrapeStart;
+          return repository.updateProvider(lastScrape);
+        })
+        .then(() => console.log(`[${moment()}] finished scrapping all ${NAME} shows`));
+  } else {
+    console.log(`[${scrapeStart}] scrapping latest ${NAME} entries...`);
+    return _scrapeLatestEntries()
+        .then(() => console.log(`[${moment()}] finished scrapping latest ${NAME} entries`));
   }
 }
 
+async function _scrapeLatestEntries() {
+  const latestEntries = await horriblesubs.getLatestEntries();
+
+  return Promise.all(latestEntries
+      .map((entryData) => limiter.schedule(() => _parseShowData(entryData)
+          .catch((err) => console.log(err)))));
+}
+
 async function _scrapeAllShows() {
-  console.log(`${NAME}: getting all shows...`);
   const shows = await horriblesubs.allShows();
 
   return Promise.all(shows
-      .slice(0, 5)
       .map((show) => limiter.schedule(() => horriblesubs.showData(show)
           .then((showData) => _parseShowData(showData))
           .catch((err) => console.log(err)))));
@@ -94,7 +113,7 @@ async function _parseShowData(showData) {
   }
 
   // sometimes horriblesubs entry contains multiple season in it, so need to split it per kitsu season entry
-  const kitsuIdsMapping = kitsuId.length && await Promise.all(kitsuId.map(kitsuId => getMetadata(kitsuId)))
+  const kitsuIdsMapping = Array.isArray(kitsuId) && await Promise.all(kitsuId.map(kitsuId => getMetadata(kitsuId)))
       .then((metas) => metas.reduce((map, meta) => {
         const epOffset = Object.keys(map).length;
         [...Array(meta.totalCount).keys()]

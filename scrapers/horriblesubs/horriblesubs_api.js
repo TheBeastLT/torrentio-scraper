@@ -3,7 +3,7 @@ const needle = require('needle');
 const moment = require('moment');
 
 const defaultUrl = 'https://horriblesubs.info';
-const defaultTimeout = 5000;
+const defaultTimeout = 10000;
 
 function allShows(config = {}) {
   return _getContent('/shows', config)
@@ -112,7 +112,15 @@ async function _findLatestEntry(entry, config) {
     reachedEnd = allEntries.length === 0;
   }
 
-  return foundEntry;
+  if (!foundEntry) {
+    return;
+  }
+  return {
+    title: foundEntry.title,
+    url: entry.urlEndpoint,
+    showId: showId,
+    singleEpisodes: [foundEntry]
+  };
 }
 
 function _parseDate(date) {

@@ -1,6 +1,6 @@
 const moment = require('moment');
 const Bottleneck = require('bottleneck');
-const leetx = require('./1337x_api');
+const kickass = require('./kickass_api');
 const { Type } = require('../../lib/types');
 const repository = require('../../lib/repository');
 const {
@@ -10,7 +10,7 @@ const {
   updateTorrentSeeders
 } = require('../../lib/torrentEntries');
 
-const NAME = '1337x';
+const NAME = 'KickassTorrents';
 const UNTIL_PAGE = 1;
 const TYPE_MAPPING = typeMapping();
 
@@ -33,10 +33,9 @@ async function scrape() {
 
 async function getLatestTorrents() {
   const allowedCategories = [
-    leetx.Categories.MOVIE,
-    leetx.Categories.TV,
-    leetx.Categories.ANIME,
-    leetx.Categories.DOCUMENTARIES
+    kickass.Categories.MOVIE,
+    kickass.Categories.TV,
+    kickass.Categories.ANIME,
   ];
 
   return Promise.all(allowedCategories.map(category => getLatestTorrentsForCategory(category)))
@@ -44,7 +43,7 @@ async function getLatestTorrents() {
 }
 
 async function getLatestTorrentsForCategory(category, page = 1) {
-  return leetx.browse(({ category: category, page: page }))
+  return kickass.browse(({ category, page }))
       .then(torrents => torrents.length && page < UNTIL_PAGE
           ? getLatestTorrents(category, page + 1).then(nextTorrents => torrents.concat(nextTorrents))
           : torrents)
@@ -56,7 +55,7 @@ async function processTorrentRecord(record) {
     return updateTorrentSeeders(record);
   }
 
-  const torrentFound = await leetx.torrent(record.torrentId).catch(() => undefined);
+  const torrentFound = await kickass.torrent(record.torrentId).catch(() => undefined);
 
   if (!torrentFound || !TYPE_MAPPING[torrentFound.category]) {
     return createSkipTorrentEntry(record);
@@ -67,11 +66,11 @@ async function processTorrentRecord(record) {
     provider: NAME,
     torrentId: torrentFound.torrentId,
     title: torrentFound.name.replace(/\t|\s+/g, ' '),
-    seeders: torrentFound.seeders,
     size: torrentFound.size,
     type: TYPE_MAPPING[torrentFound.category],
-    uploadDate: torrentFound.uploadDate,
     imdbId: torrentFound.imdbId,
+    uploadDate: torrentFound.uploadDate,
+    seeders: torrentFound.seeders,
   };
 
   return createTorrentEntry(torrent);
@@ -79,10 +78,9 @@ async function processTorrentRecord(record) {
 
 function typeMapping() {
   const mapping = {};
-  mapping[leetx.Categories.MOVIE] = Type.MOVIE;
-  mapping[leetx.Categories.DOCUMENTARIES] = Type.MOVIE;
-  mapping[leetx.Categories.TV] = Type.SERIES;
-  mapping[leetx.Categories.ANIME] = Type.ANIME;
+  mapping[kickass.Categories.MOVIE] = Type.MOVIE;
+  mapping[kickass.Categories.TV] = Type.SERIES;
+  mapping[kickass.Categories.ANIME] = Type.ANIME;
   return mapping;
 }
 

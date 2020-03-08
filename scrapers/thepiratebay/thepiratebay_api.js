@@ -9,7 +9,7 @@ const defaultProxies = [
   'https://piratebays.cool',
   'https://piratebays.life'];
 const dumpUrl = '/static/dump/csv/';
-const defaultTimeout = 30000;
+const defaultTimeout = 10000;
 
 const Categories = {
   AUDIO: {
@@ -219,16 +219,15 @@ function parseSize(sizeText) {
   if (!sizeText) {
     return undefined;
   }
+  let scale = 1;
   if (sizeText.includes('GiB')) {
-    return Math.floor(parseFloat(sizeText.trim()) * 1024 * 1024 * 1024);
+    scale = 1024 * 1024 * 1024
+  } else if (sizeText.includes('MiB')) {
+    scale = 1024 * 1024;
+  } else if (sizeText.includes('KiB')) {
+    scale = 1024;
   }
-  if (sizeText.includes('MiB')) {
-    return Math.floor(parseFloat(sizeText.trim()) * 1024 * 1024);
-  }
-  if (sizeText.includes('KiB')) {
-    return Math.floor(parseFloat(sizeText.trim()) * 1024);
-  }
-  return Math.floor(parseFloat(sizeText));
+  return Math.floor(parseFloat(sizeText) * scale);
 }
 
 function raceFirstSuccessful(promises) {
