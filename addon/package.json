@@ -1,0 +1,24 @@
+{
+  "name": "stremio-torrentio",
+  "version": "1.0.0",
+  "main": "addon.js",
+  "scripts": {
+    "start": "node index.js",
+    "deploy": "now && now alias"
+  },
+  "author": "TheBeastLT <pauliox@beyond.lt>",
+  "license": "MIT",
+  "dependencies": {
+    "cache-manager": "^2.9.0",
+    "cache-manager-mongodb": "^0.2.1",
+    "express-rate-limit": "^5.1.1",
+    "parse-torrent-title": "git://github.com/TheBeastLT/parse-torrent-title.git#master",
+    "stremio-addon-sdk": "^1.6.1"
+  },
+  "devDependencies": {
+    "eslint": "^6.4.0",
+    "eslint-config-eslint": "^5.0.1",
+    "eslint-config-google": "^0.14.0",
+    "eslint-plugin-node": "^10.0.0"
+  }
+}

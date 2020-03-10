@@ -1,0 +1,28 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "/addon/static/**/*",
+      "use": "@now/static"
+    },
+    {
+      "src": "/addon/**/*.js",
+      "use": "@now/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/static/(.*)",
+      "dest": "/addon/static/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/addon/serverless.js"
+    }
+  ],
+  "env": {
+    "MONGODB_URI": "@mongodb-uri",
+    "DATABASE_URI": "@database-uri"
+  }
+}
+
