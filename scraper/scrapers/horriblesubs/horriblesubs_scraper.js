@@ -136,6 +136,7 @@ async function _parseShowData(showData) {
 
   return Promise.all([].concat(showData.singleEpisodes).concat(showData.packEpisodes)
       .map((episodeInfo) => episodeInfo.mirrors
+          .filter((mirror) => mirror.magnetLink && mirror.magnetLink.length)
           .map((mirror) => ({
             provider: NAME,
             ...mirror,

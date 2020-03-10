@@ -21,7 +21,7 @@ function initiateCache() {
       store: mangodbStore,
       uri: MONGO_URI,
       options: {
-        collection: 'torrentio-addon',
+        collection: 'torrentio_addon_collection',
         ttl: STREAM_TTL
       },
       ttl: STREAM_TTL,
