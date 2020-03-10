@@ -15,6 +15,10 @@ async function createTorrentEntry(torrent) {
     torrent.imdbId = await getImdbId(titleInfo, torrent.type)
         .catch(() => undefined);
   }
+  if (torrent.imdbId && torrent.imdbId.length < 9) {
+    // pad zeros to imdbId if missing
+    torrent.imdbId = 'tt' + torrent.imdbId.replace('tt', '').padStart(7, '0');
+  }
   if (torrent.imdbId && torrent.imdbId.length > 9 && torrent.imdbId.startsWith('tt0')) {
     // sanitize imdbId from redundant zeros
     torrent.imdbId = torrent.imdbId.replace(/tt0+([0-9]{7,})$/, 'tt$1');

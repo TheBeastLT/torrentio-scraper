@@ -121,7 +121,7 @@ function parseTorrentPage(body) {
     const info = content.find('div[class="torrent_stats"]').parent();
     const description = content.find('div[id="main"]');
     const magnetLink = info.find('a[title="Download verified Magnet"]').attr('href');
-    const imdbIdMatch = description.html().match(/imdb\.com\/title\/tt(\d+)/i);
+    const imdbIdMatch = description.html().match(/imdb\.com\/title\/(tt\d+)/i);
 
     const torrent = {
       name: info.find('h1').first().text(),
@@ -134,7 +134,7 @@ function parseTorrentPage(body) {
       size: parseSize(description.find('ul[class="file_list"]').first().find('li').first().contents().eq(2).text()
           .match(/\(Size: (.+)\)/)[1]),
       uploadDate: moment(info.find('time').first().text()).toDate(),
-      imdbId: imdbIdMatch && `tt${imdbIdMatch[1].padStart(7, '0')}`,
+      imdbId: imdbIdMatch && imdbIdMatch[1],
       files: content.find('ul[class="file_list"]').first().find('li > ul > li[class="file_list__file"]')
           .map((i, elem) => $(elem))
           .map((i, ele) => ({

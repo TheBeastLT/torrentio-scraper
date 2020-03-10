@@ -113,7 +113,7 @@ function parseTorrentPage(body) {
 
     const details = $('.torrent-detail-page');
     const magnetLink = details.find('a:contains(\'Magnet Download\')').attr('href');
-    const imdbIdMatch = details.find('div[id=\'description\']').html().match(/imdb\.com\/title\/tt(\d+)/i);
+    const imdbIdMatch = details.find('div[id=\'description\']').html().match(/imdb\.com\/title\/(tt\d+)/i);
 
     const torrent = {
       name: decode(magnetLink).name.replace(/\+/g, ' '),
@@ -125,7 +125,7 @@ function parseTorrentPage(body) {
       language: details.find('strong:contains(\'Language\')').next().text(),
       size: parseSize(details.find('strong:contains(\'Total size\')').next().text()),
       uploadDate: Sugar.Date.create(details.find('strong:contains(\'Date uploaded\')').next().text()),
-      imdbId: imdbIdMatch && `tt${imdbIdMatch[1].padStart(7, '0')}`,
+      imdbId: imdbIdMatch && imdbIdMatch[1],
       files: details.find('div[id=\'files\']').first().find('li')
           .map((i, elem) => $(elem).text())
           .map((i, text) => ({

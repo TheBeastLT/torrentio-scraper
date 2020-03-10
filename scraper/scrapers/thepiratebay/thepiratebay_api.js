@@ -197,7 +197,7 @@ function parseTorrentPage(body) {
     }
     const details = $('div[id=\'details\']');
     const col1 = details.find('dl[class=\'col1\']');
-    const imdbIdMatch = col1.html().match(/imdb\.com\/title\/tt(\d+)/i);
+    const imdbIdMatch = col1.html().match(/imdb\.com\/title\/(tt\d+)/i);
 
     const torrent = {
       name: $('div[id=\'title\']').text().trim(),
@@ -209,7 +209,7 @@ function parseTorrentPage(body) {
       subcategory: parseInt(col1.find('a[title=\'More from this category\']').eq(0).attr('href').match(/\d+$/)[0], 10),
       size: parseSize(details.find('dt:contains(\'Size:\')').next().text().match(/(\d+)(?:.?Bytes)/)[1]),
       uploadDate: new Date(details.find('dt:contains(\'Uploaded:\')').next().text()),
-      imdbId: imdbIdMatch && `tt${imdbIdMatch[1].padStart(7, '0')}`
+      imdbId: imdbIdMatch && imdbIdMatch[1]
     };
     resolve(torrent);
   });
