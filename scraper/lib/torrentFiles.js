@@ -49,7 +49,7 @@ async function parseTorrentFiles(torrent) {
           .filter((file) => file.size > MIN_SIZE)
           .map((file) => parseSeriesFile(file, parsedTorrentName)))
       .then((files) => decomposeEpisodes(torrent, files, metadata))
-      .then((files) => assignKitsuOrImdbEpisodes(files, metadata))
+      .then((files) => assignKitsuOrImdbEpisodes(torrent, files, metadata))
       .then((files) => Promise.all(files.map(file => file.isMovie
           ? mapSeriesMovie(file, torrent)
           : mapSeriesEpisode(file, torrent, files))))
@@ -236,8 +236,18 @@ function getTimeZoneOffset(country) {
   }
 }
 
-function assignKitsuOrImdbEpisodes(files, metadata) {
+function assignKitsuOrImdbEpisodes(torrent, files, metadata) {
   if (!metadata || !metadata.videos || !metadata.videos.length) {
+    if (torrent.type === Type.ANIME) {
+      // assign episodes as kitsu episodes for anime when no metadata available for imdb mapping
+      files
+          .filter(file => file.season && file.episodes)
+          .forEach(file => {
+            file.kitsuEpisodes = file.episodes;
+            file.season = undefined;
+            file.episodes = undefined;
+          })
+    }
     return files;
   }
 
