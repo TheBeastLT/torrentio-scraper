@@ -1,13 +1,13 @@
 {
   "name": "stremio-torrention",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "scraper/index.js",
   "engines": {
     "npm": "6.x",
     "node": "10.x"
   },
   "scripts": {
-    "start": "node index.js"
+    "start": "node scraper/index.js"
   },
   "author": "TheBeastLT <pauliox@beyond.lt>",
   "license": "MIT",

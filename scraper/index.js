@@ -18,12 +18,14 @@ const PROVIDERS = [
   kickassScraper,
   leetxScraper
 ];
-const SCRAPE_CRON = process.env.SCRAPE_CRON || '* 0/4 * * * *';
+const SCRAPE_CRON = process.env.SCRAPE_CRON || '* * 0/4 * * *';
 
 async function scrape() {
   return PROVIDERS
-      .reduce((promise, scrapper) => promise
-          .then(() => scrapper.scrape().catch(() => Promise.resolve())), Promise.resolve());
+      .reduce(async (previousPromise, nextProvider) => {
+        await previousPromise;
+        return nextProvider.scrape().catch(() => Promise.resolve());
+      }, Promise.resolve());
 }
 
 server.get('/', function (req, res) {
