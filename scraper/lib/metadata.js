@@ -19,7 +19,7 @@ function getMetadata(id, type = Type.SERIES) {
       () => _requestMetadata(`${KITSU_URL}/meta/${metaType}/${key}.json`)
           .catch(() => _requestMetadata(`${CINEMETA_URL}/meta/${metaType}/${key}.json`))
           .catch((error) => {
-            throw new Error(`failed metadata query ${kitsuId} due: ${error.message}`);
+            throw new Error(`failed metadata query ${key} due: ${error.message}`);
           }));
 }
 
@@ -31,6 +31,7 @@ function _requestMetadata(url) {
           return {
             kitsuId: body.meta.kitsu_id,
             imdbId: body.meta.imdb_id,
+            type: body.meta.type,
             title: body.meta.name,
             year: body.meta.year,
             country: body.meta.country,

@@ -16,7 +16,7 @@ async function parseTorrentFiles(torrent) {
   //   throw new Error(`Mismatching entry type for ${torrent.name}: ${torrent.type}!=${metadata.type}`);
   // }
 
-  if (torrent.type === Type.MOVIE && !parsedTorrentName.seasons) {
+  if (torrent.type === Type.MOVIE && !parsedTorrentName.seasons || metadata.type === Type.MOVIE) {
     if (parsedTorrentName.complete) {
       return torrentFiles(torrent)
           .then(files => files.filter(file => file.size > MIN_SIZE))
