@@ -4,10 +4,10 @@ const { toStreamInfo } = require('./lib/streamInfo');
 const { cacheWrapStream } = require('./lib/cache');
 const repository = require('./lib/repository');
 
-const CACHE_MAX_AGE = process.env.CACHE_MAX_AGE || 24 * 60; // 24 hours in seconds
-const CACHE_MAX_AGE_EMPTY = 4 * 60; // 4 hours in seconds
-const STALE_REVALIDATE_AGE = 4 * 60; // 4 hours
-const STALE_ERROR_AGE = 7 * 24 * 60; // 7 days
+const CACHE_MAX_AGE = process.env.CACHE_MAX_AGE || 4 * 60 * 60; // 4 hours in seconds
+const CACHE_MAX_AGE_EMPTY = 30 * 60; // 30 minutes
+const STALE_REVALIDATE_AGE = 4 * 60 * 60; // 4 hours
+const STALE_ERROR_AGE = 7 * 24 * 60 * 60; // 7 days
 
 const builder = new addonBuilder({
   id: 'com.stremio.torrentio.addon',

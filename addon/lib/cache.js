@@ -4,7 +4,7 @@ const mangodbStore = require('cache-manager-mongodb');
 const GLOBAL_KEY_PREFIX = 'torrentio-addon';
 const STREAM_KEY_PREFIX = `${GLOBAL_KEY_PREFIX}|stream`;
 
-const STREAM_TTL = process.env.STREAM_TTL || 24 * 60 * 60; // 24 hours
+const STREAM_TTL = process.env.STREAM_TTL || 4 * 60 * 60; // 4 hours
 const STREAM_EMPTY_TTL = process.env.STREAM_EMPTY_TTL || 30 * 60; // 30 minutes
 // When the streams are empty we want to cache it for less time in case of timeouts or failures
 
