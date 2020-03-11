@@ -1,7 +1,7 @@
 const moment = require('moment');
 const { parse } = require('parse-torrent-title');
 const { torrentFiles } = require('../lib/torrent');
-const { escapeTitle, getMetadata, getImdbId } = require('../lib/metadata');
+const { getMetadata, getImdbId } = require('../lib/metadata');
 const { Type } = require('./types');
 
 const MIN_SIZE = 10 * 1024 * 1024; // 10 MB
@@ -16,7 +16,7 @@ async function parseTorrentFiles(torrent) {
   //   throw new Error(`Mismatching entry type for ${torrent.name}: ${torrent.type}!=${metadata.type}`);
   // }
 
-  if (torrent.type === Type.MOVIE && !parsedTorrentName.seasons || metadata.type === Type.MOVIE) {
+  if (torrent.type === Type.MOVIE && !parsedTorrentName.seasons || metadata && metadata.type === Type.MOVIE) {
     if (parsedTorrentName.complete) {
       return torrentFiles(torrent)
           .then(files => files.filter(file => file.size > MIN_SIZE))

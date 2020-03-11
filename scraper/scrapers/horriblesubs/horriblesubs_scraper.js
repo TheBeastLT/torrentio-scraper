@@ -131,7 +131,13 @@ async function _parseShowData(showData) {
   const getKitsuId = inputEpisode => {
     const episodeString = inputEpisode.includes('-') && inputEpisode.split('-')[0] || inputEpisode;
     const episode = parseInt(episodeString, 10);
-    return kitsuIdsMapping[episode] && kitsuIdsMapping[episode].kitsuId || kitsuId;
+    if (kitsuIdsMapping[episode]) {
+      return kitsuIdsMapping[episode].kitsuId;
+    } else if (Array.isArray(kitsuId)) {
+      console.warn(`Unmapped episode number for ${showData.title} - ${inputEpisode}`);
+      return kitsuId[kitsuId.length - 1];
+    }
+    return kitsuId;
   };
 
   return Promise.all([].concat(showData.singleEpisodes).concat(showData.packEpisodes)
