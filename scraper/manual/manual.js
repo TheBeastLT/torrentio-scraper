@@ -70,7 +70,12 @@ async function reapplyEpisodeDecomposing(infoHash, includeSourceFiles = true) {
       .reduce((map, next) => (map[next.fileIndex] = (map[next.fileIndex] || []).concat(next), map), {});
   const files = includeSourceFiles && Object.values(fileIndexMap)
       .map(sameIndexFiles => sameIndexFiles[0])
-      .map(file => ({ fileIndex: file.fileIndex, name: file.title, path: file.title, size: file.size }));
+      .map(file => ({
+        fileIndex: file.fileIndex,
+        name: file.title.replace(/.*\//, ''),
+        path: file.title,
+        size: file.size
+      }));
   const imdbId = storedFiles[0].imdbId;
 
   return parseTorrentFiles({ ...torrent, imdbId, files })
@@ -168,5 +173,5 @@ async function findAllFiles() {
 //addMissingEpisodes().then(() => console.log('Finished'));
 //findAllFiles().then(() => console.log('Finished'));
 //updateMovieCollections().then(() => console.log('Finished'));
-//reapplyEpisodeDecomposing('83b61caa4191469a9c15ee851aff828184f9a78d', false).then(() => console.log('Finished'));
+reapplyEpisodeDecomposing('d71c4fd1cb9bb9c5365a570b903a3a58774f61a5', true).then(() => console.log('Finished'));
 //reapplySeriesSeasonsSavedAsMovies().then(() => console.log('Finished'));
