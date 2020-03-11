@@ -40,7 +40,7 @@ const File = database.define('file',
 );
 
 Torrent.hasMany(File, { foreignKey: 'infoHash', constraints: false });
-File.belongsTo(Torrent, { constraints: false });
+File.belongsTo(Torrent, { foreignKey: 'infoHash', constraints: false });
 
 function getImdbIdMovieEntries(imdbId) {
   return File.findAll({

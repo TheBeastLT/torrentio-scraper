@@ -156,8 +156,8 @@ async function decomposeEpisodes(torrent, files, metadata = { episodeCount: [] }
   } else if (files.every(file => (!file.season || !metadata.episodeCount[file.season - 1]) && file.date)) {
     decomposeDateEpisodeFiles(torrent, files, metadata);
   } else if (files.filter(file => !file.isMovie && file.episodes).every(file => !file.season && file.episodes) ||
-      files.some(file => file.season && file.episodes && file.episodes
-          .every(ep => metadata.episodeCount[file.season - 1] < ep))) {
+      files.filter(file => file.season && file.episodes && file.episodes
+          .every(ep => metadata.episodeCount[file.season - 1] < ep)).length > Math.ceil(files.length / 5)) {
     decomposeAbsoluteEpisodeFiles(torrent, files, metadata);
   }
 

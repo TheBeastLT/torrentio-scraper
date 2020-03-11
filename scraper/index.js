@@ -8,15 +8,17 @@ const horribleSubsScraper = require('./scrapers/horriblesubs/horriblesubs_scrape
 const leetxScraper = require('./scrapers/1337x/1337x_scraper');
 const kickassScraper = require('./scrapers/kickass/kickass_scraper');
 const rarbgScraper = require('./scrapers/rarbg/rarbg_scraper');
+const rarbgDumpScraper = require('./scrapers/rarbg/rarbg_dump_scraper');
 const thepiratebayDumpScraper = require('./scrapers/thepiratebay/thepiratebay_dump_scraper');
 const thepiratebayUnofficialDumpScraper = require('./scrapers/thepiratebay/thepiratebay_unofficial_dump_scraper');
 
 const PROVIDERS = [
-  horribleSubsScraper,
-  rarbgScraper,
-  thepiratebayScraper,
-  kickassScraper,
-  leetxScraper
+  // horribleSubsScraper,
+  // rarbgScraper,
+  // thepiratebayScraper,
+  // kickassScraper,
+  // leetxScraper
+  rarbgDumpScraper
 ];
 const SCRAPE_CRON = process.env.SCRAPE_CRON || '* * 0/4 * * *';
 
@@ -34,7 +36,7 @@ server.get('/', function (req, res) {
 
 server.listen(process.env.PORT || 7000, async function () {
   await connect();
-  schedule.scheduleJob(SCRAPE_CRON, () => scrape());
+  // schedule.scheduleJob(SCRAPE_CRON, () => scrape());
   console.log('Scraper started');
   scrape();
 });
