@@ -20,6 +20,9 @@
       "dest": "/addon/serverless.js"
     }
   ],
+  "github": {
+    "silent": true
+  },
   "env": {
     "MONGODB_URI": "@mongodb-uri",
     "DATABASE_URI": "@database-uri"
