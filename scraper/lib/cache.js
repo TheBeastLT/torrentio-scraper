@@ -3,6 +3,7 @@ const mangodbStore = require('cache-manager-mongodb');
 
 const GLOBAL_KEY_PREFIX = 'stremio-torrentio';
 const IMDB_ID_PREFIX = `${GLOBAL_KEY_PREFIX}|imdb_id`;
+const KITSU_ID_PREFIX = `${GLOBAL_KEY_PREFIX}|kitsu_id`;
 const METADATA_PREFIX = `${GLOBAL_KEY_PREFIX}|metadata`;
 const TORRENT_FILES_KEY_PREFIX = `stremio-tpb|files`;
 
@@ -73,9 +74,13 @@ function cacheWrapImdbId(key, method) {
   return cacheWrap(remoteCache, `${IMDB_ID_PREFIX}:${key}`, method, { ttl: GLOBAL_TTL });
 }
 
+function cacheWrapKitsuId(key, method) {
+  return cacheWrap(remoteCache, `${KITSU_ID_PREFIX}:${key}`, method, { ttl: GLOBAL_TTL });
+}
+
 function cacheWrapMetadata(id, method) {
   return cacheWrap(memoryCache, `${METADATA_PREFIX}:${id}`, method, { ttl: GLOBAL_TTL });
 }
 
-module.exports = { cacheWrapImdbId, cacheWrapMetadata, retrieveTorrentFiles };
+module.exports = { cacheWrapImdbId, cacheWrapKitsuId, cacheWrapMetadata, retrieveTorrentFiles };
 

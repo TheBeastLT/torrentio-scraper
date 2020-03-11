@@ -1,7 +1,7 @@
 const needle = require('needle');
 const nameToImdb = require('name-to-imdb');
 const bing = require('nodejs-bing');
-const { cacheWrapImdbId, cacheWrapMetadata } = require('./cache');
+const { cacheWrapImdbId, cacheWrapKitsuId, cacheWrapMetadata } = require('./cache');
 const { Type } = require('./types');
 
 const CINEMETA_URL = 'https://v3-cinemeta.strem.io';
@@ -39,12 +39,14 @@ function _requestMetadata(url) {
             videos: (body.meta.videos || [])
                 .map((video) => video.imdbSeason
                     ? {
+                      name: video.name,
                       season: video.season,
                       episode: video.episode,
                       imdbSeason: video.imdbSeason,
                       imdbEpisode: video.imdbEpisode
                     }
                     : {
+                      name: video.name,
                       season: video.season,
                       episode: video.episode,
                       kitsuId: video.kitsu_id,
@@ -105,7 +107,7 @@ async function getKitsuId(info) {
   const season = info.season > 1 ? ` S${info.season}` : '';
   const query = `${title}${season}`;
 
-  return cacheWrapImdbId(query,
+  return cacheWrapKitsuId(query,
       () => needle('get', `${KITSU_URL}/catalog/series/kitsu-anime-list/search=${query}.json`, { open_timeout: 60000 })
           .then((response) => {
             const body = response.body;

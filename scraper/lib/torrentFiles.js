@@ -227,6 +227,24 @@ function decomposeDateEpisodeFiles(torrent, files, metadata) {
       });
 }
 
+function decomposeEpisodeTitleFiles(torrent, files, metadata) {
+  const titleMapping = metadata.videos
+      .reduce((map, video) => {
+        map[video.name.toLowerCase()] = video;
+        return map;
+      }, {});
+  files
+      .filter(file => !file.season)
+      .map(file => {
+        const episodeTitle = file.name.replace(/^.*-\s?(.+)\.\w{1,4}$/, '$1').toLowerCase();
+        const mapping = titleMapping[episodeTitle];
+        if (mapping) {
+          file.season = mapping.season;
+          file.episodes = [mapping.episode];
+        }
+      })
+}
+
 function getTimeZoneOffset(country) {
   switch (country) {
     case 'USA':
