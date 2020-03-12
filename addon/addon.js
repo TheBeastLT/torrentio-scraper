@@ -24,7 +24,7 @@ const builder = new addonBuilder({
 });
 
 builder.defineStreamHandler((args) => {
-  if (!args.id.match(/tt\d+/i) && args.id.match(/kitsu:\d+/i)) {
+  if (!args.id.match(/tt\d+/i) && !args.id.match(/kitsu:\d+/i)) {
     return Promise.resolve({ streams: [] });
   }
 
