@@ -82,4 +82,4 @@ async function processTorrentRecord(record) {
   return createTorrentEntry(torrent);
 }
 
-module.exports = { scrape };
+module.exports = { scrape, NAME };

@@ -100,4 +100,4 @@ function getType(category) {
   return Type.MOVIE;
 }
 
-module.exports = { scrape };
+module.exports = { scrape, NAME };

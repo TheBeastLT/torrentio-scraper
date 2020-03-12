@@ -193,4 +193,4 @@ async function checkIfExists(torrent) {
   return { ...torrent, size: existingTorrent.size, seeders: existingTorrent.seeders };
 }
 
-module.exports = { scrape };
+module.exports = { scrape, NAME };

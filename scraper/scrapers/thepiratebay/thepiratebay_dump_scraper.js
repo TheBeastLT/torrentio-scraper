@@ -178,4 +178,4 @@ function downloadDump(dump) {
       })
 }
 
-module.exports = { scrape };
+module.exports = { scrape, NAME };

@@ -95,4 +95,4 @@ async function findTorrent(record) {
   return Promise.reject("not found");
 }
 
-module.exports = { scrape };
+module.exports = { scrape, NAME };

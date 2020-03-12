@@ -84,4 +84,4 @@ function typeMapping() {
   return mapping;
 }
 
-module.exports = { scrape };
+module.exports = { scrape, NAME };

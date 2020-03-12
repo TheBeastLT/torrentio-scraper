@@ -26,8 +26,19 @@ async function scrape() {
   return PROVIDERS
       .reduce(async (previousPromise, nextProvider) => {
         await previousPromise;
-        return nextProvider.scrape().catch(() => Promise.resolve());
+        return nextProvider.scrape().catch(error => {
+          console.warn(`Failed ${nextProvider.NAME} scraping due: `, error);
+          return Promise.resolve()
+        });
       }, Promise.resolve());
+}
+
+function enableScheduling() {
+  if (process.env.ENABLE_SCHEDULING) {
+    schedule.scheduleJob(SCRAPE_CRON, () => scrape());
+  } else {
+    scrape();
+  }
 }
 
 server.get('/', function (req, res) {
@@ -36,7 +47,6 @@ server.get('/', function (req, res) {
 
 server.listen(process.env.PORT || 7000, async function () {
   await connect();
-  // schedule.scheduleJob(SCRAPE_CRON, () => scrape());
   console.log('Scraper started');
-  scrape();
+  enableScheduling();
 });
