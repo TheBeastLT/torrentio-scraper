@@ -11,17 +11,21 @@ const Provider = database.define('provider', {
   lastScrapedId: { type: Sequelize.STRING(128) }
 });
 
-const Torrent = database.define('torrent', {
-  infoHash: { type: Sequelize.STRING(64), primaryKey: true },
-  provider: { type: Sequelize.STRING(32), allowNull: false },
-  torrentId: { type: Sequelize.STRING(128) },
-  title: { type: Sequelize.STRING(256), allowNull: false },
-  size: { type: Sequelize.BIGINT },
-  type: { type: Sequelize.STRING(16), allowNull: false },
-  uploadDate: { type: Sequelize.DATE, allowNull: false },
-  seeders: { type: Sequelize.SMALLINT },
-  trackers: { type: Sequelize.STRING(4096) }
-});
+const Torrent = database.define('torrent',
+    {
+      infoHash: { type: Sequelize.STRING(64), primaryKey: true },
+      provider: { type: Sequelize.STRING(32), allowNull: false },
+      torrentId: { type: Sequelize.STRING(128) },
+      title: { type: Sequelize.STRING(256), allowNull: false },
+      size: { type: Sequelize.BIGINT },
+      type: { type: Sequelize.STRING(16), allowNull: false },
+      uploadDate: { type: Sequelize.DATE, allowNull: false },
+      seeders: { type: Sequelize.SMALLINT },
+      trackers: { type: Sequelize.STRING(4096) },
+      languages: { type: Sequelize.STRING(256) },
+      resolution: { type: Sequelize.STRING(16) }
+    }
+);
 
 const File = database.define('file',
     {
