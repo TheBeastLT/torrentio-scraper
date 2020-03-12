@@ -35,9 +35,9 @@ async function scrape() {
 
 function enableScheduling() {
   if (process.env.ENABLE_SCHEDULING) {
-    schedule.scheduleJob(SCRAPE_CRON, () => scrape());
+    schedule.scheduleJob(SCRAPE_CRON, () => scrape().catch(error => console.error('Failed scraping: ', error)));
   } else {
-    scrape();
+    scrape().catch(error => console.error('Failed scraping: ', error));
   }
 }
 
@@ -45,7 +45,7 @@ server.get('/', function (req, res) {
   res.send(200);
 });
 
-server.listen(process.env.PORT || 7000, async function () {
+server.listen(process.env.PORT || 7000, async () => {
   await connect();
   console.log('Scraper started');
   enableScheduling();
