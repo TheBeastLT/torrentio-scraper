@@ -4,7 +4,7 @@
   "main": "scraper/index.js",
   "engines": {
     "npm": "6.x",
-    "node": "10.x"
+    "node": "12.x"
   },
   "scripts": {
     "start": "node scraper/index.js"

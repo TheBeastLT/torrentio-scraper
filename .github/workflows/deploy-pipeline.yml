@@ -1,0 +1,28 @@
+name: Deploy Pipeline
+on:
+  push:
+    branches:
+    - 'master'
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+
+    - run: sed -i -e "s~@database-uri~$DATABASE_URI~g" app.yaml
+      env:
+        DATABASE_URI: ${{secrets.DATABASE_URI}}
+
+    - run: sed -i -e "s~@mongodb-uri~$MONGODB_URI~g" app.yaml
+      env:
+        MONGODB_URI: ${{secrets.MONGODB_URI}}
+
+    - uses: actions-hub/gcloud@master
+      env:
+        PROJECT_ID: ${{secrets.GCLOUD_PROJECT_ID}}
+        APPLICATION_CREDENTIALS: ${{secrets.GOOGLE_APPLICATION_CREDENTIALS}}
+      with:
+        args: app -q deploy app.yaml --promote

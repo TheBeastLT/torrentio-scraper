@@ -1,0 +1,5 @@
+runtime: nodejs12
+
+env_variables:
+  DATABASE_URI: @database-uri
+  MONGODB_URI: @mongodb-uri
