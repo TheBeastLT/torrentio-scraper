@@ -13,7 +13,7 @@ const thepiratebayDumpScraper = require('./scrapers/thepiratebay/thepiratebay_du
 const thepiratebayUnofficialDumpScraper = require('./scrapers/thepiratebay/thepiratebay_unofficial_dump_scraper');
 
 const PROVIDERS = [
-  horribleSubsScraper,
+  // horribleSubsScraper,
   rarbgScraper,
   thepiratebayScraper,
   kickassScraper,
