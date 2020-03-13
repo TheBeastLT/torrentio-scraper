@@ -3,8 +3,7 @@
   "version": "1.0.0",
   "main": "addon.js",
   "scripts": {
-    "start": "node index.js",
-    "deploy": "now && now alias"
+    "start": "node index.js"
   },
   "author": "TheBeastLT <pauliox@beyond.lt>",
   "license": "MIT",
@@ -13,10 +12,10 @@
     "cache-manager-mongodb": "^0.2.1",
     "express-rate-limit": "^5.1.1",
     "parse-torrent-title": "git://github.com/TheBeastLT/parse-torrent-title.git#master",
-    "stremio-addon-sdk": "^1.6.1",
     "pg": "^7.8.2",
     "pg-hstore": "^2.3.2",
-    "sequelize": "^4.43.0"
+    "sequelize": "^4.43.0",
+    "stremio-addon-sdk": "^1.6.1"
   },
   "devDependencies": {
     "eslint": "^6.4.0",

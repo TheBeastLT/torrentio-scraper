@@ -1,4 +1,5 @@
 const moment = require('moment');
+const distance = require('jaro-winkler');
 const { parse } = require('parse-torrent-title');
 const { torrentFiles } = require('../lib/torrent');
 const { getMetadata, getImdbId } = require('../lib/metadata');
@@ -61,7 +62,8 @@ async function parseTorrentFiles(torrent) {
 }
 
 async function getSeriesFiles(torrent, parsedTorrentName) {
-  if (parsedTorrentName.episode || (!parsedTorrentName.episodes && parsedTorrentName.date)) {
+  if ((parsedTorrentName.episode && (!parsedTorrentName.seasons || parsedTorrentName.seasons.length <= 1)) ||
+      (!parsedTorrentName.episodes && parsedTorrentName.date)) {
     return [{
       name: torrent.title,
       path: torrent.title,
@@ -160,6 +162,7 @@ async function decomposeEpisodes(torrent, files, metadata = { episodeCount: [] }
           .every(ep => metadata.episodeCount[file.season - 1] < ep)).length > Math.ceil(files.length / 5)) {
     decomposeAbsoluteEpisodeFiles(torrent, files, metadata);
   }
+  // decomposeEpisodeTitleFiles(torrent, files, metadata);
 
   return files;
 }
@@ -228,19 +231,17 @@ function decomposeDateEpisodeFiles(torrent, files, metadata) {
 }
 
 function decomposeEpisodeTitleFiles(torrent, files, metadata) {
-  const titleMapping = metadata.videos
-      .reduce((map, video) => {
-        map[video.name.toLowerCase()] = video;
-        return map;
-      }, {});
   files
       .filter(file => !file.season)
       .map(file => {
-        const episodeTitle = file.name.replace(/^.*-\s?(.+)\.\w{1,4}$/, '$1').toLowerCase();
-        const mapping = titleMapping[episodeTitle];
-        if (mapping) {
-          file.season = mapping.season;
-          file.episodes = [mapping.episode];
+        const episodeTitle = file.name.replace(/^.*-\s?(.+)\.\w{1,4}$/, '$1').trim();
+        const foundEpisode = metadata.videos
+            .map(video => ({ ...video, distance: distance(episodeTitle, video.name) }))
+            .sort((a, b) => b.distance - a.distance)[0];
+        if (foundEpisode) {
+          file.isMovie = false;
+          file.season = foundEpisode.season;
+          file.episodes = [foundEpisode.episode];
         }
       })
 }
