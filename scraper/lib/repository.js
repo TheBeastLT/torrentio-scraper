@@ -47,7 +47,6 @@ const File = database.define('file',
     },
     {
       indexes: [
-        { unique: true, fields: ['infoHash'], where: { fileIndex: { [Op.eq]: null } } },
         { unique: true, fields: ['infoHash', 'fileIndex', 'imdbSeason', 'imdbEpisode'] },
         { unique: false, fields: ['imdbId', 'imdbSeason', 'imdbEpisode'] },
         { unique: false, fields: ['kitsuId', 'kitsuEpisode'] }
