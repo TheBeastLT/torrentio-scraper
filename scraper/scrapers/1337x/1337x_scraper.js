@@ -60,8 +60,8 @@ async function processTorrentRecord(record) {
     console.warn(`Incorrect upload date for [${torrentFound.infoHash}] ${torrentFound.name}`);
     return;
   }
-  if (await getStoredTorrentEntry(record)) {
-    return updateTorrentSeeders(record);
+  if (await getStoredTorrentEntry(torrentFound)) {
+    return updateTorrentSeeders(torrentFound);
   }
 
   const torrent = {
