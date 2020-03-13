@@ -2,6 +2,7 @@ const cheerio = require('cheerio');
 const needle = require('needle');
 const moment = require('moment');
 const decode = require('magnet-uri');
+const Promises = require('../../lib/promises');
 
 const defaultProxies = [
   'https://thepiratebay.org',
@@ -82,7 +83,7 @@ function torrent(torrentId, config = {}, retries = 2) {
   }
   const proxyList = config.proxyList || defaultProxies;
 
-  return raceFirstSuccessful(proxyList
+  return Promises.first(proxyList
       .map((proxyUrl) => singleRequest(`${proxyUrl}/torrent/${torrentId}`, config)))
       .then((body) => parseTorrentPage(body))
       .then((torrent) => ({ torrentId, ...torrent }))
@@ -97,7 +98,7 @@ function search(keyword, config = {}, retries = 2) {
   const page = config.page || 0;
   const category = config.category || 0;
 
-  return raceFirstSuccessful(proxyList
+  return Promises.first(proxyList
       .map((proxyUrl) => singleRequest(`${proxyUrl}/search/${keyword}/${page}/99/${category}`, config)))
       .then((body) => parseBody(body))
       .catch((err) => search(keyword, config, retries - 1));
@@ -111,7 +112,7 @@ function browse(config = {}, retries = 2) {
   const page = config.page || 0;
   const category = config.category || 0;
 
-  return raceFirstSuccessful(proxyList
+  return Promises.first(proxyList
       .map((proxyUrl) => singleRequest(`${proxyUrl}/browse/${category}/${page}`, config)))
       .then((body) => parseBody(body))
       .catch((err) => browse(config, retries - 1));
@@ -123,7 +124,7 @@ function dumps(config = {}, retries = 2) {
   }
   const proxyList = config.proxyList || defaultProxies;
 
-  return raceFirstSuccessful(proxyList
+  return Promises.first(proxyList
       .map((proxyUrl) => singleRequest(`${proxyUrl}${dumpUrl}`, config)
           .then((body) => body.match(/(<a href="[^"]+">[^<]+<\/a>.+\d)/g)
               .map((group) => ({
@@ -228,23 +229,6 @@ function parseSize(sizeText) {
     scale = 1024;
   }
   return Math.floor(parseFloat(sizeText) * scale);
-}
-
-function raceFirstSuccessful(promises) {
-  return Promise.all(promises.map((p) => {
-    // If a request fails, count that as a resolution so it will keep
-    // waiting for other possible successes. If a request succeeds,
-    // treat it as a rejection so Promise.all immediately bails out.
-    return p.then(
-        (val) => Promise.reject(val),
-        (err) => Promise.resolve(err)
-    );
-  })).then(
-      // If '.all' resolved, we've just got an array of errors.
-      (errors) => Promise.reject(errors),
-      // If '.all' rejected, we've got the result we wanted.
-      (val) => Promise.resolve(val)
-  );
 }
 
 module.exports = { torrent, search, browse, dumps, Categories };

@@ -3,12 +3,8 @@ const Bottleneck = require('bottleneck');
 const thepiratebay = require('./thepiratebay_api.js');
 const { Type } = require('../../lib/types');
 const repository = require('../../lib/repository');
-const {
-  createTorrentEntry,
-  createSkipTorrentEntry,
-  getStoredTorrentEntry,
-  updateTorrentSeeders
-} = require('../../lib/torrentEntries');
+const Promises = require('../../lib/promises');
+const { createTorrentEntry, getStoredTorrentEntry, updateTorrentSeeders } = require('../../lib/torrentEntries');
 
 const NAME = 'ThePirateBay';
 const UNTIL_PAGE = 20;
@@ -33,27 +29,30 @@ async function scrape() {
   const lastScrape = await repository.getProvider({ name: NAME });
   console.log(`[${scrapeStart}] starting ${NAME} scrape...`);
 
-  const latestTorrents = await getLatestTorrents();
-  return Promise.all(latestTorrents.map(torrent => limiter.schedule(() => processTorrentRecord(torrent))))
+  return scrapeLatestTorrents()
       .then(() => {
         lastScrape.lastScraped = scrapeStart;
-        lastScrape.lastScrapedId = latestTorrents.length && latestTorrents[latestTorrents.length - 1].torrentId;
         return repository.updateProvider(lastScrape);
       })
       .then(() => console.log(`[${moment()}] finished ${NAME} scrape`));
 }
 
-async function getLatestTorrents() {
-  return Promise.all(allowedCategories.map(category => getLatestTorrentsForCategory(category)))
+async function scrapeLatestTorrents() {
+  return Promises.sequence(allowedCategories.map(category => () => scrapeLatestTorrentsForCategory(category)))
       .then(entries => entries.reduce((a, b) => a.concat(b), []));
 }
 
-async function getLatestTorrentsForCategory(category, page = 0) {
+async function scrapeLatestTorrentsForCategory(category, page = 1) {
+  console.log(`Scrapping ${NAME} ${category} category page ${page}`);
   return thepiratebay.browse(({ category, page }))
-      .then(torrents => torrents.length && page < UNTIL_PAGE
-          ? getLatestTorrents(category, page + 1).then(nextTorrents => torrents.concat(nextTorrents))
-          : torrents)
-      .catch(() => []);
+      .then(torrents => Promise.all(torrents.map(torrent => limiter.schedule(() => processTorrentRecord(torrent)))))
+      .then(resolved => resolved.length > 0 && page < UNTIL_PAGE
+          ? scrapeLatestTorrentsForCategory(category, page + 1)
+          : Promise.resolve())
+      .catch(error => {
+        console.warn(`Failed ${NAME} scrapping for [${page}] ${category} due: `, error);
+        return Promise.resolve();
+      });
 }
 
 async function processTorrentRecord(record) {
@@ -64,7 +63,7 @@ async function processTorrentRecord(record) {
   const torrentFound = await thepiratebay.torrent(record.torrentId).catch(() => undefined);
 
   if (!torrentFound || !allowedCategories.includes(torrentFound.subcategory)) {
-    return createSkipTorrentEntry(record);
+    return Promise.resolve('Invalid torrent record');
   }
 
   const torrent = {

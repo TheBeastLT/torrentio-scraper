@@ -4,11 +4,8 @@ const rarbg = require('rarbg-api');
 const decode = require('magnet-uri');
 const { Type } = require('../../lib/types');
 const repository = require('../../lib/repository');
-const {
-  createTorrentEntry,
-  getStoredTorrentEntry,
-  updateTorrentSeeders
-} = require('../../lib/torrentEntries');
+const Promises = require('../../lib/promises');
+const { createTorrentEntry, getStoredTorrentEntry, updateTorrentSeeders } = require('../../lib/torrentEntries');
 
 const NAME = 'RARBG';
 
@@ -20,17 +17,15 @@ async function scrape() {
   const lastScrape = await repository.getProvider({ name: NAME });
   console.log(`[${scrapeStart}] starting ${NAME} scrape...`);
 
-  const latestTorrents = await getLatestTorrents();
-  return Promise.all(latestTorrents.map(torrent => entryLimiter.schedule(() => processTorrentRecord(torrent))))
+  return scrapeLatestTorrents()
       .then(() => {
         lastScrape.lastScraped = scrapeStart;
-        lastScrape.lastScrapedId = latestTorrents.length && latestTorrents[latestTorrents.length - 1].torrentId;
         return repository.updateProvider(lastScrape);
       })
       .then(() => console.log(`[${moment()}] finished ${NAME} scrape`));
 }
 
-async function getLatestTorrents() {
+async function scrapeLatestTorrents() {
   const allowedCategories = [
     rarbg.CATEGORY['4K_MOVIES_X264_4k'],
     rarbg.CATEGORY['4K_X265_4k'],
@@ -48,11 +43,13 @@ async function getLatestTorrents() {
     rarbg.CATEGORY.TV_HD_EPISODES
   ];
 
-  return Promise.all(allowedCategories.map(category => limiter.schedule(() => getLatestTorrentsForCategory(category))))
+  return Promises.sequence(allowedCategories
+      .map(category => () => limiter.schedule(() => scrapeLatestTorrentsForCategory(category))))
       .then(entries => entries.reduce((a, b) => a.concat(b), []));
 }
 
-async function getLatestTorrentsForCategory(category) {
+async function scrapeLatestTorrentsForCategory(category) {
+  console.log(`Scrapping ${NAME} ${category} category`);
   return rarbg.list({ category: category, limit: 100, sort: 'last', format: 'json_extended', ranked: 0 })
       .then(torrents => torrents.map(torrent => ({
         name: torrent.title,
@@ -65,7 +62,11 @@ async function getLatestTorrentsForCategory(category) {
         uploadDate: new Date(torrent.pubdate),
         imdbId: torrent.episode_info && torrent.episode_info.imdb
       })))
-      .catch((err) => []);
+      .then(torrents => Promise.all(torrents.map(t => entryLimiter.schedule(() => processTorrentRecord(t)))))
+      .catch(error => {
+        console.warn(`Failed ${NAME} scrapping for [${page}] ${category} due: `, error);
+        return Promise.resolve();
+      });
 }
 
 async function processTorrentRecord(record) {

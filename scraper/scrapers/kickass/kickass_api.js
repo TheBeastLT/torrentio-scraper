@@ -2,6 +2,7 @@ const cheerio = require('cheerio');
 const needle = require('needle');
 const moment = require('moment');
 const decode = require('magnet-uri');
+const Promises = require('../../lib/promises');
 
 const defaultProxies = [
   'https://katcr.co'
@@ -26,7 +27,7 @@ function torrent(torrentId, config = {}, retries = 2) {
   }
   const proxyList = config.proxyList || defaultProxies;
 
-  return raceFirstSuccessful(proxyList
+  return Promises.first(proxyList
       .map((proxyUrl) => singleRequest(`${proxyUrl}/torrent/${torrentId}`, config)))
       .then((body) => parseTorrentPage(body))
       .then((torrent) => ({ torrentId, ...torrent }))
@@ -41,7 +42,7 @@ function search(keyword, config = {}, retries = 2) {
   const page = config.page || 1;
   const category = config.category;
 
-  return raceFirstSuccessful(proxyList
+  return Promises.first(proxyList
       .map((proxyUrl) => singleRequest(`${proxyUrl}/search/${keyword}/${page}/99/${category}`, config)))
       .then((body) => parseTableBody(body))
       .catch((err) => search(keyword, config, retries - 1));
@@ -55,7 +56,7 @@ function browse(config = {}, retries = 2) {
   const page = config.page || 1;
   const category = config.category;
 
-  return raceFirstSuccessful(proxyList
+  return Promises.first(proxyList
       .map((proxyUrl) => singleRequest(`${proxyUrl}/category/${category}/page/${page}`, config)))
       .then((body) => parseTableBody(body))
       .catch((err) => browse(config, retries - 1));
@@ -94,9 +95,12 @@ function parseTableBody(body) {
 
     $('.table > tbody > tr').each((i, element) => {
       const row = $(element);
+      const magnetLink = row.find('a[title="Torrent magnet link"]').attr('href');
       torrents.push({
-        torrentId: row.find('a[class="torrents_table__torrent_title"]').first().attr('href').replace('/torrent/', ''),
         name: row.find('a[class="torrents_table__torrent_title"]').first().children('b').text(),
+        infoHash: decode(magnetLink).infoHash,
+        magnetLink: magnetLink,
+        torrentId: row.find('a[class="torrents_table__torrent_title"]').first().attr('href').replace('/torrent/', ''),
         category: row.find('span[class="torrents_table__upload_info"]').first().children('a').first().attr('href')
             .match(/category\/([^\/]+)/)[1],
         seeders: parseInt(row.find('td[data-title="Seed"]').first().text()),
@@ -165,23 +169,6 @@ function parseSize(sizeText) {
     scale = 1024;
   }
   return Math.floor(parseFloat(sizeText.replace(/[',]/g, '')) * scale);
-}
-
-function raceFirstSuccessful(promises) {
-  return Promise.all(promises.map((p) => {
-    // If a request fails, count that as a resolution so it will keep
-    // waiting for other possible successes. If a request succeeds,
-    // treat it as a rejection so Promise.all immediately bails out.
-    return p.then(
-        (val) => Promise.reject(val),
-        (err) => Promise.resolve(err)
-    );
-  })).then(
-      // If '.all' resolved, we've just got an array of errors.
-      (errors) => Promise.reject(errors),
-      // If '.all' rejected, we've got the result we wanted.
-      (val) => Promise.resolve(val)
-  );
 }
 
 module.exports = { torrent, search, browse, Categories };
