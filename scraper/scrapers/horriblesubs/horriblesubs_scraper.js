@@ -135,7 +135,7 @@ async function _parseShowData(showData) {
       return kitsuIdsMapping[episode].kitsuId;
     } else if (Array.isArray(kitsuId)) {
       console.warn(`Unmapped episode number for ${showData.title} - ${inputEpisode}`);
-      return kitsuId[kitsuId.length - 1];
+      return undefined;
     }
     return kitsuId;
   };
@@ -155,6 +155,7 @@ async function _parseShowData(showData) {
             uploadDate: episodeInfo.uploadDate,
           })))
       .reduce((a, b) => a.concat(b), [])
+      .filter((incompleteTorrent) => incompleteTorrent.kitsuId)
       .map((incompleteTorrent) => entryLimiter.schedule(() => checkIfExists(incompleteTorrent)
           .then((torrent) => torrent && updateCurrentSeeders(torrent))
           .then((torrent) => torrent && parseTorrentFiles(torrent)
