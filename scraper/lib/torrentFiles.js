@@ -138,7 +138,7 @@ async function decomposeEpisodes(torrent, files, metadata = { episodeCount: [] }
     return files;
   }
   // for anime type episodes are always absolute and for a single season
-  if (torrent.type === Type.ANIME) {
+  if (torrent.type === Type.ANIME && torrent.kitsuId) {
     files
         .filter(file => file.episodes)
         .forEach(file => file.season = 1);
