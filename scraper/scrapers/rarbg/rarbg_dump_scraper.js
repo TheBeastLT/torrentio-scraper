@@ -20,8 +20,8 @@ async function scrape() {
   const seriesImdbIds = require('./rargb_series_imdb_ids_2020-03-09.json');
   const allImdbIds = [].concat(movieImdbIds).concat(seriesImdbIds);
 
-  return Promise.all(allImdbIds.map(imdbId => limiter.schedule(() => getTorrentsForImdbId(imdbId))
-      .then(torrents => Promise.all(torrents.map(t => entryLimiter.schedule(() => processTorrentRecord(t)))))))
+  return Promise.all(allImdbIds.map(imdbId => limiter.schedule(() => getTorrentsForImdbId(imdbId)
+      .then(torrents => Promise.all(torrents.map(t => entryLimiter.schedule(() => processTorrentRecord(t))))))))
       .then(() => console.log(`[${moment()}] finished ${NAME} dump scrape`));
 }
 
@@ -38,7 +38,14 @@ async function getTorrentsForImdbId(imdbId) {
         uploadDate: new Date(torrent.pubdate),
         imdbId: torrent.episode_info && torrent.episode_info.imdb
       })))
-      .catch((err) => []);
+      .then(torrents => {
+        console.log(`Completed ${imdbId} request`);
+        return torrents;
+      })
+      .catch(error => {
+        console.warn(`Failed ${NAME} request for ${imdbId}: `, error);
+        return [];
+      });
 }
 
 async function processTorrentRecord(record) {
