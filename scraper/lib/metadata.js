@@ -104,8 +104,9 @@ async function getImdbId(info, type) {
 
 async function getKitsuId(info) {
   const title = escapeTitle(info.title);
+  const year = info.year ? ` ${info.year} ` : '';
   const season = info.season > 1 ? ` S${info.season}` : '';
-  const query = `${title}${season}`;
+  const query = `${title}${year}${season}`;
 
   return cacheWrapKitsuId(query,
       () => needle('get', `${KITSU_URL}/catalog/series/kitsu-anime-list/search=${query}.json`, { open_timeout: 60000 })
