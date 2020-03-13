@@ -61,6 +61,10 @@ async function processTorrentRecord(record) {
   if (!torrentFound || !TYPE_MAPPING[torrentFound.category]) {
     return createSkipTorrentEntry(record);
   }
+  if (isNaN(torrentFound.uploadDate)) {
+    console.warn(`Incorrect upload date for [${torrentFound.infoHash}] ${torrentFound.name}`);
+    return;
+  }
 
   const torrent = {
     infoHash: torrentFound.infoHash,

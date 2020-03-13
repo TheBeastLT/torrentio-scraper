@@ -122,7 +122,7 @@ function parseSeriesFile(file, parsedTorrentName) {
     fileInfo.season = pathInfo.season;
   }
   // force episode to any found number if it was not parsed
-  if (!fileInfo.episodes) {
+  if (!fileInfo.episodes && !fileInfo.date) {
     const epMatcher = fileInfo.title.match(/(?<!movie\W*|film\W*)(?:^|\W)(\d{1,4})(?:a|b|v\d)?(?:\W|$)(?!movie|film)/i);
     fileInfo.episodes = epMatcher && [parseInt(epMatcher[1], 10)];
     fileInfo.episode = fileInfo.episodes && fileInfo.episodes[0];

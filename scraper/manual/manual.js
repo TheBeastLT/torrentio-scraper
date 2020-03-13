@@ -83,6 +83,9 @@ async function reapplyEpisodeDecomposing(infoHash, includeSourceFiles = true) {
         if (fileIndexMap[file.fileIndex]) {
           const originalFile = fileIndexMap[file.fileIndex].shift();
           if (originalFile) {
+            if (!originalFile.imdbId) {
+              originalFile.imdbId = file.imdbId
+            }
             originalFile.imdbSeason = file.imdbSeason;
             originalFile.imdbEpisode = file.imdbEpisode;
             originalFile.kitsuId = file.kitsuId;

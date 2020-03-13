@@ -15,8 +15,8 @@ const Torrent = database.define('torrent',
     {
       infoHash: { type: Sequelize.STRING(64), primaryKey: true },
       provider: { type: Sequelize.STRING(32), allowNull: false },
-      torrentId: { type: Sequelize.STRING(128) },
-      title: { type: Sequelize.STRING(256), allowNull: false },
+      torrentId: { type: Sequelize.STRING(512) },
+      title: { type: Sequelize.STRING(512), allowNull: false },
       size: { type: Sequelize.BIGINT },
       type: { type: Sequelize.STRING(16), allowNull: false },
       uploadDate: { type: Sequelize.DATE, allowNull: false },
@@ -37,7 +37,7 @@ const File = database.define('file',
         onDelete: 'CASCADE'
       },
       fileIndex: { type: Sequelize.INTEGER },
-      title: { type: Sequelize.STRING(256), allowNull: false },
+      title: { type: Sequelize.STRING(512), allowNull: false },
       size: { type: Sequelize.BIGINT },
       imdbId: { type: Sequelize.STRING(32) },
       imdbSeason: { type: Sequelize.INTEGER },
@@ -67,7 +67,9 @@ function connect() {
 }
 
 function getProvider(provider) {
-  return Provider.findOrCreate({ where: { name: { [Op.eq]: provider.name } }, defaults: provider });
+  return Provider.findOrCreate({ where: { name: { [Op.eq]: provider.name } }, defaults: provider })
+      .then((result) => result[0])
+      .catch(() => provider);
 }
 
 function updateProvider(provider) {
