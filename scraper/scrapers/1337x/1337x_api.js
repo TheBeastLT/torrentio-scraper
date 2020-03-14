@@ -3,6 +3,7 @@ const needle = require('needle');
 const Sugar = require('sugar-date');
 const decode = require('magnet-uri');
 const Promises = require('../../lib/promises');
+const { escapeHTML } = require('../../lib/metadata');
 
 const defaultProxies = [
   'https://1337x.to'
@@ -117,7 +118,7 @@ function parseTorrentPage(body) {
     const imdbIdMatch = details.find('div[id=\'description\']').html().match(/imdb\.com\/title\/(tt\d+)/i);
 
     const torrent = {
-      name: decode(magnetLink).name.replace(/\+/g, ' '),
+      name: escapeHTML(decode(magnetLink).name.replace(/\+/g, ' ')),
       infoHash: decode(magnetLink).infoHash,
       magnetLink: magnetLink,
       seeders: parseInt(details.find('strong:contains(\'Seeders\')').next().text(), 10),

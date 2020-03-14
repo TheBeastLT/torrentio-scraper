@@ -80,6 +80,14 @@ function escapeTitle(title) {
       .trim();
 }
 
+function escapeHTML(title) {
+  return title
+      .replace(/&#039;|&apos;/g, '\'')
+      .replace(/&#38;|&amp;/g, '&')
+      .replace(/&#33;/g, '!')
+      .replace(/&#37;/g, '%');
+}
+
 async function getImdbId(info, type) {
   const name = escapeTitle(info.title);
   const year = info.year || info.date && info.date.slice(0, 4);
@@ -121,4 +129,4 @@ async function getKitsuId(info) {
           }));
 }
 
-module.exports = { getMetadata, getImdbId, getKitsuId };
+module.exports = { getMetadata, getImdbId, getKitsuId, escapeHTML };

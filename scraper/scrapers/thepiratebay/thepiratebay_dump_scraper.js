@@ -8,6 +8,7 @@ const thepiratebay = require('./thepiratebay_api.js');
 const bing = require('nodejs-bing');
 const { Type } = require('../../lib/types');
 const repository = require('../../lib/repository');
+const { escapeHTML } = require('../../lib/metadata');
 const { createTorrentEntry, createSkipTorrentEntry, getStoredTorrentEntry } = require('../../lib/torrentEntries');
 
 const NAME = 'ThePirateBay';
@@ -42,10 +43,9 @@ async function scrape() {
       const torrent = {
         uploadDate: moment(row[0], 'YYYY-MMM-DD HH:mm:ss').toDate(),
         infoHash: Buffer.from(row[1], 'base64').toString('hex'),
-        title: row[2]
+        title: escapeHTML(row[2])
             .replace(/^"|"$/g, '')
-            .replace(/&amp;/g, '&')
-            .replace(/&\w{2,6};/g, ' ')
+            .replace(/&#?\w{2,6};/g, ' ')
             .replace(/\s+/g, ' ')
             .trim(),
         size: parseInt(row[3], 10)
