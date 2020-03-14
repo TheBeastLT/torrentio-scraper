@@ -16,12 +16,13 @@ const entryLimiter = new Bottleneck({ maxConcurrent: 40 });
 
 async function scrape() {
   console.log(`[${moment()}] starting ${NAME} dump scrape...`);
-  const movieImdbIds = require('./rargb_movie_imdb_ids_2020-03-09.json');
-  const seriesImdbIds = require('./rargb_series_imdb_ids_2020-03-09.json');
-  const allImdbIds = [].concat(movieImdbIds).concat(seriesImdbIds);
+  //const movieImdbIds = require('./rargb_movie_imdb_ids_2020-03-09.json');
+  const seriesImdbIds = require('./rargb_series_imdb_ids_2020-03-09.json').slice(800);
+  //const allImdbIds = [].concat(movieImdbIds).concat(seriesImdbIds);
 
-  return Promise.all(allImdbIds.map(imdbId => limiter.schedule(() => getTorrentsForImdbId(imdbId)
-      .then(torrents => Promise.all(torrents.map(t => entryLimiter.schedule(() => processTorrentRecord(t))))))))
+  return Promise.all(
+      seriesImdbIds.map(imdbId => limiter.schedule(() => getTorrentsForImdbId(imdbId))
+          .then(torrents => Promise.all(torrents.map(t => entryLimiter.schedule(() => processTorrentRecord(t)))))))
       .then(() => console.log(`[${moment()}] finished ${NAME} dump scrape`));
 }
 

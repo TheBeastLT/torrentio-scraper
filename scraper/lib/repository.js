@@ -1,9 +1,14 @@
-const { Sequelize } = require('sequelize');
+const { Sequelize, fn, col } = require('sequelize');
 const Op = Sequelize.Op;
 
 const DATABASE_URI = process.env.DATABASE_URI;
 
-const database = new Sequelize(DATABASE_URI, { logging: false });
+const database = new Sequelize(
+    DATABASE_URI,
+    {
+      logging: false
+    }
+);
 
 const Provider = database.define('provider', {
   name: { type: Sequelize.STRING(32), primaryKey: true },
@@ -47,6 +52,19 @@ const File = database.define('file',
     },
     {
       indexes: [
+        {
+          unique: true,
+          name: 'files_unique_file_constraint',
+          fields: [
+            col('infoHash'),
+            fn('COALESCE', (col('fileIndex')), -1),
+            fn('COALESCE', (col('imdbId')), 'null'),
+            fn('COALESCE', (col('imdbSeason')), -1),
+            fn('COALESCE', (col('imdbEpisode')), -1),
+            fn('COALESCE', (col('kitsuId')), -1),
+            fn('COALESCE', (col('kitsuEpisode')), -1)
+          ]
+        },
         { unique: false, fields: ['imdbId', 'imdbSeason', 'imdbEpisode'] },
         { unique: false, fields: ['kitsuId', 'kitsuEpisode'] }
       ]
@@ -63,7 +81,11 @@ const FailedImdbTorrent = database.define('failed_imdb_torrent', {
 });
 
 function connect() {
-  return database.sync({ alter: true });
+  return database.sync({ alter: true })
+      .catch(error => {
+        console.error('Failed syncing database: ', error);
+        throw error;
+      });
 }
 
 function getProvider(provider) {

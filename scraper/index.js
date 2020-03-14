@@ -14,7 +14,7 @@ const thepiratebayUnofficialDumpScraper = require('./scrapers/thepiratebay/thepi
 
 const PROVIDERS = [
   // horribleSubsScraper,
-  rarbgScraper,
+  // rarbgScraper,
   thepiratebayScraper,
   kickassScraper,
   leetxScraper
@@ -42,7 +42,7 @@ function enableScheduling() {
 }
 
 server.get('/', function (req, res) {
-  res.send(200);
+  res.sendStatus(200);
 });
 
 server.listen(process.env.PORT || 7000, async () => {

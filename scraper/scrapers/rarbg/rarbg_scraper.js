@@ -20,7 +20,7 @@ async function scrape() {
   return scrapeLatestTorrents()
       .then(() => {
         lastScrape.lastScraped = scrapeStart;
-        return repository.updateProvider(lastScrape);
+        return lastScrape.save();
       })
       .then(() => console.log(`[${moment()}] finished ${NAME} scrape`));
 }
@@ -64,8 +64,8 @@ async function scrapeLatestTorrentsForCategory(category) {
       })))
       .then(torrents => Promise.all(torrents.map(t => entryLimiter.schedule(() => processTorrentRecord(t)))))
       .catch(error => {
-        console.warn(`Failed ${NAME} scrapping for [${page}] ${category} due: `, error);
-        return Promise.resolve();
+        console.warn(`Failed ${NAME} scrapping for ${category} due: `, error);
+        return Promise.resolve([]);
       });
 }
 

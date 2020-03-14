@@ -111,7 +111,7 @@ async function filesFromTorrentStream(torrent) {
 function filterVideos(files) {
   return files.filter((file) => {
     const match = file.path.match(/\.(\w{2,4})$/);
-    return match && EXTENSIONS.includes(match[1]);
+    return match && EXTENSIONS.includes(match[1].toLowerCase());
   });
 }
 

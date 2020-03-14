@@ -20,7 +20,7 @@ async function scrape() {
   return scrapeLatestTorrents()
       .then(() => {
         lastScrape.lastScraped = scrapeStart;
-        return repository.updateProvider(lastScrape);
+        return lastScrape.save();
       })
       .then(() => console.log(`[${moment()}] finished ${NAME} scrape`));
 }
@@ -39,14 +39,14 @@ async function scrapeLatestTorrents() {
 async function scrapeLatestTorrentsForCategory(category, page = 1) {
   console.log(`Scrapping ${NAME} ${category} category page ${page}`);
   return kickass.browse(({ category, page }))
+      .catch(error => {
+        console.warn(`Failed ${NAME} scrapping for [${page}] ${category} due: `, error);
+        return Promise.resolve([]);
+      })
       .then(torrents => Promise.all(torrents.map(torrent => limiter.schedule(() => processTorrentRecord(torrent)))))
       .then(resolved => resolved.length > 0 && page < UNTIL_PAGE
           ? scrapeLatestTorrentsForCategory(category, page + 1)
-          : Promise.resolve())
-      .catch(error => {
-        console.warn(`Failed ${NAME} scrapping for [${page}] ${category} due: `, error);
-        return Promise.resolve();
-      });
+          : Promise.resolve());
 }
 
 async function processTorrentRecord(record) {

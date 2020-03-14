@@ -6,9 +6,9 @@ const Promises = require('../../lib/promises');
 
 const defaultProxies = [
   'https://thepiratebay.org',
-  'https://piratebays.icu',
-  'https://piratebays.cool',
-  'https://piratebays.life'];
+  'https://proxybay.pro',
+  'https://ukpiratebayproxy.com',
+  'https://thepiratebayproxy.info'];
 const dumpUrl = '/static/dump/csv/';
 const defaultTimeout = 10000;
 
@@ -169,15 +169,18 @@ function parseBody(body) {
     $('table[id=\'searchResult\'] tr').each(function () {
       const name = $(this).find('.detLink').text();
       const sizeMatcher = $(this).find('.detDesc').text().match(/(?:,\s?Size\s)(.+),/);
+      const magnetLink = $(this).find('a[title=\'Download this torrent using magnet\']').attr('href');
       if (!name || !sizeMatcher) {
         return;
       }
       torrents.push({
-        torrentId: $(this).find('.detLink').attr('href').match(/torrent\/([^/]+)/)[1],
         name: name,
+        magnetLink: magnetLink,
+        infoHash: decode(magnetLink).infoHash,
+        torrentId: $(this).find('.detLink').attr('href').match(/torrent\/([^/]+)/)[1],
         seeders: parseInt($(this).find('td[align=\'right\']').eq(0).text(), 10),
         leechers: parseInt($(this).find('td[align=\'right\']').eq(1).text(), 10),
-        magnetLink: $(this).find('a[title=\'Download this torrent using magnet\']').attr('href'),
+
         category: parseInt($(this).find('a[title=\'More from this category\']').eq(0).attr('href').match(/\d+$/)[0],
             10),
         subcategory: parseInt($(this).find('a[title=\'More from this category\']').eq(1).attr('href').match(/\d+$/)[0],

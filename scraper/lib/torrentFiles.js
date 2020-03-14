@@ -62,8 +62,9 @@ async function parseTorrentFiles(torrent) {
 }
 
 async function getSeriesFiles(torrent, parsedTorrentName) {
-  if ((parsedTorrentName.episode && (!parsedTorrentName.seasons || parsedTorrentName.seasons.length <= 1)) ||
-      (!parsedTorrentName.episodes && parsedTorrentName.date)) {
+  if (!parsedTorrentName.complete && !parsedTorrentName.hasMovies &&
+      ((parsedTorrentName.episode && (!parsedTorrentName.seasons || parsedTorrentName.seasons.length <= 1)) ||
+          (!parsedTorrentName.episodes && parsedTorrentName.date))) {
     return [{
       name: torrent.title,
       path: torrent.title,

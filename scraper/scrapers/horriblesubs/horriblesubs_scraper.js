@@ -11,7 +11,7 @@ const { getMetadata, getKitsuId } = require('../../lib/metadata');
 const showMappings = require('./horriblesubs_mapping.json');
 
 const NAME = 'HorribleSubs';
-const NEXT_FULL_SCRAPE_OFFSET = 3 * 24 * 60 * 60; // 3 days;
+const NEXT_FULL_SCRAPE_OFFSET = 5 * 24 * 60 * 60; // 5 days;
 
 const limiter = new Bottleneck({ maxConcurrent: 5 });
 const entryLimiter = new Bottleneck({ maxConcurrent: 10 });
@@ -26,7 +26,7 @@ async function scrape() {
     return _scrapeAllShows()
         .then(() => {
           lastScrape.lastScraped = scrapeStart;
-          return repository.updateProvider(lastScrape);
+          return lastScrape.save();
         })
         .then(() => console.log(`[${moment()}] finished scrapping all ${NAME} shows`));
   } else {
@@ -140,7 +140,7 @@ async function _parseShowData(showData) {
     return kitsuId;
   };
 
-  return Promise.all([].concat(showData.singleEpisodes).concat(showData.packEpisodes)
+  return Promise.all([].concat(showData.singleEpisodes || []).concat(showData.packEpisodes || [])
       .map((episodeInfo) => episodeInfo.mirrors
           .filter((mirror) => mirror.magnetLink && mirror.magnetLink.length)
           .map((mirror) => ({
@@ -169,15 +169,23 @@ async function _parseShowData(showData) {
 async function verifyFiles(torrent, files) {
   if (files && files.length) {
     const existingFiles = await repository.getFiles({ infoHash: files[0].infoHash })
-        .then((existing) => existing.reduce((map, file) => (map[file.fileIndex] = file, map), {}))
+        .then((existing) => existing
+            .reduce((map, next) => {
+              const fileIndex = next.fileIndex !== undefined ? next.fileIndex : null;
+              map[fileIndex] = (map[fileIndex] || []).concat(next);
+              return map;
+            }, {}))
         .catch(() => undefined);
     if (existingFiles && Object.keys(existingFiles).length) {
       return files
-          .map(file => ({
-            ...file,
-            id: existingFiles[file.fileIndex] && existingFiles[file.fileIndex].id,
-            size: existingFiles[file.fileIndex] && existingFiles[file.fileIndex].size || file.size
-          }))
+          .map(file => {
+            const mapping = existingFiles[file.fileIndex !== undefined ? file.fileIndex : null];
+            if (mapping) {
+              const originalFile = mapping.shift();
+              return { ...file, id: originalFile.id, size: originalFile.size || file.size };
+            }
+            return file;
+          })
     }
     return files;
   }
