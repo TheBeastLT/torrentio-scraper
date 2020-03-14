@@ -12,8 +12,10 @@ function toStreamInfo(record) {
 
 function movieStream(record) {
   const titleInfo = titleParser.parse(record.title);
+  const sameInfo = record.title === record.torrent.title;
   const title = joinDetailParts(
       [
+        joinDetailParts([!sameInfo && record.torrent.title.replace(/[, ]+/g, ' ') || undefined]),
         joinDetailParts([titleInfo.title, titleInfo.year, titleInfo.language]),
         joinDetailParts([titleInfo.resolution, titleInfo.source], '📺 '),
         joinDetailParts([record.torrent.seeders], '👤 ')
@@ -37,7 +39,10 @@ function seriesStream(record) {
       [
         joinDetailParts([record.torrent.title.replace(/[, ]+/g, ' ')]),
         joinDetailParts([!sameInfo && record.title.replace(/[, ]+/g, ' ') || undefined]),
-        joinDetailParts([tInfo.resolution || eInfo.resolution, tInfo.source || eInfo.source], '📺 '),
+        joinDetailParts([
+          tInfo.resolution || eInfo.resolution || record.torrent.resolution,
+          tInfo.source || eInfo.source
+        ], '📺 '),
         joinDetailParts([record.torrent.seeders], '👤 ')
       ],
       '',
