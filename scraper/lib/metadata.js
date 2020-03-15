@@ -18,6 +18,11 @@ function getMetadata(id, type = Type.SERIES) {
   return cacheWrapMetadata(key,
       () => _requestMetadata(`${KITSU_URL}/meta/${metaType}/${key}.json`)
           .catch(() => _requestMetadata(`${CINEMETA_URL}/meta/${metaType}/${key}.json`))
+          .catch(() => {
+            // try different type in case there was a mismatch
+            const otherType = metaType === Type.MOVIE ? Type.SERIES : Type.MOVIE;
+            return _requestMetadata(`${CINEMETA_URL}/meta/${otherType}/${key}.json`)
+          })
           .catch((error) => {
             throw new Error(`failed metadata query ${key} due: ${error.message}`);
           }));
