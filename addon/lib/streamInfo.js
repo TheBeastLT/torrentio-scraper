@@ -34,7 +34,8 @@ function movieStream(record) {
 function seriesStream(record) {
   const tInfo = titleParser.parse(record.title);
   const eInfo = titleParser.parse(record.torrent.title);
-  const sameInfo = tInfo.season === eInfo.season && tInfo.episode && eInfo.episode === tInfo.episode;
+  const sameInfo = record.title === record.torrent.title ||
+      tInfo.season === eInfo.season && tInfo.episode && eInfo.episode === tInfo.episode;
   const title = joinDetailParts(
       [
         joinDetailParts([record.torrent.title.replace(/[, ]+/g, ' ')]),
