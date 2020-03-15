@@ -56,9 +56,13 @@ function browse(config = {}, retries = 2) {
   const proxyList = config.proxyList || defaultProxies;
   const page = config.page || 1;
   const category = config.category;
+  const sort = config.sort;
+  const requestUrl = proxyUrl => sort
+      ? `${proxyUrl}/sort-cat/${category}/${sort}/desc/${page}/`
+      : `${proxyUrl}/cat/${category}/${page}/`;
 
   return Promises.first(proxyList
-      .map((proxyUrl) => singleRequest(`${proxyUrl}/cat/${category}/${page}/`, config)))
+      .map((proxyUrl) => singleRequest(requestUrl(proxyUrl), config)))
       .then((body) => parseTableBody(body))
       .catch((err) => browse(config, retries - 1));
 }

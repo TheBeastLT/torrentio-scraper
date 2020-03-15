@@ -83,7 +83,7 @@ async function processTorrentRecord(record) {
 function typeMapping() {
   const mapping = {};
   mapping[leetx.Categories.MOVIE] = Type.MOVIE;
-  mapping[leetx.Categories.DOCUMENTARIES] = Type.MOVIE;
+  mapping[leetx.Categories.DOCUMENTARIES] = Type.SERIES;
   mapping[leetx.Categories.TV] = Type.SERIES;
   mapping[leetx.Categories.ANIME] = Type.ANIME;
   return mapping;
