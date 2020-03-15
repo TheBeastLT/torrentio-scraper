@@ -153,7 +153,7 @@ function parseSize(sizeText) {
   } else if (sizeText.includes('KB')) {
     scale = 1024;
   }
-  return Math.floor(parseFloat(sizeText) * scale);
+  return Math.floor(parseFloat(sizeText.replace(/,/g, '')) * scale);
 }
 
 module.exports = { torrent, search, browse, Categories };
