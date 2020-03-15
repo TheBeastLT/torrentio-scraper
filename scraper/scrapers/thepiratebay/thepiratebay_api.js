@@ -8,7 +8,8 @@ const defaultProxies = [
   'https://thepiratebay.org',
   'https://proxybay.pro',
   'https://ukpiratebayproxy.com',
-  'https://thepiratebayproxy.info'];
+  'https://thepiratebayproxy.info'
+];
 const dumpUrl = '/static/dump/csv/';
 const defaultTimeout = 10000;
 
@@ -84,8 +85,8 @@ function torrent(torrentId, config = {}, retries = 2) {
   const proxyList = config.proxyList || defaultProxies;
 
   return Promises.first(proxyList
-      .map((proxyUrl) => singleRequest(`${proxyUrl}/torrent/${torrentId}`, config)))
-      .then((body) => parseTorrentPage(body))
+      .map((proxyUrl) => singleRequest(`${proxyUrl}/torrent/${torrentId}/`, config)
+          .then((body) => parseTorrentPage(body))))
       .then((torrent) => ({ torrentId, ...torrent }))
       .catch((err) => torrent(torrentId, config, retries - 1));
 }
@@ -99,8 +100,8 @@ function search(keyword, config = {}, retries = 2) {
   const category = config.category || 0;
 
   return Promises.first(proxyList
-      .map((proxyUrl) => singleRequest(`${proxyUrl}/search/${keyword}/${page}/99/${category}`, config)))
-      .then((body) => parseBody(body))
+      .map((proxyUrl) => singleRequest(`${proxyUrl}/search/${keyword}/${page}/99/${category}`, config)
+          .then((body) => parseBody(body))))
       .catch((err) => search(keyword, config, retries - 1));
 }
 
@@ -113,8 +114,8 @@ function browse(config = {}, retries = 2) {
   const category = config.category || 0;
 
   return Promises.first(proxyList
-      .map((proxyUrl) => singleRequest(`${proxyUrl}/browse/${category}/${page}`, config)))
-      .then((body) => parseBody(body))
+      .map((proxyUrl) => singleRequest(`${proxyUrl}/browse/${category}/${page}`, config)
+          .then((body) => parseBody(body))))
       .catch((err) => browse(config, retries - 1));
 }
 

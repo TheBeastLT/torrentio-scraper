@@ -17,12 +17,11 @@ const CSV_FILE_PATH = '/tmp/tpb_dump.csv';
 const limiter = new Bottleneck({ maxConcurrent: 40 });
 
 async function scrape() {
-  const lastScraped = await repository.getProvider({ name: NAME });
   const lastDump = { updatedAt: 2147000000 };
   //const checkPoint = moment('2016-06-17 00:00:00', 'YYYY-MMM-DD HH:mm:ss').toDate();
   //const lastDump = await thepiratebay.dumps().then((dumps) => dumps.sort((a, b) => b.updatedAt - a.updatedAt)[0]);
 
-  if (!lastScraped.lastScraped || lastScraped.lastScraped < lastDump.updatedAt) {
+  if (lastDump) {
     console.log(`starting to scrape tpb dump: ${JSON.stringify(lastDump)}`);
     await downloadDump(lastDump);
 
@@ -55,11 +54,6 @@ async function scrape() {
       //   entriesProcessed++;
       //   return;
       // }
-
-      if (lastScraped.lastScraped && lastScraped.lastScraped > torrent.uploadDate) {
-        // torrent was already scraped previously, skipping
-        return;
-      }
 
       if (!limiter.empty()) {
         lr.pause()
@@ -138,7 +132,8 @@ async function findTorrentInSource(record) {
     return Promise.reject(new Error(`Failed to find torrent ${record.title}`));
   }
   return Promise.resolve(torrentFound)
-      .then((torrent) => thepiratebay.torrent(torrent.torrentId));
+      .then((torrent) => thepiratebay.torrent(torrent.torrentId)
+          .catch(() => thepiratebay.torrent(torrent.torrentId)));
 }
 
 async function findTorrentViaBing(record) {
@@ -148,11 +143,12 @@ async function findTorrentViaBing(record) {
               result.description.includes('Get this torrent')))
       .then((result) => {
         if (!result) {
-          throw new Error(`Failed to find torrent ${record.title}`);
+          console.warn(`Failed to find torrent ${record.title}`);
+          return Promise.resolve(undefined);
         }
         return result.link.match(/torrent\/(\w+)\//)[1];
       })
-      .then((torrentId) => thepiratebay.torrent(torrentId))
+      .then((torrentId) => torrentId && thepiratebay.torrent(torrentId))
 }
 
 function downloadDump(dump) {

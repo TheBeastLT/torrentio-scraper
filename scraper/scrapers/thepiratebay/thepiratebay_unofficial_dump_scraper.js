@@ -1,7 +1,6 @@
 const moment = require('moment');
 const Bottleneck = require('bottleneck');
 const LineByLineReader = require('line-by-line');
-const fs = require('fs');
 const decode = require('magnet-uri');
 const thepiratebay = require('./thepiratebay_api.js');
 const { Type } = require('../../lib/types');
@@ -13,6 +12,7 @@ const CSV_FILE_PATH = '/tmp/tpb.csv';
 const limiter = new Bottleneck({ maxConcurrent: 40 });
 
 async function scrape() {
+  // await processTorrentRecord({ torrentId: 35313644, category: 'Video' });
   console.log(`starting to scrape tpb dump...`);
   //const checkPoint = moment('2013-06-16 00:00:00', 'YYYY-MMM-DD HH:mm:ss').toDate();
   const checkPoint = 4115000;
@@ -88,16 +88,16 @@ async function processTorrentRecord(record) {
     return;
   }
 
-  const torrentFound = await thepiratebay.torrent(record.torrentId).catch(() => undefined);
+  const torrentFound = await thepiratebay.torrent(record.torrentId);
 
   if (!torrentFound || !allowedCategories.includes(torrentFound.subcategory)) {
     return createSkipTorrentEntry(record);
   }
 
   const torrent = {
-    infoHash: record.infoHash,
+    infoHash: torrentFound.infoHash,
     provider: NAME,
-    torrentId: record.torrentId,
+    torrentId: torrentFound.torrentId,
     title: torrentFound.name,
     size: torrentFound.size,
     type: seriesCategories.includes(torrentFound.subcategory) ? Type.SERIES : Type.MOVIE,

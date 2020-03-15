@@ -81,11 +81,14 @@ const FailedImdbTorrent = database.define('failed_imdb_torrent', {
 });
 
 function connect() {
-  return database.sync({ alter: true })
-      .catch(error => {
-        console.error('Failed syncing database: ', error);
-        throw error;
-      });
+  if (process.env.ENABLE_SYNC) {
+    return database.sync({ alter: true })
+        .catch(error => {
+          console.error('Failed syncing database: ', error);
+          throw error;
+        });
+  }
+  return Promise.resolve();
 }
 
 function getProvider(provider) {
