@@ -11,7 +11,7 @@
     "cache-manager": "^2.9.0",
     "cache-manager-mongodb": "^0.2.1",
     "express-rate-limit": "^5.1.1",
-    "parse-torrent-title": "git://github.com/TheBeastLT/parse-torrent-title.git#master",
+    "parse-torrent-title": "git://github.com/TheBeastLT/parse-torrent-title.git#7c00602bc1c405f5574758eeabb72b133fea81d5",
     "pg": "^7.8.2",
     "pg-hstore": "^2.3.2",
     "sequelize": "^4.43.0",

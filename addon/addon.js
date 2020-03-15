@@ -1,5 +1,6 @@
 const { addonBuilder } = require('stremio-addon-sdk');
 const titleParser = require('parse-torrent-title');
+const { manifest } = require('./lib/manifest');
 const { toStreamInfo } = require('./lib/streamInfo');
 const { cacheWrapStream } = require('./lib/cache');
 const repository = require('./lib/repository');
@@ -9,19 +10,7 @@ const CACHE_MAX_AGE_EMPTY = 30 * 60; // 30 minutes
 const STALE_REVALIDATE_AGE = 4 * 60 * 60; // 4 hours
 const STALE_ERROR_AGE = 7 * 24 * 60 * 60; // 7 days
 
-const builder = new addonBuilder({
-  id: 'com.stremio.torrentio.addon',
-  version: '1.0.0',
-  name: 'Torrentio',
-  description: 'Provides torrent stream from scraped torrent providers. '
-      + 'Currently supports ThePirateBay, 1337x, RARBG, KickassTorrents, HorribleSubs.',
-  catalogs: [],
-  resources: ['stream'],
-  types: ['movie', 'series'],
-  idPrefixes: ['tt', 'kitsu'],
-  background: `https://i.imgur.com/t8wVwcg.jpg`,
-  logo: `https://i.imgur.com/GwxAcDV.png`,
-});
+const builder = new addonBuilder(manifest());
 
 builder.defineStreamHandler((args) => {
   if (!args.id.match(/tt\d+/i) && !args.id.match(/kitsu:\d+/i)) {
