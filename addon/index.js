@@ -1,6 +1,9 @@
-const { serveHTTP } = require('stremio-addon-sdk');
-const addonInterface = require('./addon');
+const express = require('express');
+const serverless = require('./serverless');
 
-const PORT = process.env.PORT || 7000;
+const app = express();
 
-serveHTTP(addonInterface, { port: PORT, cacheMaxAge: 86400 });
+app.use((req, res, next) => serverless(req, res, next));
+app.listen(process.env.PORT || 7000, () => {
+  console.log(`Started addon at: http://localhost:${process.env.PORT || 7000}`)
+});

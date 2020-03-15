@@ -79,7 +79,7 @@ function cacheWrapKitsuId(key, method) {
 }
 
 function cacheWrapMetadata(id, method) {
-  return cacheWrap(memoryCache, `${METADATA_PREFIX}:${id}`, method, { ttl: GLOBAL_TTL });
+  return cacheWrap(memoryCache, `${METADATA_PREFIX}:${id}`, method, { ttl: MEMORY_TTL });
 }
 
 module.exports = { cacheWrapImdbId, cacheWrapKitsuId, cacheWrapMetadata, retrieveTorrentFiles };

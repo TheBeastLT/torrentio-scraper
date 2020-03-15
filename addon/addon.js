@@ -1,8 +1,7 @@
 const { addonBuilder } = require('stremio-addon-sdk');
-const titleParser = require('parse-torrent-title');
 const { manifest } = require('./lib/manifest');
-const { toStreamInfo } = require('./lib/streamInfo');
 const { cacheWrapStream } = require('./lib/cache');
+const { toStreamInfo, sanitizeStreamInfo } = require('./lib/streamInfo');
 const repository = require('./lib/repository');
 
 const CACHE_MAX_AGE = process.env.CACHE_MAX_AGE || 4 * 60 * 60; // 4 hours in seconds
@@ -18,15 +17,16 @@ builder.defineStreamHandler((args) => {
   }
 
   const handlers = {
-    series: () => seriesRecordsHandler(args),
-    movie: () => movieRecordsHandler(args),
+    series: () => seriesRecordsHandler(args).then(records => records.map(record => toStreamInfo(record))),
+    movie: () => movieRecordsHandler(args).then(records => records.map(record => toStreamInfo(record))),
     fallback: () => Promise.reject('not supported type')
   };
 
-  return cacheWrapStream(args.id, handlers[args.type] || handlers.fallback)
-      .then(records => filterRecordsBySeeders(records))
-      .then(records => sortRecordsByVideoQuality(records))
-      .then(records => records.map(record => toStreamInfo(record)))
+  return cacheWrapStream(args.id, (handlers[args.type] || handlers.fallback))
+      .then(streams => filterStreamByProvider(streams, args.extra.providers))
+      .then(streams => filterStreamsBySeeders(streams))
+      .then(streams => sortStreamsByVideoQuality(streams))
+      .then(streams => streams.map(stream => sanitizeStreamInfo(stream)))
       .then(streams => ({
         streams: streams,
         cacheMaxAge: streams.length ? CACHE_MAX_AGE : CACHE_MAX_AGE_EMPTY,
@@ -64,38 +64,43 @@ async function movieRecordsHandler(args) {
   return Promise.reject(`Unsupported id type: ${args.id}`);
 }
 
+function filterStreamByProvider(streams, providers) {
+  if (!providers || !providers.length) {
+    return streams;
+  }
+  return streams.filter(stream => providers.includes(stream.name.split('\n')[1].toLowerCase()))
+}
+
 const HEALTHY_SEEDERS = 5;
 const SEEDED_SEEDERS = 1;
 const MIN_HEALTHY_COUNT = 10;
 const MAX_UNHEALTHY_COUNT = 5;
 
-function filterRecordsBySeeders(records) {
-  const sortedRecords = records
-      .sort((a, b) => b.torrent.seeders - a.torrent.seeders || b.torrent.uploadDate - a.torrent.uploadDate);
-  const healthy = sortedRecords.filter(record => record.torrent.seeders >= HEALTHY_SEEDERS);
-  const seeded = sortedRecords.filter(record => record.torrent.seeders >= SEEDED_SEEDERS);
+function filterStreamsBySeeders(streams) {
+  const sortedStreams = streams
+      .sort((a, b) => b.filters.seeders - a.filters.seeders || b.filters.uploadDate - a.filters.uploadDate);
+  const healthy = sortedStreams.filter(stream => stream.filters.seeders >= HEALTHY_SEEDERS);
+  const seeded = sortedStreams.filter(stream => stream.filters.seeders >= SEEDED_SEEDERS);
 
   if (healthy.length >= MIN_HEALTHY_COUNT) {
     return healthy;
   } else if (seeded.length >= MAX_UNHEALTHY_COUNT) {
     return seeded.slice(0, MIN_HEALTHY_COUNT);
   }
-  return sortedRecords.slice(0, MAX_UNHEALTHY_COUNT);
+  return sortedStreams.slice(0, MAX_UNHEALTHY_COUNT);
 }
 
-function sortRecordsByVideoQuality(records) {
-  const qualityMap = records
-      .reduce((map, record) => {
-        const parsedFile = titleParser.parse(record.title);
-        const parsedTorrent = titleParser.parse(record.torrent.title);
-        const quality = parsedFile.resolution || parsedTorrent.resolution || parsedFile.source || parsedTorrent.source;
-        map[quality] = (map[quality] || []).concat(record);
+function sortStreamsByVideoQuality(streams) {
+  const qualityMap = streams
+      .reduce((map, stream) => {
+        const quality = stream.filters.quality;
+        map[quality] = (map[quality] || []).concat(stream);
         return map;
       }, {});
   const sortedQualities = Object.keys(qualityMap)
       .sort((a, b) => {
-        const aQuality = a === '4k' ? '2160p' : a === 'undefined' ? undefined : a;
-        const bQuality = b === '4k' ? '2160p' : b === 'undefined' ? undefined : b;
+        const aQuality = a === '4k' ? '2160p' : a;
+        const bQuality = b === '4k' ? '2160p' : b;
         const aResolution = aQuality && aQuality.match(/\d+p/) && parseInt(aQuality, 10);
         const bResolution = bQuality && bQuality.match(/\d+p/) && parseInt(bQuality, 10);
         if (aResolution && bResolution) {

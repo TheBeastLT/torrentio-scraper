@@ -6,10 +6,10 @@ const Providers = [
   'HorribleSubs'
 ];
 
-function manifest(providers, realDebridApiKey) {
+function manifest({ providers, realdebrid } = {}) {
   const providersList = Array.isArray(providers) && providers.map(provider => getProvider(provider)) || Providers;
   const providersDesc = providers && providers.length ? 'Enabled providers -' : 'Currently supports';
-  const realDebridDesc = realDebridApiKey ? ' and RealdDebrid enabled' : '';
+  const realDebridDesc = realdebrid ? ' and RealDebrid enabled' : '';
   return {
     id: 'com.stremio.torrentio.addon',
     version: '0.0.1-beta',

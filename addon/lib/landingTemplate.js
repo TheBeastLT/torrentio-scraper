@@ -174,8 +174,6 @@ button:active {
 const { Providers } = require('./manifest');
 
 function landingTemplate(manifest, providers = [], realDebridApiKey = '') {
-  console.log(providers);
-  console.log(realDebridApiKey);
   const background = manifest.background || 'https://dl.strem.io/addon-background.jpg';
   const logo = manifest.logo || 'https://dl.strem.io/addon-logo.png';
   const contactHTML = manifest.contactEmail ?
@@ -254,7 +252,7 @@ function landingTemplate(manifest, providers = [], realDebridApiKey = '') {
               const providersValue = $('#iProviders').val().join(',');
               const realDebridValue = $('#iRealDebrid').val();
               const providers = providersValue && providersValue.length ? 'providers=' + providersValue : '';
-              const realDebrid = realDebridValue && realDebridValue.length ? 'realrebrid='+realDebridValue : '';
+              const realDebrid = realDebridValue && realDebridValue.length ? 'realdebrid=' + realDebridValue : '';
               const configurationValue = [providers, realDebrid].filter(value => value.length).join('|');
               const configuration = configurationValue && configurationValue.length ? '/' + configurationValue : '';
               installLink.href = 'stremio://' + window.location.host + configuration + '/manifest.json';

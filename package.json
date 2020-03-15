@@ -29,7 +29,7 @@
     "node-schedule": "^1.3.2",
     "nodejs-bing": "^0.1.0",
     "parse-torrent": "^6.1.2",
-    "parse-torrent-title": "git://github.com/TheBeastLT/parse-torrent-title.git#494145d07b1ac842d3edf0ed9c69ca65caf30eef",
+    "parse-torrent-title": "git://github.com/TheBeastLT/parse-torrent-title.git#7c00602bc1c405f5574758eeabb72b133fea81d5",
     "peer-search": "^0.6.x",
     "pg": "^7.8.2",
     "pg-hstore": "^2.3.2",
