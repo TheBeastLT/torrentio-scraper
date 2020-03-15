@@ -72,13 +72,17 @@ async function initMapping() {
       .then((shows) => Promise.all(shows.map((show) => limiter.schedule(() => enrichShow(show)))))
       .then((shows) => shows.reduce((map, show) => (map[show.title] = show, map), showMappings));
 
-  fs.writeFile("./scrapers/horriblesubs/horriblesubs_mapping.json", JSON.stringify(shows), 'utf8', function (err) {
-    if (err) {
-      console.log("An error occurred while writing JSON Object to File.");
-    } else {
-      console.log(`${NAME}: finished kitsu mapping`);
-    }
-  });
+  fs.writeFile(
+      "./scraper/scrapers/horriblesubs/horriblesubs_mapping.json",
+      JSON.stringify(shows), 'utf8',
+      (err) => {
+        if (err) {
+          console.log("An error occurred while writing JSON Object to File.", err);
+        } else {
+          console.log(`${NAME}: finished kitsu mapping`);
+        }
+      }
+  );
 }
 
 async function enrichShow(show) {

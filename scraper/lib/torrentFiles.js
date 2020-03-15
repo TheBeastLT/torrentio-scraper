@@ -16,6 +16,10 @@ async function parseTorrentFiles(torrent) {
   // if (metadata && metadata.type !== torrent.type && torrent.type !== Type.ANIME) {
   //   throw new Error(`Mismatching entry type for ${torrent.name}: ${torrent.type}!=${metadata.type}`);
   // }
+  if (torrent.type === Type.SERIES && metadata && metadata.type === Type.MOVIE) {
+    // it's actually a movie
+    torrent.type = Type.MOVIE;
+  }
 
   if (torrent.type === Type.MOVIE && !parsedTorrentName.seasons || metadata && metadata.type === Type.MOVIE) {
     if (parsedTorrentName.complete) {
@@ -45,6 +49,9 @@ async function parseTorrentFiles(torrent) {
     }];
   }
 
+  // const parsedSeriesTorrentName = seriesParser.parse(torrent.title);
+  // parsedTorrentName.episodes = parsedSeriesTorrentName.episodes;
+  // parsedTorrentName.episode = parsedSeriesTorrentName.episode;
   return getSeriesFiles(torrent, parsedTorrentName)
       .then((files) => files
           .filter((file) => file.size > MIN_SIZE)
