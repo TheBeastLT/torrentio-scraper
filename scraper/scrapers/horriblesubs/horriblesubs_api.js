@@ -1,6 +1,7 @@
 const cheerio = require('cheerio');
 const needle = require('needle');
 const moment = require('moment');
+const Promises = require('../../lib/promises');
 
 const defaultUrl = 'https://horriblesubs.info';
 const defaultTimeout = 10000;
@@ -33,7 +34,7 @@ async function showData(showInfo, config = {}) {
 
 async function getLatestEntries(config = {}) {
   return _getAllLatestEntries(config)
-      .then((entries) => Promise.all(entries.map((entry) => _findLatestEntry(entry, config))))
+      .then((entries) => Promises.sequence(entries.map((entry) => () => _findLatestEntry(entry, config))))
       .then((entries) => entries.filter((entry) => entry))
 }
 
