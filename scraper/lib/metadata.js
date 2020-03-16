@@ -113,7 +113,7 @@ async function getImdbId(info, type) {
               .find(result => result.includes('imdb.com/title/')))
           .then(result => result && result.match(/imdb\.com\/title\/(tt\d+)/))
           .then(match => match && match[1])))
-      .then(imdbId => 'tt' + imdbId.replace(/tt0*([1-9][0-9]*)$/, '$1').padStart(7, '0'));
+      .then(imdbId => imdbId && 'tt' + imdbId.replace(/tt0*([1-9][0-9]*)$/, '$1').padStart(7, '0'));
 }
 
 async function getKitsuId(info) {
