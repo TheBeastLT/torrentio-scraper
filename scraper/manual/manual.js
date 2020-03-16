@@ -190,7 +190,7 @@ async function findAllFiles() {
 //addMissingEpisodes().then(() => console.log('Finished'));
 //findAllFiles().then(() => console.log('Finished'));
 //updateMovieCollections().then(() => console.log('Finished'));
-reapplyEpisodeDecomposing('aec7bcac457ad68924e7119f859cf6fa3878f9f5', false).then(() => console.log('Finished'));
+reapplyEpisodeDecomposing('0b6c0f0692bdb151efb87e3de90e46e3b177444e', false).then(() => console.log('Finished'));
 //reapplySeriesSeasonsSavedAsMovies().then(() => console.log('Finished'));
-// reapplyDecomposingToTorrentsOnRegex('.*Boku no Hero Academia.*').then(() => console.log('Finished'));
+//reapplyDecomposingToTorrentsOnRegex('.*Boku no Hero Academia.*').then(() => console.log('Finished'));
 //reapplyManualHashes().then(() => console.log('Finished'));

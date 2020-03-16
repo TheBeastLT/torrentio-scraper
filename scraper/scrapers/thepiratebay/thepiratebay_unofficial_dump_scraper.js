@@ -12,7 +12,7 @@ const CSV_FILE_PATH = '/tmp/tpb.csv';
 const limiter = new Bottleneck({ maxConcurrent: 40 });
 
 async function scrape() {
-  // await processTorrentRecord({ torrentId: 35313644, category: 'Video' });
+  // await processTorrentRecord({ torrentId: 26877339, category: 'Video' });
   console.log(`starting to scrape tpb dump...`);
   //const checkPoint = moment('2013-06-16 00:00:00', 'YYYY-MMM-DD HH:mm:ss').toDate();
   const checkPoint = 4115000;

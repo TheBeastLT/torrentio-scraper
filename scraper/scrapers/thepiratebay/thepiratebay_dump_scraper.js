@@ -7,7 +7,6 @@ const fs = require('fs');
 const thepiratebay = require('./thepiratebay_api.js');
 const bing = require('nodejs-bing');
 const { Type } = require('../../lib/types');
-const repository = require('../../lib/repository');
 const { escapeHTML } = require('../../lib/metadata');
 const { createTorrentEntry, createSkipTorrentEntry, getStoredTorrentEntry } = require('../../lib/torrentEntries');
 
@@ -20,6 +19,7 @@ async function scrape() {
   const lastDump = { updatedAt: 2147000000 };
   //const checkPoint = moment('2016-06-17 00:00:00', 'YYYY-MMM-DD HH:mm:ss').toDate();
   //const lastDump = await thepiratebay.dumps().then((dumps) => dumps.sort((a, b) => b.updatedAt - a.updatedAt)[0]);
+  const checkPoint = 611000;
 
   if (lastDump) {
     console.log(`starting to scrape tpb dump: ${JSON.stringify(lastDump)}`);
@@ -34,6 +34,11 @@ async function scrape() {
       if (entriesProcessed % 1000 === 0) {
         console.log(`Processed ${entriesProcessed} entries`);
       }
+      if (entriesProcessed <= checkPoint) {
+        entriesProcessed++;
+        return;
+      }
+
       const row = line.match(/(?<=^|;)(".*"|[^;]+)(?=;|$)/g);
       if (row.length !== 4) {
         console.log(`Invalid row: ${line}`);

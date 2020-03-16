@@ -13,12 +13,14 @@ const thepiratebayDumpScraper = require('./scrapers/thepiratebay/thepiratebay_du
 const thepiratebayUnofficialDumpScraper = require('./scrapers/thepiratebay/thepiratebay_unofficial_dump_scraper');
 
 const PROVIDERS = [
-  // horribleSubsScraper,
-  // rarbgScraper,
+  horribleSubsScraper,
+  rarbgScraper,
   thepiratebayScraper,
   kickassScraper,
   leetxScraper
   // rarbgDumpScraper
+  // thepiratebayDumpScraper
+  // thepiratebayUnofficialDumpScraper
 ];
 const SCRAPE_CRON = process.env.SCRAPE_CRON || '* * 0/4 * * *';
 

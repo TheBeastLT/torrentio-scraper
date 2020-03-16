@@ -7,7 +7,7 @@ const Promises = require('../../lib/promises');
 const defaultProxies = [
   'https://katcr.co'
 ];
-const defaultTimeout = 10000;
+const defaultTimeout = 30000;
 
 const Categories = {
   MOVIE: 'movies',

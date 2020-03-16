@@ -5,10 +5,12 @@ const decode = require('magnet-uri');
 const Promises = require('../../lib/promises');
 
 const defaultProxies = [
-  'https://thepiratebay.org',
+  // 'https://thepiratebay.org',
   'https://proxybay.pro',
   'https://ukpiratebayproxy.com',
-  'https://thepiratebayproxy.info'
+  'https://thepiratebayproxy.info',
+  'https://mypiratebay.co',
+  'https://thepiratebay.asia',
 ];
 const dumpUrl = '/static/dump/csv/';
 const defaultTimeout = 10000;
