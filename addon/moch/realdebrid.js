@@ -85,13 +85,17 @@ async function _unrestrictLink(RD, link) {
     return Promise.reject("No available links found");
   }
   return RD._post('unrestrict/link', { form: { link }, proxy: getProxy() })
-      .then(unrestrictedLink => RD.streaming.transcode(unrestrictedLink.id))
-      .then(transcodedLink => {
-        const url = transcodedLink.apple && transcodedLink.apple.full
-            || transcodedLink[Object.keys(transcodedLink)[0]].full;
-        console.log(`Unrestricted ${link} to ${url}`);
-        return url;
+      .then(unrestrictedLink => {
+        console.log(`Unrestricted ${link} to ${unrestrictedLink.download}`);
+        return Promise.resolve(unrestrictedLink.download);
       });
+  // .then(unrestrictedLink => RD.streaming.transcode(unrestrictedLink.id))
+  // .then(transcodedLink => {
+  //   const url = transcodedLink.apple && transcodedLink.apple.full
+  //       || transcodedLink[Object.keys(transcodedLink)[0]].full;
+  //   console.log(`Unrestricted ${link} to ${url}`);
+  //   return url;
+  // });
 }
 
 function getCachedFileIds(fileIndex, hosterResults) {
