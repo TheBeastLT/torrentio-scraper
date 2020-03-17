@@ -1,23 +1,23 @@
 const needle = require('needle');
 const { encode } = require('magnet-uri');
 const RealDebridClient = require('real-debrid-api');
+const isVideo = require('../lib/video');
 const { cacheWrapUnrestricted } = require('../lib/cache');
 
-const REAL_DEBRID_API_URL = 'https://api.real-debrid.com/rest/1.0';
-const REAL_DEBRID_UNRESTRICTER_URL = 'http://localhost:7050';
+const ADDON_HOST = process.env.TORRENTIO_ADDON_HOST || 'http://localhost:7050';
 
 async function applyMoch(streams, token) {
   const streamMapping = streams.reduce((map, stream) => (map[stream.infoHash] = stream, map), {});
   const hashes = streams.map(stream => stream.infoHash);
-  const available = await _instantAvailability(hashes, token).catch(() => undefined);
+  const available = await _instantAvailability(hashes, token);
   if (available) {
     Object.entries(available)
-        .filter(([key, value]) => isCachedFileAvailable(streamMapping[key.toLowerCase()], value))
+        .filter(([key, value]) => getCachedFileIds(streamMapping[key.toLowerCase()].fileIdx, value).length)
         .map(([key]) => key.toLowerCase())
         .map(cachedInfoHash => streams.find(stream => stream.infoHash === cachedInfoHash))
         .forEach(stream => {
           stream.name = `[RD Cached]\n${stream.name}`;
-          stream.url = `${REAL_DEBRID_UNRESTRICTER_URL}/realdebrid/${token}/${stream.infoHash}/${stream.fileIdx}`;
+          stream.url = `${ADDON_HOST}/realdebrid/${token}/${stream.infoHash}/${stream.fileIdx}`;
           delete stream.infoHash;
           delete stream.fileIndex;
         })
@@ -73,23 +73,29 @@ async function _createOrFindTorrentId(RD, infoHash) {
       });
 }
 
-function isCachedFileAvailable(stream, hosterResults) {
+function getCachedFileIds(fileIndex, hosterResults) {
   if (!hosterResults || Array.isArray(hosterResults)) {
-    return false;
+    return [];
   }
-  return !!Object.values(hosterResults)
+  // if not all cached files are videos, then the torrent will be zipped to a rar
+  const cachedTorrent = Object.values(hosterResults)
       .reduce((a, b) => a.concat(b), [])
-      .filter(cached => isNaN(stream.fileIdx) && Object.keys(cached).length || cached[stream.fileIdx + 1])
-      .length;
+      .filter(cached => isNaN(fileIndex) && Object.keys(cached).length || cached[fileIndex + 1])
+      .find(cached => Object.values(cached).every(file => isVideo(file.filename)));
+  return cachedTorrent && Object.keys(cachedTorrent) || [];
 }
 
 async function _instantAvailability(hashes, token) {
-  const endpoint = `/torrents/instantAvailability/${hashes.join('/')}`;
-  return _request(endpoint, { token });
+  const endpoint = `torrents/instantAvailability/${hashes.join('/')}`;
+  return _request(endpoint, { token })
+      .catch(error => {
+        console.warn('Failed cached torrent availability request: ', error)
+        return undefined;
+      });
 }
 
 async function _request(endpoint, config) {
-  const url = REAL_DEBRID_API_URL + endpoint;
+  const url = new RealDebridClient().base_url + endpoint;
   const method = config.method || 'get';
   const headers = { 'Authorization': 'Bearer ' + config.token };
 

@@ -21,7 +21,8 @@
   },
   "env": {
     "MONGODB_URI": "@mongodb-uri",
-    "DATABASE_URI": "@database-uri"
+    "DATABASE_URI": "@database-uri",
+    "TORRENTIO_ADDON_HOST": "@torrentio-addon-host"
   }
 }
 

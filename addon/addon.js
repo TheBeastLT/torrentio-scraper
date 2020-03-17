@@ -131,7 +131,11 @@ function applyMochs(streams, config) {
   return Object.keys(config)
       .filter(configKey => MOCHS[configKey])
       .reduce(async (streams, moch) => {
-        return await MOCHS[moch].applyMoch(streams, config[moch]).catch(() => streams);
+        return await MOCHS[moch].applyMoch(streams, config[moch])
+            .catch(error => {
+              console.warn(error);
+              return streams;
+            });
       }, streams);
 }
 
