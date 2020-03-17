@@ -69,13 +69,16 @@ router.get('/:configuration/:resource/:type/:id.json', (req, res, next) => {
       });
 });
 
-router.get('/realdebrid/:apiKey/:infoHash/:fileIndex?', (req, res) => {
+router.get('/realdebrid/:apiKey/:infoHash/:fileIndex?.json', (req, res) => {
   const { apiKey, infoHash, fileIndex } = req.params;
   console.time(infoHash);
   realDebrid.unrestrict(apiKey, infoHash, isNaN(fileIndex) ? undefined : parseInt(fileIndex))
       .then(url => {
         console.timeEnd(infoHash);
-        res.writeHead(301, { Location: url });
+        res.writeHead(301, {
+          'Location': url,
+          'Cache-Control': 'max-age=7200, public'
+        });
         res.end();
       })
       .catch(error => {
