@@ -65,7 +65,7 @@ async function movieRecordsHandler(args) {
   if (args.id.match(/tt\d+/)) {
     return repository.getImdbIdMovieEntries(args.id);
   } else if (args.id.match(/kitsu:\d+/i)) {
-    return repository.getKitsuIdMovieEntries(args.id.replace('kitsu:', ''), episode);
+    return repository.getKitsuIdMovieEntries(args.id.replace('kitsu:', ''));
   }
   return Promise.reject(`Unsupported id type: ${args.id}`);
 }
