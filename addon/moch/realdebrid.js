@@ -44,7 +44,8 @@ async function _unrestrict(apiKey, infoHash, fileIndex) {
   console.log(`Retrieved torrentId: ${torrentId}`);
   if (torrentId) {
     const info = await RD.torrents.info(torrentId);
-    const targetFile = info.files.find(file => file.id === fileIndex + 1);
+    const targetFile = info.files.find(file => file.id === fileIndex + 1)
+        || info.files.filter(file => file.selected).sort((a, b) => b.bytes - a.bytes)[0];
     const selectedFiles = info.files.filter(file => file.selected);
     const fileLink = info.links.length === 1
         ? info.links[0]
