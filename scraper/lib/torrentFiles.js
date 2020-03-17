@@ -9,7 +9,7 @@ const MIN_SIZE = 10 * 1024 * 1024; // 10 MB
 
 async function parseTorrentFiles(torrent) {
   const parsedTorrentName = parse(torrent.title);
-  parsedTorrentName.hasMovies = parsedTorrentName.complete || !!torrent.title.match(/movies?(?:\W|$)/);
+  parsedTorrentName.hasMovies = parsedTorrentName.complete || !!torrent.title.match(/movies?(?:\W|$)/i);
   const metadata = await getMetadata(torrent.kitsuId || torrent.imdbId, torrent.type || Type.MOVIE)
       .catch(() => undefined);
 
