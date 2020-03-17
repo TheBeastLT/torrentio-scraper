@@ -15,12 +15,16 @@ async function applyMoch(streams, apiKey) {
   const available = await _instantAvailability(RD, hashes);
   if (available) {
     Object.entries(available)
-        .filter(([key, value]) => getCachedFileIds(streamMapping[key.toLowerCase()].fileIdx, value).length)
-        .map(([key]) => key.toLowerCase())
-        .map(cachedInfoHash => streamMapping[cachedInfoHash])
-        .forEach(stream => {
+        .map(([key, value]) => ({
+          cachedInfoHash: key.toLowerCase(),
+          cachedFileIds: getCachedFileIds(streamMapping[key.toLowerCase()].fileIdx, value)
+        }))
+        .filter(cachedEntry => cachedEntry.cachedFileIds && cachedEntry.cachedFileIds.length)
+        .forEach(cachedEntry => {
+          const stream = streamMapping[cachedEntry.cachedInfoHash];
+          const cachedIds = cachedEntry.cachedFileIds.join(',');
           stream.name = `[RD Cached]\n${stream.name}`;
-          stream.url = `${ADDON_HOST}/realdebrid/${apiKey}/${stream.infoHash}/${stream.fileIdx}`;
+          stream.url = `${ADDON_HOST}/realdebrid/${apiKey}/${stream.infoHash}/${cachedIds}/${stream.fileIdx}`;
           delete stream.infoHash;
           delete stream.fileIndex;
         })
@@ -29,18 +33,18 @@ async function applyMoch(streams, apiKey) {
   return streams;
 }
 
-async function unrestrict(apiKey, infoHash, fileIndex) {
-  if (!apiKey || !infoHash) {
+async function unrestrict(apiKey, infoHash, cachedFileIds, fileIndex) {
+  if (!apiKey || !infoHash || !cachedFileIds || !cachedFileIds.length) {
     return Promise.reject("No valid parameters passed");
   }
   const key = `${apiKey}_${infoHash}_${fileIndex}`;
-  return cacheWrapUnrestricted(key, () => _unrestrict(apiKey, infoHash, fileIndex))
+  return cacheWrapUnrestricted(key, () => _unrestrict(apiKey, infoHash, cachedFileIds, fileIndex))
 }
 
-async function _unrestrict(apiKey, infoHash, fileIndex) {
+async function _unrestrict(apiKey, infoHash, cachedFileIds, fileIndex) {
   console.log(`Unrestricting ${infoHash} [${fileIndex}]`);
   const RD = new RealDebridClient(apiKey);
-  const torrentId = await _createOrFindTorrentId(RD, infoHash);
+  const torrentId = await _createOrFindTorrentId(RD, infoHash, cachedFileIds);
   console.log(`Retrieved torrentId: ${torrentId}`);
   if (torrentId) {
     const info = await RD.torrents.info(torrentId);
@@ -55,12 +59,12 @@ async function _unrestrict(apiKey, infoHash, fileIndex) {
   return Promise.reject("Failed adding torrent");
 }
 
-async function _createOrFindTorrentId(RD, infoHash) {
+async function _createOrFindTorrentId(RD, infoHash, cachedFileIds) {
   return RD.torrents.get(0, 1)
       .then(torrents => torrents.find(torrent => torrent.hash.toLowerCase() === infoHash))
       .then(torrent => torrent && torrent.id || Promise.reject('No recent torrent found'))
       .catch((error) => RD.torrents.addMagnet(encode({ infoHash }))
-          .then(response => RD.torrents.selectFiles(response.id)
+          .then(response => RD.torrents.selectFiles(response.id, cachedFileIds)
               .then((() => response.id))))
       .catch(error => {
         console.warn('Failed RealDebrid torrent retrieval', error);
@@ -81,9 +85,12 @@ async function _unrestrictLink(RD, link) {
     return Promise.reject("No available links found");
   }
   return RD._post('unrestrict/link', { form: { link }, proxy: getProxy() })
-      .then(unrestrictedLink => {
-        console.log(`Unrestricted ${link} to ${unrestrictedLink.download}`);
-        return Promise.resolve(unrestrictedLink.download);
+      .then(unrestrictedLink => RD.streaming.transcode(unrestrictedLink.id))
+      .then(transcodedLink => {
+        const url = transcodedLink.apple && transcodedLink.apple.full
+            || transcodedLink[Object.keys(transcodedLink)[0]].full;
+        console.log(`Unrestricted ${link} to ${url}`);
+        return url;
       });
 }
 
@@ -92,11 +99,13 @@ function getCachedFileIds(fileIndex, hosterResults) {
     return [];
   }
   // if not all cached files are videos, then the torrent will be zipped to a rar
-  const cachedTorrent = Object.values(hosterResults)
+  const cachedTorrents = Object.values(hosterResults)
       .reduce((a, b) => a.concat(b), [])
-      .filter(cached => isNaN(fileIndex) && Object.keys(cached).length || cached[fileIndex + 1])
-      .find(cached => Object.values(cached).every(file => isVideo(file.filename)));
-  return cachedTorrent && Object.keys(cachedTorrent) || [];
+      .filter(cached => !Number.isInteger(fileIndex) && Object.keys(cached).length || cached[fileIndex + 1])
+      .filter(cached => Object.values(cached).every(file => isVideo(file.filename)))
+      .map(cached => Object.keys(cached))
+      .sort((a, b) => b.length - a.length);
+  return cachedTorrents.length && cachedTorrents[0] || [];
 }
 
 function getProxy() {
