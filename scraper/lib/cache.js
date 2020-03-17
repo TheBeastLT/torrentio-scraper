@@ -23,6 +23,7 @@ function initiateTorrentFilesCache() {
       uri: MONGO_URI,
       options: {
         collection: 'cacheManager',
+        useUnifiedTopology: true,
       },
       ttl: GLOBAL_TTL,
       ignoreCacheErrors: true
@@ -37,6 +38,7 @@ function initiateRemoteCache() {
       uri: MONGO_URI,
       options: {
         collection: 'torrentio_scraper_collection',
+        useUnifiedTopology: true,
       },
       ttl: GLOBAL_TTL,
       ignoreCacheErrors: true
