@@ -11,23 +11,18 @@ const PROXY_PASSWORD = process.env.PROXY_PASSWORD;
 async function applyMoch(streams, apiKey) {
   const RD = new RealDebridClient(apiKey);
   const hashes = streams.map(stream => stream.infoHash);
-  const streamMapping = streams.reduce((map, stream) => (map[stream.infoHash] = stream, map), {});
   const available = await _instantAvailability(RD, hashes);
   if (available) {
-    Object.entries(available)
-        .map(([key, value]) => ({
-          cachedInfoHash: key.toLowerCase(),
-          cachedFileIds: getCachedFileIds(streamMapping[key.toLowerCase()].fileIdx, value)
-        }))
-        .filter(cachedEntry => cachedEntry.cachedFileIds && cachedEntry.cachedFileIds.length)
-        .forEach(cachedEntry => {
-          const stream = streamMapping[cachedEntry.cachedInfoHash];
-          const cachedIds = cachedEntry.cachedFileIds.join(',');
-          stream.name = `[RD Cached]\n${stream.name}`;
-          stream.url = `${ADDON_HOST}/realdebrid/${apiKey}/${stream.infoHash}/${cachedIds}/${stream.fileIdx}`;
-          delete stream.infoHash;
-          delete stream.fileIndex;
-        })
+    streams.forEach(stream => {
+      const cachedEntry = available[stream.infoHash];
+      const cachedIds = getCachedFileIds(stream.fileIdx, cachedEntry);
+      if (cachedIds && cachedIds.length) {
+        stream.name = `[RD Cached]\n${stream.name}`;
+        stream.url = `${ADDON_HOST}/realdebrid/${apiKey}/${stream.infoHash}/${cachedIds.join(',')}/${stream.fileIdx}`;
+        delete stream.infoHash;
+        delete stream.fileIndex;
+      }
+    });
   }
 
   return streams;
