@@ -5,6 +5,7 @@ const GLOBAL_KEY_PREFIX = 'torrentio-addon';
 const STREAM_KEY_PREFIX = `${GLOBAL_KEY_PREFIX}|stream`;
 const REALDEBRID_KEY_PREFIX = `${GLOBAL_KEY_PREFIX}|realdebrid`;
 
+const REDIRECT_TTL = process.env.STREAM_EMPTY_TTL || 2 * 60; // 2 hours
 const STREAM_TTL = process.env.STREAM_TTL || 4 * 60 * 60; // 4 hours
 const STREAM_EMPTY_TTL = process.env.STREAM_EMPTY_TTL || 30 * 60; // 30 minutes
 // When the streams are empty we want to cache it for less time in case of timeouts or failures
@@ -58,7 +59,7 @@ function cacheWrapStream(id, method) {
 }
 
 function cacheWrapUnrestricted(id, method) {
-  return cacheWrap(memoryCache, `${REALDEBRID_KEY_PREFIX}:${id}`, method, { ttl: 60 });
+  return cacheWrap(memoryCache, `${REALDEBRID_KEY_PREFIX}:${id}`, method, { ttl: REDIRECT_TTL });
 }
 
 module.exports = { cacheWrapStream, cacheWrapUnrestricted };
