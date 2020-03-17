@@ -22,7 +22,7 @@ const PROVIDERS = [
   // thepiratebayDumpScraper
   // thepiratebayUnofficialDumpScraper
 ];
-const SCRAPE_CRON = process.env.SCRAPE_CRON || '* * 0/4 * * *';
+const SCRAPE_CRON = process.env.SCRAPE_CRON || '0 0 */4 ? * *';
 
 async function scrape() {
   return PROVIDERS
