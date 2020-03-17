@@ -75,11 +75,13 @@ router.get('/realdebrid/:apiKey/:infoHash/:fileIndex?', (req, res) => {
   realDebrid.unrestrict(apiKey, infoHash, isNaN(fileIndex) ? undefined : parseInt(fileIndex))
       .then(url => {
         console.timeEnd(infoHash);
-        res.redirect(301, url)
+        res.writeHead(301, { Location: url });
+        res.end();
       })
       .catch(error => {
         console.log(error);
-        res.sendStatus(404);
+        res.statusCode = 404;
+        res.end();
       });
 });
 

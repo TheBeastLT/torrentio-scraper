@@ -22,7 +22,10 @@
   "env": {
     "MONGODB_URI": "@mongodb-uri",
     "DATABASE_URI": "@database-uri",
-    "TORRENTIO_ADDON_HOST": "@torrentio-addon-host"
+    "ADDON_HOST": "@torrentio-addon-host",
+    "PROXY_HOST": "@torrentio-proxy-host",
+    "PROXY_USERNAME": "@torrentio-proxy-username",
+    "PROXY_PASSWORD": "@torrentio-proxy-password"
   }
 }
 

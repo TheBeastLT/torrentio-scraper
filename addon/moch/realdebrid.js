@@ -1,23 +1,26 @@
-const needle = require('needle');
 const { encode } = require('magnet-uri');
 const RealDebridClient = require('real-debrid-api');
 const isVideo = require('../lib/video');
 const { cacheWrapUnrestricted } = require('../lib/cache');
 
-const ADDON_HOST = process.env.TORRENTIO_ADDON_HOST || 'http://localhost:7050';
+const ADDON_HOST = process.env.ADDON_HOST || 'http://localhost:7050';
+const PROXY_HOST = process.env.PROXY_HOST;
+const PROXY_USERNAME = process.env.PROXY_USERNAME;
+const PROXY_PASSWORD = process.env.PROXY_PASSWORD;
 
-async function applyMoch(streams, token) {
-  const streamMapping = streams.reduce((map, stream) => (map[stream.infoHash] = stream, map), {});
+async function applyMoch(streams, apiKey) {
+  const RD = new RealDebridClient(apiKey);
   const hashes = streams.map(stream => stream.infoHash);
-  const available = await _instantAvailability(hashes, token);
+  const streamMapping = streams.reduce((map, stream) => (map[stream.infoHash] = stream, map), {});
+  const available = await _instantAvailability(RD, hashes);
   if (available) {
     Object.entries(available)
         .filter(([key, value]) => getCachedFileIds(streamMapping[key.toLowerCase()].fileIdx, value).length)
         .map(([key]) => key.toLowerCase())
-        .map(cachedInfoHash => streams.find(stream => stream.infoHash === cachedInfoHash))
+        .map(cachedInfoHash => streamMapping[cachedInfoHash])
         .forEach(stream => {
           stream.name = `[RD Cached]\n${stream.name}`;
-          stream.url = `${ADDON_HOST}/realdebrid/${token}/${stream.infoHash}/${stream.fileIdx}`;
+          stream.url = `${ADDON_HOST}/realdebrid/${apiKey}/${stream.infoHash}/${stream.fileIdx}`;
           delete stream.infoHash;
           delete stream.fileIndex;
         })
@@ -35,9 +38,6 @@ async function unrestrict(apiKey, infoHash, fileIndex) {
 }
 
 async function _unrestrict(apiKey, infoHash, fileIndex) {
-  if (!apiKey || !infoHash) {
-    return Promise.reject("No valid parameters passed");
-  }
   console.log(`Unrestricting ${infoHash} [${fileIndex}]`);
   const RD = new RealDebridClient(apiKey);
   const torrentId = await _createOrFindTorrentId(RD, infoHash);
@@ -49,13 +49,7 @@ async function _unrestrict(apiKey, infoHash, fileIndex) {
     const fileLink = info.links.length === 1
         ? info.links[0]
         : info.links[selectedFiles.indexOf(downloadFile)];
-    const unrestrictedLink = fileLink && await RD.unrestrict.link(fileLink);
-
-    if (unrestrictedLink) {
-      console.log(`Unrestricted ${infoHash} [${fileIndex}] to ${unrestrictedLink.download}`);
-      return Promise.resolve(unrestrictedLink.download);
-    }
-    return Promise.reject("No available links found");
+    return _unrestrictLink(RD, fileLink);
   }
   return Promise.reject("Failed adding torrent");
 }
@@ -73,6 +67,25 @@ async function _createOrFindTorrentId(RD, infoHash) {
       });
 }
 
+async function _instantAvailability(RD, hashes) {
+  return RD._get(`torrents/instantAvailability/${hashes.join('/')}`)
+      .catch(error => {
+        console.warn('Failed cached torrent availability request: ', error);
+        return undefined;
+      });
+}
+
+async function _unrestrictLink(RD, link) {
+  if (!link || !link.length) {
+    return Promise.reject("No available links found");
+  }
+  return RD._post('unrestrict/link', { form: { link }, proxy: getProxy() })
+      .then(unrestrictedLink => {
+        console.log(`Unrestricted ${link} to ${unrestrictedLink.download}`);
+        return Promise.resolve(unrestrictedLink.download);
+      });
+}
+
 function getCachedFileIds(fileIndex, hosterResults) {
   if (!hosterResults || Array.isArray(hosterResults)) {
     return [];
@@ -85,27 +98,11 @@ function getCachedFileIds(fileIndex, hosterResults) {
   return cachedTorrent && Object.keys(cachedTorrent) || [];
 }
 
-async function _instantAvailability(hashes, token) {
-  const endpoint = `torrents/instantAvailability/${hashes.join('/')}`;
-  return _request(endpoint, { token })
-      .catch(error => {
-        console.warn('Failed cached torrent availability request: ', error)
-        return undefined;
-      });
-}
-
-async function _request(endpoint, config) {
-  const url = new RealDebridClient().base_url + endpoint;
-  const method = config.method || 'get';
-  const headers = { 'Authorization': 'Bearer ' + config.token };
-
-  return needle(method, url, { headers })
-      .then(response => {
-        if (response.body && typeof response.body === 'object') {
-          return response.body;
-        }
-        return Promise.reject('No response body');
-      })
+function getProxy() {
+  if (PROXY_HOST && PROXY_USERNAME && PROXY_PASSWORD) {
+    return `http://${PROXY_USERNAME}:${PROXY_PASSWORD}@${PROXY_HOST}`;
+  }
+  return undefined;
 }
 
 module.exports = { applyMoch, unrestrict };
