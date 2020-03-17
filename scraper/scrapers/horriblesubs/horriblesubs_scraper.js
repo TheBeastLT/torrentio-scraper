@@ -120,7 +120,7 @@ async function _parseShowData(showData) {
   const kitsuIdsMapping = Array.isArray(kitsuId) && await Promise.all(kitsuId.map(kitsuId => getMetadata(kitsuId)))
       .then((metas) => metas.reduce((map, meta) => {
         const epOffset = Object.keys(map).length;
-        [...Array(meta.totalCount).keys()]
+        [...Array(meta.totalCount || 1).keys()]
             .map(ep => ep + 1)
             .forEach(ep => map[ep + epOffset] = { kitsuId: meta.kitsuId, episode: ep, title: meta.title });
         return map;

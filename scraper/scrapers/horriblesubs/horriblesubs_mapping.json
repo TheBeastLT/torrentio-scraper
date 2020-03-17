@@ -5393,5 +5393,16 @@
   "Yatogame-chan Kansatsu Nikki S2": {
     "showId": "1353",
     "kitsu_id": "42398"
+  },
+  "K - Seven Stories": {
+    "showId": "1381",
+    "kitsu_id": [
+      "12116",
+      "41770",
+      "41772",
+      "41767",
+      "41768",
+      "41771"
+    ]
   }
 }
