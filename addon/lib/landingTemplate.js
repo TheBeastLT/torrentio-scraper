@@ -227,7 +227,7 @@ function landingTemplate(manifest, providers = [], realDebridApiKey = '') {
             ${providersHTML}
          </select>
          
-         <label class="label" for="iRealDebrid">RealDebrid API Key:</label>
+         <label class="label" for="iRealDebrid">(Experimental) RealDebrid API Key:</label>
          <input type="text" id="iRealDebrid" onchange="generateInstallLink()" class="input">
          
          <div class="separator"></div>

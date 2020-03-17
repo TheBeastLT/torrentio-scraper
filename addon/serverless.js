@@ -4,8 +4,9 @@ const addonInterface = require('./addon');
 const { manifest } = require('./lib/manifest');
 const parseConfiguration = require('./lib/configuration');
 const landingTemplate = require('./lib/landingTemplate');
-const router = getRouter(addonInterface);
+const realDebrid = require('./moch/realdebrid');
 
+const router = getRouter(addonInterface);
 const limiter = rateLimit({
   windowMs: 10 * 1000, // 10 seconds
   max: 10, // limit each IP to 10 requests per windowMs
@@ -65,6 +66,20 @@ router.get('/:configuration/:resource/:type/:id.json', (req, res, next) => {
           res.writeHead(500);
           res.end(JSON.stringify({ err: 'handler error' }));
         }
+      });
+});
+
+router.get('/realdebrid/:apiKey/:infoHash/:fileIndex?', (req, res) => {
+  const { apiKey, infoHash, fileIndex } = req.params;
+  console.time(infoHash);
+  realDebrid.unrestrict(apiKey, infoHash, isNaN(fileIndex) ? undefined : parseInt(fileIndex))
+      .then(url => {
+        console.timeEnd(infoHash);
+        res.redirect(301, url)
+      })
+      .catch(error => {
+        console.log(error);
+        res.sendStatus(404);
       });
 });
 

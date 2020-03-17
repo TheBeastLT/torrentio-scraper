@@ -3,11 +3,16 @@ const { manifest } = require('./lib/manifest');
 const { cacheWrapStream } = require('./lib/cache');
 const { toStreamInfo, sanitizeStreamInfo } = require('./lib/streamInfo');
 const repository = require('./lib/repository');
+const realdebrid = require('./moch/realdebrid');
 
 const CACHE_MAX_AGE = process.env.CACHE_MAX_AGE || 4 * 60 * 60; // 4 hours in seconds
 const CACHE_MAX_AGE_EMPTY = 30 * 60; // 30 minutes
 const STALE_REVALIDATE_AGE = 4 * 60 * 60; // 4 hours
 const STALE_ERROR_AGE = 7 * 24 * 60 * 60; // 7 days
+
+const MOCHS = {
+  'realdebrid': realdebrid
+};
 
 const builder = new addonBuilder(manifest());
 
@@ -26,6 +31,7 @@ builder.defineStreamHandler((args) => {
       .then(streams => filterStreamByProvider(streams, args.extra.providers))
       .then(streams => filterStreamsBySeeders(streams))
       .then(streams => sortStreamsByVideoQuality(streams))
+      .then(streams => applyMochs(streams, args.extra))
       .then(streams => streams.map(stream => sanitizeStreamInfo(stream)))
       .then(streams => ({
         streams: streams,
@@ -115,6 +121,18 @@ function sortStreamsByVideoQuality(streams) {
   return sortedQualities
       .map(quality => qualityMap[quality])
       .reduce((a, b) => a.concat(b), []);
+}
+
+function applyMochs(streams, config) {
+  if (!streams || !streams.length) {
+    return streams;
+  }
+
+  return Object.keys(config)
+      .filter(configKey => MOCHS[configKey])
+      .reduce(async (streams, moch) => {
+        return await MOCHS[moch].applyMoch(streams, config[moch]).catch(() => streams);
+      }, streams);
 }
 
 module.exports = builder.getInterface();
