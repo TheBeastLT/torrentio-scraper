@@ -4,11 +4,10 @@ const parseTorrent = require('parse-torrent');
 const async = require('async');
 const decode = require('magnet-uri');
 const { retrieveTorrentFiles } = require('./cache');
+const isVideo = require('./video');
 
 const MAX_PEER_CONNECTIONS = process.env.MAX_PEER_CONNECTIONS || 20;
 const SEEDS_CHECK_TIMEOUT = process.env.SEEDS_CHECK_TIMEOUT || 10 * 1000; // 10 secs
-const EXTENSIONS = ["3g2", "3gp", "avi", "flv", "mkv", "mov", "mp2", "mp4", "mpe", "mpeg", "mpg", "mpv", "webm", "wmv",
-  "ogm"];
 
 module.exports.updateCurrentSeeders = function (torrent) {
   return new Promise((resolve) => {
@@ -110,10 +109,7 @@ async function filesFromTorrentStream(torrent) {
 }
 
 function filterVideos(files) {
-  return files.filter((file) => {
-    const match = file.path.match(/\.(\w{2,4})$/);
-    return match && EXTENSIONS.includes(match[1].toLowerCase());
-  });
+  return files.filter((file) => isVideo(file.path));
 }
 
 function filterSamples(files) {
