@@ -71,10 +71,10 @@ router.get('/:configuration/:resource/:type/:id.json', (req, res, next) => {
 
 router.get('/realdebrid/:apiKey/:infoHash/:cachedFileIds/:fileIndex?', (req, res) => {
   const { apiKey, infoHash, cachedFileIds, fileIndex } = req.params;
-  console.time(infoHash);
+  console.log(`Unrestricting ${infoHash} [${fileIndex}]`);
   realDebrid.unrestrict(apiKey, infoHash, cachedFileIds, isNaN(fileIndex) ? undefined : parseInt(fileIndex))
       .then(url => {
-        console.timeEnd(infoHash);
+        console.log(`Unrestricted ${infoHash} [${fileIndex}] to ${url}`);
         res.writeHead(301, { Location: url });
         res.end();
       })
