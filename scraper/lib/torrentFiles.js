@@ -22,7 +22,7 @@ async function parseTorrentFiles(torrent) {
   }
 
   if (torrent.type === Type.MOVIE && !parsedTorrentName.seasons || metadata && metadata.type === Type.MOVIE) {
-    if (parsedTorrentName.complete) {
+    if (parsedTorrentName.complete || typeof parsedTorrentName.year === 'string') {
       return torrentFiles(torrent)
           .then(files => files.filter(file => file.size > MIN_SIZE))
           .then(files => Promise.all(files

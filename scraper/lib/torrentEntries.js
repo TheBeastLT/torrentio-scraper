@@ -28,7 +28,7 @@ async function createTorrentEntry(torrent) {
         .catch(() => undefined);
   }
 
-  if (!torrent.imdbId && !torrent.kitsuId && !titleInfo.complete) {
+  if (!torrent.imdbId && !torrent.kitsuId && !titleInfo.complete && typeof titleInfo.year !== 'string') {
     console.log(`imdbId or kitsuId not found: ${torrent.title}`);
     repository.createFailedImdbTorrent(torrent);
     return;
