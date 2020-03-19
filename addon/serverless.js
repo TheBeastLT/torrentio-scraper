@@ -22,7 +22,7 @@ router.get('/', (_, res) => {
 
 router.get('/:configuration', (req, res) => {
   const configValues = parseConfiguration(req.params.configuration);
-  const landingHTML = landingTemplate(manifest(configValues), configValues.providers, configValues.realdebrid);
+  const landingHTML = landingTemplate(manifest(configValues), configValues);
   res.setHeader('content-type', 'text/html');
   res.end(landingHTML);
 });

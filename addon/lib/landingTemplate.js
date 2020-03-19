@@ -185,7 +185,11 @@ button:active {
 const { Providers } = require('./manifest');
 const { SortType } = require('./sort');
 
-function landingTemplate(manifest, providers = [], realDebridApiKey = '') {
+function landingTemplate(manifest, config = {}) {
+  const providers = config.providers || [];
+  const realDebridApiKey = config.realdebrid || '';
+  const sort = config.sort === SortType.SEEDERS ? SortType.SEEDERS : SortType.QUALITY;
+  const limit = config.limit || '';
   const background = manifest.background || 'https://dl.strem.io/addon-background.jpg';
   const logo = manifest.logo || 'https://dl.strem.io/addon-logo.png';
   const contactHTML = manifest.contactEmail ?
@@ -266,6 +270,8 @@ function landingTemplate(manifest, providers = [], realDebridApiKey = '') {
               });
               $('#iProviders').multiselect('select', [${providers.map(provider => '"' + provider + '"')}]);
               $('#iRealDebrid').val("${realDebridApiKey}");
+              $('#iSort').val("${sort}");
+              $('#iLimit').val("${limit}");
               generateInstallLink();
           });
           
