@@ -16,7 +16,7 @@ function manifest({ providers, realdebrid } = {}) {
     name: 'Torrentio',
     description: '[BETA] Provides torrent streams from scraped torrent providers.'
         + ` ${providersDesc} ${providersList.join(', ')}${realDebridDesc}.`
-        + ' To configure visit www.torrentio.now.sh',
+        + ' To configure providers and and RealDebrid support visit www.torrentio.now.sh',
     catalogs: [],
     resources: ['stream'],
     types: ['movie', 'series'],
