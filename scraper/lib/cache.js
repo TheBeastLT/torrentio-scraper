@@ -5,6 +5,7 @@ const GLOBAL_KEY_PREFIX = 'stremio-torrentio';
 const IMDB_ID_PREFIX = `${GLOBAL_KEY_PREFIX}|imdb_id`;
 const KITSU_ID_PREFIX = `${GLOBAL_KEY_PREFIX}|kitsu_id`;
 const METADATA_PREFIX = `${GLOBAL_KEY_PREFIX}|metadata`;
+const RESOLVED_URL_KEY_PREFIX = `${GLOBAL_KEY_PREFIX}|moch`;
 const TORRENT_FILES_KEY_PREFIX = `stremio-tpb|files`;
 
 const GLOBAL_TTL = process.env.METADATA_TTL || 7 * 24 * 60 * 60; // 7 days
@@ -84,5 +85,9 @@ function cacheWrapMetadata(id, method) {
   return cacheWrap(memoryCache, `${METADATA_PREFIX}:${id}`, method, { ttl: MEMORY_TTL });
 }
 
-module.exports = { cacheWrapImdbId, cacheWrapKitsuId, cacheWrapMetadata, retrieveTorrentFiles };
+function cacheWrapResolvedUrl(id, method) {
+  return cacheWrap(memoryCache, `${RESOLVED_URL_KEY_PREFIX}:${id}`, method, { ttl: { MEMORY_TTL } });
+}
+
+module.exports = { cacheWrapImdbId, cacheWrapKitsuId, cacheWrapMetadata, retrieveTorrentFiles, cacheWrapResolvedUrl };
 

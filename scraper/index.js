@@ -3,6 +3,7 @@ const express = require("express");
 const server = express();
 const schedule = require('node-schedule');
 const { connect } = require('./lib/repository');
+const realDebrid = require('./moch/realdebrid');
 const thepiratebayScraper = require('./scrapers/thepiratebay/thepiratebay_scraper');
 const horribleSubsScraper = require('./scrapers/horriblesubs/horriblesubs_scraper');
 const leetxScraper = require('./scrapers/1337x/1337x_scraper');
@@ -45,6 +46,22 @@ function enableScheduling() {
 
 server.get('/', function (req, res) {
   res.sendStatus(200);
+});
+
+server.get('/realdebrid/:apiKey/:infoHash/:cachedFileIds/:fileIndex?', (req, res) => {
+  const { apiKey, infoHash, cachedFileIds, fileIndex } = req.params;
+  console.log(`Unrestricting ${infoHash} [${fileIndex}]`);
+  realDebrid.resolve(apiKey, infoHash, cachedFileIds, isNaN(fileIndex) ? undefined : parseInt(fileIndex))
+      .then(url => {
+        console.log(`Unrestricted ${infoHash} [${fileIndex}] to ${url}`);
+        res.writeHead(301, { Location: url });
+        res.end();
+      })
+      .catch(error => {
+        console.log(error);
+        res.statusCode = 404;
+        res.end();
+      });
 });
 
 server.listen(process.env.PORT || 7000, async () => {
