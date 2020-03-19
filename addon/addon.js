@@ -3,16 +3,13 @@ const { manifest } = require('./lib/manifest');
 const { cacheWrapStream } = require('./lib/cache');
 const { toStreamInfo, sanitizeStreamInfo } = require('./lib/streamInfo');
 const repository = require('./lib/repository');
-const realdebrid = require('./moch/realdebrid');
+const applyStreamSorting = require('./lib/sort');
+const applyMochs = require('./moch/moch');
 
 const CACHE_MAX_AGE = process.env.CACHE_MAX_AGE || 4 * 60 * 60; // 4 hours in seconds
 const CACHE_MAX_AGE_EMPTY = 30 * 60; // 30 minutes
 const STALE_REVALIDATE_AGE = 4 * 60 * 60; // 4 hours
 const STALE_ERROR_AGE = 7 * 24 * 60 * 60; // 7 days
-
-const MOCHS = {
-  'realdebrid': realdebrid
-};
 
 const builder = new addonBuilder(manifest());
 
@@ -29,8 +26,7 @@ builder.defineStreamHandler((args) => {
 
   return cacheWrapStream(args.id, (handlers[args.type] || handlers.fallback))
       .then(streams => filterStreamByProvider(streams, args.extra.providers))
-      .then(streams => filterStreamsBySeeders(streams))
-      .then(streams => sortStreamsByVideoQuality(streams))
+      .then(streams => applyStreamSorting(streams, args.extra))
       .then(streams => applyMochs(streams, args.extra))
       .then(streams => streams.map(stream => sanitizeStreamInfo(stream)))
       .then(streams => ({
@@ -75,68 +71,6 @@ function filterStreamByProvider(streams, providers) {
     return streams;
   }
   return streams.filter(stream => providers.includes(stream.name.split('\n')[1].toLowerCase()))
-}
-
-const HEALTHY_SEEDERS = 5;
-const SEEDED_SEEDERS = 1;
-const MIN_HEALTHY_COUNT = 10;
-const MAX_UNHEALTHY_COUNT = 5;
-
-function filterStreamsBySeeders(streams) {
-  const sortedStreams = streams
-      .sort((a, b) => b.filters.seeders - a.filters.seeders || b.filters.uploadDate - a.filters.uploadDate);
-  const healthy = sortedStreams.filter(stream => stream.filters.seeders >= HEALTHY_SEEDERS);
-  const seeded = sortedStreams.filter(stream => stream.filters.seeders >= SEEDED_SEEDERS);
-
-  if (healthy.length >= MIN_HEALTHY_COUNT) {
-    return healthy;
-  } else if (seeded.length >= MAX_UNHEALTHY_COUNT) {
-    return seeded.slice(0, MIN_HEALTHY_COUNT);
-  }
-  return sortedStreams.slice(0, MAX_UNHEALTHY_COUNT);
-}
-
-function sortStreamsByVideoQuality(streams) {
-  const qualityMap = streams
-      .reduce((map, stream) => {
-        const quality = stream.filters.quality;
-        map[quality] = (map[quality] || []).concat(stream);
-        return map;
-      }, {});
-  const sortedQualities = Object.keys(qualityMap)
-      .sort((a, b) => {
-        const aQuality = a === '4k' ? '2160p' : a;
-        const bQuality = b === '4k' ? '2160p' : b;
-        const aResolution = aQuality && aQuality.match(/\d+p/) && parseInt(aQuality, 10);
-        const bResolution = bQuality && bQuality.match(/\d+p/) && parseInt(bQuality, 10);
-        if (aResolution && bResolution) {
-          return bResolution - aResolution; // higher resolution first;
-        } else if (aResolution) {
-          return -1;
-        } else if (bResolution) {
-          return 1;
-        }
-        return a < b ? -1 : b < a ? 1 : 0;
-      });
-  return sortedQualities
-      .map(quality => qualityMap[quality])
-      .reduce((a, b) => a.concat(b), []);
-}
-
-function applyMochs(streams, config) {
-  if (!streams || !streams.length) {
-    return streams;
-  }
-
-  return Object.keys(config)
-      .filter(configKey => MOCHS[configKey])
-      .reduce(async (streams, moch) => {
-        return await MOCHS[moch].applyMoch(streams, config[moch])
-            .catch(error => {
-              console.warn(error);
-              return streams;
-            });
-      }, streams);
 }
 
 module.exports = builder.getInterface();

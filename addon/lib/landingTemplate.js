@@ -154,6 +154,16 @@ button:active {
   width: 100%;
 }
 
+.btn {
+  text-align: left;
+}
+
+.caret {
+  position: absolute;
+  left: 97%;
+  top: 45%;
+}
+
 .multiselect-container {
   border: 0;
   border-radius: 0;
@@ -168,10 +178,12 @@ button:active {
   border-radius: 0;
   outline: 0;
   color: #333;
+  background-color: rgb(255, 255, 255);
   box-shadow: 0 0.5vh 1vh rgba(0, 0, 0, 0.2);
 }
 `;
 const { Providers } = require('./manifest');
+const { SortType } = require('./sort');
 
 function landingTemplate(manifest, providers = [], realDebridApiKey = '') {
   const background = manifest.background || 'https://dl.strem.io/addon-background.jpg';
@@ -227,6 +239,15 @@ function landingTemplate(manifest, providers = [], realDebridApiKey = '') {
             ${providersHTML}
          </select>
          
+         <label class="label" for="iSort">Sorting:</label>
+         <select id="iSort" class="input" onchange="sortModeChange()">
+            <option value="${SortType.QUALITY}" selected>Quality</option>
+            <option value="${SortType.SEEDERS}">Seeders</option>
+         </select>
+         
+         <label class="label" id="iLimitLabel" for="iLimit">Max results per quality:</label>
+         <input type="text" id="iLimit" onchange="generateInstallLink()" class="input"  placeholder="All results">
+         
          <label class="label" for="iRealDebrid">(Experimental) RealDebrid API Key:</label>
          <input type="text" id="iRealDebrid" onchange="generateInstallLink()" class="input">
          
@@ -248,12 +269,27 @@ function landingTemplate(manifest, providers = [], realDebridApiKey = '') {
               generateInstallLink();
           });
           
+          function sortModeChange() {
+            if ($('#iSort').val() === '${SortType.SEEDERS}') {
+              $("#iLimitLabel").text("Max results:");
+            } else {
+              $("#iLimitLabel").text("Max results per quality:");
+            }
+            generateInstallLink();
+          }
+          
           function generateInstallLink() {
               const providersValue = $('#iProviders').val().join(',');
               const realDebridValue = $('#iRealDebrid').val();
+              const sortValue = $('#iSort').val();
+              const limitValue = $('#iLimit').val();
+              
               const providers = providersValue && providersValue.length ? 'providers=' + providersValue : '';
               const realDebrid = realDebridValue && realDebridValue.length ? 'realdebrid=' + realDebridValue : '';
-              const configurationValue = [providers, realDebrid].filter(value => value.length).join('|');
+              const sort = sortValue === '${SortType.SEEDERS}' ? 'sort=' + sortValue : '';
+              const limit = /^[1-9][0-9]*$/.test(limitValue) ? 'limit=' + limitValue : '';
+              
+              const configurationValue = [providers, sort, limit, realDebrid].filter(value => value.length).join('|');
               const configuration = configurationValue && configurationValue.length ? '/' + configurationValue : '';
               installLink.href = 'stremio://' + window.location.host + configuration + '/manifest.json';
           }
