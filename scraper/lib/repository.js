@@ -128,7 +128,7 @@ function getFiles(torrent) {
 }
 
 function getFilesBasedOnTitle(titleQuery) {
-  return File.findAll({ where: { title: { [Op.iLike]: `%${titleQuery}%` } } });
+  return File.findAll({ where: { title: { [Op.regexp]: `${titleQuery}` } } });
 }
 
 function deleteFile(file) {

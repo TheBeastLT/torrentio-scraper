@@ -12,7 +12,7 @@
     "cache-manager-mongodb": "^0.2.1",
     "express-rate-limit": "^5.1.1",
     "needle": "^2.2.4",
-    "parse-torrent-title": "git://github.com/TheBeastLT/parse-torrent-title.git#7259b01bfe6e1fbc3879ba68d9c58ebac84029e9",
+    "parse-torrent-title": "git://github.com/TheBeastLT/parse-torrent-title.git#afd4a374276420c13c52df8e3d07ae7699c46b60",
     "pg": "^7.8.2",
     "pg-hstore": "^2.3.2",
     "real-debrid-api": "^1.0.1",

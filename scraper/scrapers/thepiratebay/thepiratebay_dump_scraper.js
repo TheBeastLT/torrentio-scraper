@@ -19,7 +19,7 @@ async function scrape() {
   const lastDump = { updatedAt: 2147000000 };
   //const checkPoint = moment('2016-06-17 00:00:00', 'YYYY-MMM-DD HH:mm:ss').toDate();
   //const lastDump = await thepiratebay.dumps().then((dumps) => dumps.sort((a, b) => b.updatedAt - a.updatedAt)[0]);
-  const checkPoint = 611000;
+  const checkPoint = 0;
 
   if (lastDump) {
     console.log(`starting to scrape tpb dump: ${JSON.stringify(lastDump)}`);
@@ -55,11 +55,6 @@ async function scrape() {
         size: parseInt(row[3], 10)
       };
 
-      // if (torrent.uploadDate > checkPoint) {
-      //   entriesProcessed++;
-      //   return;
-      // }
-
       if (!limiter.empty()) {
         lr.pause()
       }
@@ -74,8 +69,6 @@ async function scrape() {
       console.log(err);
     });
     lr.on('end', () => {
-      fs.unlink(CSV_FILE_PATH, (error) => console.warn(error));
-      //repository.updateProvider({ name: NAME, lastScraped: lastDump.updatedAt });
       console.log(`finished to scrape tpb dump: ${JSON.stringify(lastDump)}!`);
     });
   }
@@ -106,13 +99,13 @@ async function processTorrentRecord(record) {
   }
 
   const torrent = {
-    infoHash: record.infoHash,
+    infoHash: torrentFound.infoHash,
     provider: NAME,
-    torrentId: record.torrentId,
+    torrentId: torrentFound.torrentId,
     title: torrentFound.name,
     size: torrentFound.size,
     type: seriesCategories.includes(torrentFound.subcategory) ? Type.SERIES : Type.MOVIE,
-    imdbId: torrentFound.imdbId,
+    imdbId: seriesCategories.includes(torrentFound.subcategory) && torrentFound.imdbId || undefined,
     uploadDate: torrentFound.uploadDate || record.uploadDate,
     seeders: torrentFound.seeders,
   };

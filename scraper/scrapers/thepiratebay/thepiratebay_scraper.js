@@ -73,7 +73,7 @@ async function processTorrentRecord(record) {
     title: torrentFound.name.replace(/\t|\s+/g, ' '),
     size: torrentFound.size,
     type: seriesCategories.includes(torrentFound.subcategory) ? Type.SERIES : Type.MOVIE,
-    imdbId: torrentFound.imdbId,
+    imdbId: seriesCategories.includes(torrentFound.subcategory) && torrentFound.imdbId || undefined,
     uploadDate: torrentFound.uploadDate,
     seeders: torrentFound.seeders,
   };
