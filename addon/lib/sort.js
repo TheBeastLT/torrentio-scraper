@@ -59,7 +59,14 @@ function extractQuality(title) {
   const qualityMatch = title.match(/📺 (.*)/);
   const qualityDesc = qualityMatch && qualityMatch[1];
   const resolutionMatch = qualityDesc && qualityDesc.match(/\d+p/);
-  return resolutionMatch && resolutionMatch[0] || qualityDesc;
+  if (resolutionMatch) {
+    return resolutionMatch[0];
+  } else if (/8k/i.test(qualityDesc)) {
+    return '4320p'
+  } else if (/4k|uhd/i.test(qualityDesc)) {
+    return '2060p'
+  }
+  return qualityDesc;
 }
 
 function extractSeeders(title) {
