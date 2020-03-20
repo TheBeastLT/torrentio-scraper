@@ -10,16 +10,6 @@ function toStreamInfo(record) {
   return seriesStream(record);
 }
 
-function sanitizeStreamInfo(stream) {
-  if (stream.filters) {
-    delete stream.filters;
-  }
-  if (stream.fileIdx === undefined || stream.fileIdx === null) {
-    delete stream.fileIdx;
-  }
-  return stream;
-}
-
 function movieStream(record) {
   const titleInfo = titleParser.parse(record.title);
   const sameInfo = record.title === record.torrent.title;
@@ -38,12 +28,7 @@ function movieStream(record) {
     name: `${ADDON_NAME}\n${record.torrent.provider}`,
     title: title,
     infoHash: record.infoHash,
-    fileIdx: record.fileIndex,
-    filters: {
-      quality: titleInfo.resolution || record.torrent.resolution || titleInfo.source,
-      seeders: record.torrent.seeders,
-      uploadDate: new Date(record.torrent.uploadDate)
-    }
+    fileIdx: record.fileIndex
   };
 }
 
@@ -70,12 +55,7 @@ function seriesStream(record) {
     name: `${ADDON_NAME}\n${record.torrent.provider}`,
     title: title,
     infoHash: record.infoHash,
-    fileIdx: record.fileIndex,
-    filters: {
-      quality: tInfo.resolution || eInfo.resolution || record.torrent.resolution || tInfo.source || eInfo.source,
-      seeders: record.torrent.seeders,
-      uploadDate: new Date(record.torrent.uploadDate)
-    }
+    fileIdx: record.fileIndex
   };
 }
 
@@ -85,4 +65,4 @@ function joinDetailParts(parts, prefix = '', delimiter = ' ') {
   return filtered.length > 0 ? `${prefix}${filtered}` : undefined;
 }
 
-module.exports = { toStreamInfo, sanitizeStreamInfo };
+module.exports = { toStreamInfo };

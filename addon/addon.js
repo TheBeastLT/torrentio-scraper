@@ -1,9 +1,10 @@
 const { addonBuilder } = require('stremio-addon-sdk');
+const { Type } = require('./lib/types');
 const { manifest } = require('./lib/manifest');
 const { cacheWrapStream } = require('./lib/cache');
-const { toStreamInfo, sanitizeStreamInfo } = require('./lib/streamInfo');
+const { toStreamInfo } = require('./lib/streamInfo');
 const repository = require('./lib/repository');
-const applyStreamSorting = require('./lib/sort');
+const applySorting = require('./lib/sort');
 const applyMochs = require('./moch/moch');
 
 const CACHE_MAX_AGE = process.env.CACHE_MAX_AGE || 4 * 60 * 60; // 4 hours in seconds
@@ -18,17 +19,13 @@ builder.defineStreamHandler((args) => {
     return Promise.resolve({ streams: [] });
   }
 
-  const handlers = {
-    series: () => seriesRecordsHandler(args).then(records => records.map(record => toStreamInfo(record))),
-    movie: () => movieRecordsHandler(args).then(records => records.map(record => toStreamInfo(record))),
-    fallback: () => Promise.reject('not supported type')
-  };
-
-  return cacheWrapStream(args.id, (handlers[args.type] || handlers.fallback))
-      .then(streams => filterStreamByProvider(streams, args.extra.providers))
-      .then(streams => applyStreamSorting(streams, args.extra))
+  return cacheWrapStream(args.id, () => streamHandler(args)
+      .then(records => records
+          .sort((a, b) => b.torrent.seeders - a.torrent.seeders || b.torrent.uploadDate - a.torrent.uploadDate)
+          .map(record => toStreamInfo(record))))
+      .then(streams => filterByProvider(streams, args.extra.providers))
+      .then(streams => applySorting(streams, args.extra))
       .then(streams => applyMochs(streams, args.extra))
-      .then(streams => streams.map(stream => sanitizeStreamInfo(stream)))
       .then(streams => ({
         streams: streams,
         cacheMaxAge: streams.length ? CACHE_MAX_AGE : CACHE_MAX_AGE_EMPTY,
@@ -40,6 +37,15 @@ builder.defineStreamHandler((args) => {
         throw error;
       });
 });
+
+async function streamHandler(args) {
+  if (args.type === Type.MOVIE) {
+    return movieRecordsHandler(args);
+  } else if (args.type === Type.SERIES) {
+    return seriesRecordsHandler(args);
+  }
+  return Promise.reject('not supported type');
+}
 
 async function seriesRecordsHandler(args) {
   if (args.id.match(/tt\d+/)) {
@@ -66,7 +72,7 @@ async function movieRecordsHandler(args) {
   return Promise.reject(`Unsupported id type: ${args.id}`);
 }
 
-function filterStreamByProvider(streams, providers) {
+function filterByProvider(streams, providers) {
   if (!providers || !providers.length) {
     return streams;
   }

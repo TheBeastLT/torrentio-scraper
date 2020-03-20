@@ -18,44 +18,53 @@ function sortStreams(streams, config) {
 }
 
 function sortBySeeders(streams) {
-  const sortedStreams = streams
-      .sort((a, b) => b.filters.seeders - a.filters.seeders || b.filters.uploadDate - a.filters.uploadDate);
-  const healthy = sortedStreams.filter(stream => stream.filters.seeders >= HEALTHY_SEEDERS);
-  const seeded = sortedStreams.filter(stream => stream.filters.seeders >= SEEDED_SEEDERS);
+  // streams are already presorted by seeders and upload date
+  const healthy = streams.filter(stream => extractSeeders(stream.title) >= HEALTHY_SEEDERS);
+  const seeded = streams.filter(stream => extractSeeders(stream.title) >= SEEDED_SEEDERS);
 
   if (healthy.length >= MIN_HEALTHY_COUNT) {
     return healthy;
   } else if (seeded.length >= MAX_UNHEALTHY_COUNT) {
     return seeded.slice(0, MIN_HEALTHY_COUNT);
   }
-  return sortedStreams.slice(0, MAX_UNHEALTHY_COUNT);
+  return streams.slice(0, MAX_UNHEALTHY_COUNT);
 }
 
 function sortByVideoQuality(streams, limit) {
   const qualityMap = sortBySeeders(streams)
       .reduce((map, stream) => {
-        const quality = stream.filters.quality;
+        const quality = extractQuality(stream.title);
         map[quality] = (map[quality] || []).concat(stream);
         return map;
       }, {});
   const sortedQualities = Object.keys(qualityMap)
       .sort((a, b) => {
-        const aQuality = a === '4k' ? '2160p' : a;
-        const bQuality = b === '4k' ? '2160p' : b;
-        const aResolution = aQuality && aQuality.match(/\d+p/) && parseInt(aQuality, 10);
-        const bResolution = bQuality && bQuality.match(/\d+p/) && parseInt(bQuality, 10);
+        const aResolution = a && a.match(/\d+p/) && parseInt(a, 10);
+        const bResolution = b && b.match(/\d+p/) && parseInt(b, 10);
         if (aResolution && bResolution) {
           return bResolution - aResolution; // higher resolution first;
         } else if (aResolution) {
-          return -1;
+          return -1; // remain higher if resolution is there
         } else if (bResolution) {
-          return 1;
+          return 1; // move downward if other stream has resolution
         }
-        return a < b ? -1 : b < a ? 1 : 0;
+        return a < b ? -1 : b < a ? 1 : 0; // otherwise sort by alphabetic order
       });
   return sortedQualities
       .map(quality => qualityMap[quality].slice(0, limit))
       .reduce((a, b) => a.concat(b), []);
+}
+
+function extractQuality(title) {
+  const qualityMatch = title.match(/📺 (.*)/);
+  const qualityDesc = qualityMatch && qualityMatch[1];
+  const resolutionMatch = qualityDesc && qualityDesc.match(/\d+p/);
+  return resolutionMatch && resolutionMatch[0] || qualityDesc;
+}
+
+function extractSeeders(title) {
+  const seedersMatch = title.match(/👤 (\d+)/);
+  return seedersMatch && parseInt(seedersMatch[1]) || 0;
 }
 
 module.exports = sortStreams;
