@@ -24,6 +24,7 @@ async function resolve(apiKey, infoHash, cachedFileIds, fileIndex) {
 }
 
 async function _unrestrict(apiKey, infoHash, cachedFileIds, fileIndex) {
+  console.log(`Unrestricting ${infoHash} [${fileIndex}]`);
   const RD = new RealDebridClient(apiKey);
   const torrentId = await _createOrFindTorrentId(RD, infoHash, cachedFileIds);
   if (torrentId) {
@@ -34,7 +35,9 @@ async function _unrestrict(apiKey, infoHash, cachedFileIds, fileIndex) {
     const fileLink = info.links.length === 1
         ? info.links[0]
         : info.links[selectedFiles.indexOf(targetFile)];
-    return _unrestrictLink(RD, fileLink);
+    const unrestrictedLink = await _unrestrictLink(RD, fileLink);
+    console.log(`Unrestricted ${infoHash} [${fileIndex}] to ${unrestrictedLink}`);
+    return unrestrictedLink;
   }
   return Promise.reject("Failed adding torrent");
 }

@@ -50,10 +50,8 @@ server.get('/', function (req, res) {
 
 server.get('/realdebrid/:apiKey/:infoHash/:cachedFileIds/:fileIndex?', (req, res) => {
   const { apiKey, infoHash, cachedFileIds, fileIndex } = req.params;
-  console.log(`Unrestricting ${infoHash} [${fileIndex}]`);
   realDebrid.resolve(apiKey, infoHash, cachedFileIds, isNaN(fileIndex) ? undefined : parseInt(fileIndex))
       .then(url => {
-        console.log(`Unrestricted ${infoHash} [${fileIndex}] to ${url}`);
         res.writeHead(301, { Location: url });
         res.end();
       })
