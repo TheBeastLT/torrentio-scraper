@@ -2590,7 +2590,12 @@
   },
   "Boku no Hero Academia": {
     "showId": "659",
-    "kitsu_id": "11469"
+    "kitsu_id": [
+      "11469",
+      "12268",
+      "13881",
+      "41971"
+    ]
   },
   "Re Zero kara Hajimeru Isekai Seikatsu": {
     "showId": "660",
