@@ -1,6 +1,7 @@
 const needle = require('needle');
 const nameToImdb = require('name-to-imdb');
 const bing = require('nodejs-bing');
+const he = require('he');
 const { cacheWrapImdbId, cacheWrapKitsuId, cacheWrapMetadata } = require('./cache');
 const { Type } = require('./types');
 
@@ -86,11 +87,7 @@ function escapeTitle(title) {
 }
 
 function escapeHTML(title) {
-  return title
-      .replace(/&#039;|&apos;/g, '\'')
-      .replace(/&#38;|&amp;/g, '&')
-      .replace(/&#33;/g, '!')
-      .replace(/&#37;/g, '%');
+  return he.decode(title);
 }
 
 async function getImdbId(info, type) {

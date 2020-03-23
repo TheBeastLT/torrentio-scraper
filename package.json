@@ -19,6 +19,7 @@
     "cheerio": "^0.22.0",
     "dotenv": "^8.2.0",
     "express": "^4.16.4",
+    "he": "^1.2.0",
     "jaro-winkler": "^0.2.8",
     "line-by-line": "^0.1.6",
     "magnet-uri": "^5.1.7",
