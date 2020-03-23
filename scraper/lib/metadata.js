@@ -1,5 +1,6 @@
 const needle = require('needle');
 const nameToImdb = require('name-to-imdb');
+const googleIt = require('google-it');
 const bing = require('nodejs-bing');
 const he = require('he');
 const { cacheWrapImdbId, cacheWrapKitsuId, cacheWrapMetadata } = require('./cache');
@@ -94,6 +95,7 @@ async function getImdbId(info, type) {
   const name = escapeTitle(info.title);
   const year = info.year || info.date && info.date.slice(0, 4);
   const key = `${name}_${year}_${type}`;
+  const query = `${name} ${year || ''} ${type} imdb`;
 
   return cacheWrapImdbId(key,
       () => new Promise((resolve, reject) => {
@@ -104,7 +106,8 @@ async function getImdbId(info, type) {
             reject(err || new Error('failed imdbId search'));
           }
         });
-      }).catch(() => bing.web(`${name} ${year || ''} ${type} imdb`)
+      }).catch(() => googleIt({ query, disableConsole: true })
+          .catch(() => bing.web(query))
           .then(results => results
               .map(result => result.link)
               .find(result => result.includes('imdb.com/title/')))
