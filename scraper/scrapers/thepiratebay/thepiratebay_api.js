@@ -6,7 +6,7 @@ const Promises = require('../../lib/promises');
 
 const defaultProxies = [
   // 'https://thepiratebay.org',
-  'https://proxybay.pro',
+  // 'https://proxybay.pro',
   'https://ukpiratebayproxy.com',
   'https://thepiratebayproxy.info',
   'https://mypiratebay.co',

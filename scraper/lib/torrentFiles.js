@@ -158,16 +158,11 @@ async function decomposeEpisodes(torrent, files, metadata = { episodeCount: [] }
       .reduce((a, b) => a.concat(b), [])
       .sort((a, b) => a - b);
 
-  if (sortedEpisodes.every(ep => ep > 100)
-      && sortedEpisodes.slice(1).some((ep, index) => ep - sortedEpisodes[index] > 10)
-      && sortedEpisodes.every(ep => metadata.episodeCount[div100(ep) - 1] >= mod100(ep))
-      && files.every(file => !file.season || file.episodes.every(ep => div100(ep) === file.season))) {
+  if (isConcatSeasonAndEpisodeFiles(files, sortedEpisodes, metadata)) {
     decomposeConcatSeasonAndEpisodeFiles(torrent, files, metadata);
-  } else if (files.every(file => (!file.season || !metadata.episodeCount[file.season - 1]) && file.date)) {
+  } else if (isDateEpisodeFiles(files, metadata)) {
     decomposeDateEpisodeFiles(torrent, files, metadata);
-  } else if (files.filter(file => !file.isMovie && file.episodes).every(file => !file.season && file.episodes) ||
-      files.filter(file => file.season && file.episodes && file.episodes
-          .every(ep => metadata.episodeCount[file.season - 1] < ep)).length > Math.ceil(files.length / 5)) {
+  } else if (isAbsoluteEpisodeFiles(files, metadata)) {
     decomposeAbsoluteEpisodeFiles(torrent, files, metadata);
   }
   // decomposeEpisodeTitleFiles(torrent, files, metadata);
@@ -175,12 +170,40 @@ async function decomposeEpisodes(torrent, files, metadata = { episodeCount: [] }
   return files;
 }
 
-function decomposeConcatSeasonAndEpisodeFiles(torrent, files, metadata) {
+function isConcatSeasonAndEpisodeFiles(files, sortedEpisodes, metadata) {
   // decompose concat season and episode files (ex. 101=S01E01) in case:
   // 1. file has a season, but individual files are concatenated with that season (ex. path Season 5/511 - Prize
   // Fighters.avi)
   // 2. file does not have a season and the episode does not go out of range for the concat season
   // episode count
+  return sortedEpisodes.every(ep => ep > 100)
+      && sortedEpisodes.slice(1).some((ep, index) => ep - sortedEpisodes[index] > 10)
+      && sortedEpisodes.every(ep => metadata.episodeCount[div100(ep) - 1] >= mod100(ep))
+      && files.every(file => !file.season || file.episodes.every(ep => div100(ep) === file.season))
+}
+
+function isDateEpisodeFiles(files, metadata) {
+  return files.every(file => (!file.season || !metadata.episodeCount[file.season - 1]) && file.date);
+}
+
+function isAbsoluteEpisodeFiles(files, metadata) {
+  return (files.filter(file => !file.isMovie && file.episodes).every(file => !file.season && file.episodes)
+      || files.filter(file => file.season && file.episodes && file.episodes
+          .every(ep => metadata.episodeCount[file.season - 1] < ep)).length > Math.ceil(files.length / 5))
+  // && !isNewEpisodesNotInMetadata(files, metadata);
+}
+
+function isNewEpisodesNotInMetadata(files, metadata) {
+  // new episode might not yet been indexed by cinemeta.
+  // detect this if episode number is larger than the last episode or season is larger than the last one
+  return files.length === 1
+      && /continuing|current/i.test(metadata.status)
+      && files.filter(file => !file.isMovie && file.episodes)
+          .every(file => file.season >= metadata.episodeCount.length
+              && file.episodes.every(ep => ep > metadata.episodeCount[file.season - 1]))
+}
+
+function decomposeConcatSeasonAndEpisodeFiles(torrent, files, metadata) {
   files
       .filter(file => file.episodes && file.episodes.every(ep => ep > 100))
       .filter(file => metadata.episodeCount[(file.season || div100(file.episodes[0])) - 1] < 100)

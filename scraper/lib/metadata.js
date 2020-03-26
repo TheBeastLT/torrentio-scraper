@@ -7,7 +7,7 @@ const { cacheWrapImdbId, cacheWrapKitsuId, cacheWrapMetadata } = require('./cach
 const { Type } = require('./types');
 
 const CINEMETA_URL = 'https://v3-cinemeta.strem.io';
-const KITSU_URL = 'https://kitsu-anime.now.sh';
+const KITSU_URL = 'https://anime-kitsu.strem.fun';
 const TIMEOUT = 20000;
 
 function getMetadata(id, type = Type.SERIES) {
@@ -43,6 +43,7 @@ function _requestMetadata(url) {
             year: body.meta.year,
             country: body.meta.country,
             genres: body.meta.genres,
+            status: body.status,
             videos: (body.meta.videos || [])
                 .map((video) => video.imdbSeason
                     ? {
