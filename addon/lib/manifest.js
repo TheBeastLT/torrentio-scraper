@@ -12,9 +12,9 @@ function manifest({ providers, realdebrid } = {}) {
   const realDebridDesc = realdebrid ? ' and RealDebrid enabled' : '';
   return {
     id: 'com.stremio.torrentio.addon',
-    version: '0.0.1-beta',
+    version: '0.0.2',
     name: 'Torrentio',
-    description: '[BETA] Provides torrent streams from scraped torrent providers.'
+    description: 'Provides torrent streams from scraped torrent providers.'
         + ` ${providersDesc} ${providersList.join(', ')}${realDebridDesc}.`
         + ' To configure providers, RealDebrid support and other settings visit www.torrentio.now.sh',
     catalogs: [],

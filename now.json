@@ -1,28 +1,16 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "/addon/**/*.js",
-      "use": "@now/node"
-    }
-  ],
   "routes": [
     {
-      "src": "/static/(.*)",
-      "dest": "/addon/static/$1"
-    },
-    {
       "src": "/(.*)",
-      "dest": "/addon/serverless.js"
+      "status": 308,
+      "headers": {
+        "Location": "https://torrentio.strem.fun/$1"
+      }
     }
   ],
   "github": {
     "silent": true
-  },
-  "env": {
-    "MONGODB_URI": "@mongodb-uri",
-    "DATABASE_URI": "@database-uri",
-    "RESOLVER_HOST": "@torrentio-resolver-host"
   }
 }
 
