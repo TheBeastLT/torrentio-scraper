@@ -116,7 +116,7 @@ function browse(config = {}, retries = 2) {
   const category = config.category || 0;
 
   return Promises.first(proxyList
-      .map((proxyUrl) => singleRequest(`${proxyUrl}/browse/${category}/${page}`, config)
+      .map((proxyUrl) => singleRequest(`${proxyUrl}/browse/${category}/${page}/3`, config)
           .then((body) => parseBody(body))))
       .catch((err) => browse(config, retries - 1));
 }
