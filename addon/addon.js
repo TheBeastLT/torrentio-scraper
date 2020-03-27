@@ -51,13 +51,13 @@ async function seriesRecordsHandler(args) {
   if (args.id.match(/tt\d+/)) {
     const parts = args.id.split(':');
     const imdbId = parts[0];
-    const season = parseInt(parts[1], 10);
-    const episode = parseInt(parts[2], 10);
+    const season = parts[1] ? parseInt(parts[1], 10) : 1;
+    const episode = parts[2] ? parseInt(parts[2], 10) : 1;
     return repository.getImdbIdSeriesEntries(imdbId, season, episode);
   } else if (args.id.match(/kitsu:\d+/i)) {
     const parts = args.id.split(':');
     const kitsuId = parts[1];
-    const episode = parseInt(parts[2], 10);
+    const episode = parts[2] ? parseInt(parts[2], 10) : 1;
     return repository.getKitsuIdSeriesEntries(kitsuId, episode);
   }
   return Promise.reject(`Unsupported id type: ${args.id}`);
@@ -65,9 +65,13 @@ async function seriesRecordsHandler(args) {
 
 async function movieRecordsHandler(args) {
   if (args.id.match(/tt\d+/)) {
-    return repository.getImdbIdMovieEntries(args.id);
+    const parts = args.id.split(':');
+    const imdbId = parts[0];
+    return repository.getImdbIdMovieEntries(imdbId);
   } else if (args.id.match(/kitsu:\d+/i)) {
-    return repository.getKitsuIdMovieEntries(args.id.replace('kitsu:', ''));
+    const parts = args.id.split(':');
+    const kitsuId = parts[1];
+    return repository.getKitsuIdMovieEntries(kitsuId);
   }
   return Promise.reject(`Unsupported id type: ${args.id}`);
 }
