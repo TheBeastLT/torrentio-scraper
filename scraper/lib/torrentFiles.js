@@ -44,8 +44,8 @@ async function parseTorrentFiles(torrent) {
       infoHash: torrent.infoHash,
       title: torrent.title,
       size: torrent.size,
-      imdbId: torrent.imdbId || metadata && metadata.imdb_id,
-      kitsuId: torrent.kitsuId || metadata && metadata.kitsu_id
+      imdbId: torrent.imdbId || metadata && metadata.imdbId,
+      kitsuId: torrent.kitsuId || metadata && metadata.kitsuId
     }];
   }
 
