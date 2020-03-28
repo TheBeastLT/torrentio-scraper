@@ -30,7 +30,7 @@ async function parseTorrentFiles(torrent) {
                   .then((newImdbId) => ({
                     infoHash: torrent.infoHash,
                     fileIndex: file.fileIndex,
-                    title: file.name,
+                    title: file.path || file.name,
                     size: file.size,
                     imdbId: newImdbId,
                   })))))
@@ -113,7 +113,7 @@ async function mapSeriesMovie(file, torrent) {
   return findMovieImdbId(file).then((imdbId) => [{
     infoHash: torrent.infoHash,
     fileIndex: file.fileIndex,
-    title: file.name,
+    title: file.path || file.name,
     size: file.size,
     imdbId: imdbId
   }])
@@ -122,12 +122,13 @@ async function mapSeriesMovie(file, torrent) {
 function parseSeriesFile(file, parsedTorrentName) {
   const fileInfo = parse(file.name);
   // the episode may be in a folder containing season number
-  if (!fileInfo.season && parsedTorrentName.season) {
-    fileInfo.season = parsedTorrentName.season;
-  } else if (!fileInfo.season && file.path.includes('/')) {
+  if (!fileInfo.season && file.path.includes('/')) {
     const folders = file.path.split('/');
     const pathInfo = parse(folders[folders.length - 2]);
     fileInfo.season = pathInfo.season;
+  }
+  if (!fileInfo.season && parsedTorrentName.season) {
+    fileInfo.season = parsedTorrentName.season;
   }
   // force episode to any found number if it was not parsed
   if (!fileInfo.episodes && !fileInfo.date) {
@@ -263,9 +264,9 @@ function decomposeDateEpisodeFiles(torrent, files, metadata) {
 
 function decomposeEpisodeTitleFiles(torrent, files, metadata) {
   files
-      .filter(file => !file.season)
+      // .filter(file => !file.season)
       .map(file => {
-        const episodeTitle = file.name.replace(/^.*-\s?(.+)\.\w{1,4}$/, '$1').trim();
+        const episodeTitle = file.name.replace('_', ' ').replace(/^.*(?:E\d+[abc]?|-)\s?(.+)\.\w{1,4}$/, '$1').trim();
         const foundEpisode = metadata.videos
             .map(video => ({ ...video, distance: distance(episodeTitle, video.name) }))
             .sort((a, b) => b.distance - a.distance)[0];
