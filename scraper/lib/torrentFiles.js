@@ -110,13 +110,16 @@ async function mapSeriesEpisode(file, torrent, files) {
 }
 
 async function mapSeriesMovie(file, torrent) {
-  return findMovieImdbId(file).then((imdbId) => [{
-    infoHash: torrent.infoHash,
-    fileIndex: file.fileIndex,
-    title: file.path || file.name,
-    size: file.size,
-    imdbId: imdbId
-  }])
+  return findMovieImdbId(file)
+      .then(imdbId => getMetadata(imdbId, Type.MOVIE).catch(() => ({ imdbId })))
+      .then(metadata => [{
+        infoHash: torrent.infoHash,
+        fileIndex: file.fileIndex,
+        title: file.path || file.name,
+        size: file.size,
+        imdbId: metadata.imdbId,
+        kitsuId: metadata.kitsuId
+      }]);
 }
 
 function parseSeriesFile(file, parsedTorrentName) {
