@@ -67,10 +67,6 @@ async function updateTorrentSeeders(torrent) {
           return stored.save()
         }
       })
-      .then(updated => {
-        console.log(`Updated [${torrent.infoHash}] ${torrent.name || torrent.title} to ${torrent.seeders} seeders`);
-        return updated;
-      })
       .catch(error => {
         console.warn('Failed updating seeders:', error);
         return undefined;
