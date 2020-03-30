@@ -83,7 +83,7 @@ function escapeTitle(title) {
       .normalize('NFKD') // normalize non-ASCII characters
       .replace(/[\u0300-\u036F]/g, '')
       .replace(/&/g, 'and')
-      .replace(/[;, ~]+/g, ' ') // replace dots, commas or underscores with spaces
+      .replace(/[;, ~.]+/g, ' ') // replace dots, commas or underscores with spaces
       .replace(/[^\w \-()+#@!']+/g, '') // remove all non-alphanumeric chars
       .trim();
 }

@@ -107,12 +107,20 @@ function getTorrent(torrent) {
         if (!result) {
           throw new Error(`torrent not found: ${torrent.infoHash}`);
         }
-        return result.dataValues;
+        return result;
       })
 }
 
 function getTorrentsBasedOnTitle(titleQuery, type) {
   return Torrent.findAll({ where: { title: { [Op.regexp]: `${titleQuery}` }, type: type } });
+}
+
+function getTorrentsWithoutId(provider) {
+  return Torrent.findAll({ where: { provider: provider, torrentId: { [Op.is]: null } }, limit: 100 });
+}
+
+function getTorrentsUpdatedBetween(provider, startDate, endDate) {
+  return Torrent.findAll({ where: { provider: provider, updatedAt: { [Op.gte]: startDate, [Op.lte]: endDate } } });
 }
 
 function createTorrent(torrent) {
@@ -176,5 +184,7 @@ module.exports = {
   deleteFile,
   getSkipTorrent,
   createSkipTorrent,
-  createFailedImdbTorrent
+  createFailedImdbTorrent,
+  getTorrentsWithoutId,
+  getTorrentsUpdatedBetween
 };

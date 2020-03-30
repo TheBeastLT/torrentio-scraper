@@ -37,7 +37,7 @@ async function updateMovieCollections() {
       .then(files => files.filter(file => parse(file.title).complete));
 
   collectionFiles.map(original => repository.getTorrent({ infoHash: original.infoHash })
-      .then(torrent => parseTorrentFiles({ ...torrent, imdbId: original.imdbId }))
+      .then(torrent => parseTorrentFiles({ ...torrent.get(), imdbId: original.imdbId }))
       .then(files => Promise.all(files.map(file => {
         console.log(file);
         return repository.createFile(file)
@@ -90,7 +90,7 @@ async function reapplyEpisodeDecomposing(infoHash, includeSourceFiles = true) {
       }));
   const imdbId = storedFiles.length && storedFiles[0].imdbId || await getImdbId(parse(torrent.title));
 
-  return parseTorrentFiles({ ...torrent, imdbId, files })
+  return parseTorrentFiles({ ...torrent.get(), imdbId, files })
       .then(newFiles => newFiles.map(file => {
         const fileIndex = file.fileIndex !== undefined ? file.fileIndex : null;
         const mapping = fileIndexMap[fileIndex];

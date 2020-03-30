@@ -7,10 +7,13 @@ const Promises = require('../../lib/promises');
 const defaultProxies = [
   // 'https://thepiratebay.org',
   // 'https://proxybay.pro',
-  'https://ukpiratebayproxy.com',
-  'https://thepiratebayproxy.info',
-  'https://mypiratebay.co',
+  // 'https://ukpiratebayproxy.com',
+  // 'https://thepiratebayproxy.info',
+  // 'https://mypiratebay.co',
   'https://thepiratebay.asia',
+  'https://thepiratebay10.org',
+  'https://thepiratebay0.org',
+  'https://proxtpb.art',
 ];
 const dumpUrl = '/static/dump/csv/';
 const defaultTimeout = 10000;

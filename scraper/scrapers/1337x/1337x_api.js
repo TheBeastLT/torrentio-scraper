@@ -130,7 +130,7 @@ function parseTorrentPage(body) {
       category: details.find('strong:contains(\'Category\')').next().text(),
       language: details.find('strong:contains(\'Language\')').next().text(),
       size: parseSize(details.find('strong:contains(\'Total size\')').next().text()),
-      uploadDate: Sugar.Date.create(details.find('strong:contains(\'Date uploaded\')').next().text()),
+      uploadDate: parseDate(details.find('strong:contains(\'Date uploaded\')').next().text()),
       imdbId: imdbIdMatch && imdbIdMatch[1],
       files: details.find('div[id=\'files\']').first().find('li')
           .map((i, elem) => $(elem).text())
@@ -143,6 +143,13 @@ function parseTorrentPage(body) {
     };
     resolve(torrent);
   });
+}
+
+function parseDate(dateString) {
+  if (/decade.*ago/i.test(dateString)) {
+    return Sugar.Date.create('10 years ago');
+  }
+  return Sugar.Date.create(dateString);
 }
 
 function parseSize(sizeText) {

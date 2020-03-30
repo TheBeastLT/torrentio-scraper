@@ -80,6 +80,15 @@ async function processTorrentRecord(record) {
   return createTorrentEntry(torrent);
 }
 
+async function updateSeeders() {
+  const startDate = moment().subtract(7, 'day').toDate();
+  const endDate = moment().subtract(1, 'day').toDate();
+  return repository.getTorrentsUpdatedBetween(NAME, startDate, endDate)
+      .then(torrents => Promise.all(torrents.map(torrent => limiter.schedule(() => leetx.torrent(torrent.torrentId)
+          .then(foundTorrent => updateTorrentSeeders(foundTorrent))
+          .catch(error => console.warn(error))))))
+}
+
 function typeMapping() {
   const mapping = {};
   mapping[leetx.Categories.MOVIE] = Type.MOVIE;

@@ -203,7 +203,7 @@ async function checkIfExists(torrent) {
   } else if (existingTorrent.provider === NAME) {
     return undefined; // torrent by this provider already exists
   }
-  return { ...torrent, size: existingTorrent.size, seeders: existingTorrent.seeders };
+  return { ...torrent.get(), size: existingTorrent.size, seeders: existingTorrent.seeders };
 }
 
 module.exports = { scrape, NAME };

@@ -60,10 +60,21 @@ async function updateTorrentSeeders(torrent) {
   }
 
   return repository.getTorrent(torrent)
+      .catch(() => undefined)
       .then(stored => {
-        stored.seeders = torrent.seeders;
-        return stored.save();
-      }).catch(() => undefined);
+        if (stored && stored.seeders !== torrent.seeders) {
+          stored.seeders = torrent.seeders;
+          return stored.save()
+        }
+      })
+      .then(updated => {
+        console.log(`Updated [${torrent.infoHash}] ${torrent.name || torrent.title} to ${torrent.seeders} seeders`);
+        return updated;
+      })
+      .catch(error => {
+        console.warn('Failed updating seeders:', error);
+        return undefined;
+      });
 }
 
 module.exports = { createTorrentEntry, createSkipTorrentEntry, getStoredTorrentEntry, updateTorrentSeeders };
