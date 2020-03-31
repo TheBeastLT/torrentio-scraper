@@ -22,7 +22,8 @@ function initiateCache() {
       uri: MONGO_URI,
       options: {
         collection: 'torrentio_addon_collection',
-        useUnifiedTopology: true,
+        useNewUrlParser: true,
+        useUnifiedTopology: false,
         ttl: STREAM_TTL
       },
       ttl: STREAM_TTL,

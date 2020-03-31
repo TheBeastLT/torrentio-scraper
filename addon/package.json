@@ -8,8 +8,8 @@
   "author": "TheBeastLT <pauliox@beyond.lt>",
   "license": "MIT",
   "dependencies": {
-    "cache-manager": "^2.9.0",
-    "cache-manager-mongodb": "^0.2.1",
+    "cache-manager": "^2.11.1",
+    "cache-manager-mongodb": "^0.2.2",
     "express-rate-limit": "^5.1.1",
     "needle": "^2.2.4",
     "parse-torrent-title": "git://github.com/TheBeastLT/parse-torrent-title.git#afd4a374276420c13c52df8e3d07ae7699c46b60",
