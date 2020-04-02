@@ -5,6 +5,7 @@ const bing = require('nodejs-bing');
 const he = require('he');
 const { cacheWrapImdbId, cacheWrapKitsuId, cacheWrapMetadata } = require('./cache');
 const { Type } = require('./types');
+const { getRandomUserAgent } = require('./request_helper');
 
 const CINEMETA_URL = 'https://v3-cinemeta.strem.io';
 const KITSU_URL = 'https://anime-kitsu.strem.fun';
@@ -107,7 +108,7 @@ async function getImdbId(info, type) {
             reject(err || new Error('failed imdbId search'));
           }
         });
-      }).catch(() => googleIt({ query, disableConsole: true })
+      }).catch(() => googleIt({ query, userAgent: getRandomUserAgent(), disableConsole: true })
           .catch(() => bing.web(query))
           .then(results => results
               .map(result => result.link)

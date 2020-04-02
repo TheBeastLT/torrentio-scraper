@@ -2,10 +2,7 @@ const { encode } = require('magnet-uri');
 const RealDebridClient = require('real-debrid-api');
 const namedQueue = require('named-queue');
 const { cacheWrapResolvedUrl } = require('../lib/cache');
-
-const PROXY_HOST = process.env.PROXY_HOST;
-const PROXY_USERNAME = process.env.PROXY_USERNAME;
-const PROXY_PASSWORD = process.env.PROXY_PASSWORD;
+const { getProxy } = require('../lib/request_helper');
 
 const unrestrictQueue = new namedQueue((task, callback) => task.method()
     .then(result => callback(false, result))
@@ -68,13 +65,6 @@ async function _unrestrictLink(RD, link) {
   //   console.log(`Unrestricted ${link} to ${url}`);
   //   return url;
   // });
-}
-
-function getProxy() {
-  if (PROXY_HOST && PROXY_USERNAME && PROXY_PASSWORD) {
-    return `http://${PROXY_USERNAME}:${PROXY_PASSWORD}@${PROXY_HOST}`;
-  }
-  return undefined;
 }
 
 module.exports = { resolve };
