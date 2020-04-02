@@ -34,6 +34,54 @@ module.exports.updateCurrentSeeders = function (torrent) {
   }).then((seeders) => ({ ...torrent, seeders: torrent.seeders || seeders }));
 };
 
+module.exports.updateTorrentSize = function (torrent) {
+  if (!torrent.infoHash && !torrent.magnetLink) {
+    return Promise.reject(new Error("no infoHash or magnetLink"));
+  }
+  const magnetLink = torrent.magnetLink || decode.encode({ infoHash: torrent.infoHash });
+  return new Promise((resolve, rejected) => {
+    const engine = new torrentStream(magnetLink, { connections: MAX_PEER_CONNECTIONS });
+
+    engine.ready(() => {
+      const size = engine.torrent.length;
+      engine.destroy();
+      resolve({ size });
+    });
+    setTimeout(() => {
+      engine.destroy();
+      rejected(new Error('No available connections for torrent!'));
+    }, SEEDS_CHECK_TIMEOUT);
+  }).then((size) => ({ ...torrent, size }));
+};
+
+module.exports.sizeAndFiles = function (torrent) {
+  if (!torrent.infoHash && !torrent.magnetLink) {
+    return Promise.reject(new Error("no infoHash or magnetLink"));
+  }
+  // const magnet = decode.encode({ infoHash: torrent.infoHash, announce: torrent.trackers });
+  return new Promise((resolve, rejected) => {
+    const engine = new torrentStream(torrent.infoHash, { connections: MAX_PEER_CONNECTIONS });
+
+    engine.ready(() => {
+      const files = engine.files
+          .map((file, fileId) => ({
+            fileIndex: fileId,
+            name: file.name,
+            path: file.path.replace(/^[^\/]+\//, ''),
+            size: file.length
+          }));
+      const size = engine.torrent.length;
+
+      engine.destroy();
+      resolve({ files, size });
+    });
+    setTimeout(() => {
+      engine.destroy();
+      rejected(new Error('No available connections for torrent!'));
+    }, 20000);
+  });
+};
+
 module.exports.torrentFiles = function (torrent) {
   return getFilesFromObject(torrent)
       .catch(() => filesFromTorrentFile(torrent))

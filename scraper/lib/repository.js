@@ -1,4 +1,4 @@
-const { Sequelize, fn, col } = require('sequelize');
+const { Sequelize, fn, col, literal } = require('sequelize');
 const Op = Sequelize.Op;
 
 const DATABASE_URI = process.env.DATABASE_URI;
@@ -115,8 +115,15 @@ function getTorrentsBasedOnTitle(titleQuery, type) {
   return Torrent.findAll({ where: { title: { [Op.regexp]: `${titleQuery}` }, type: type } });
 }
 
-function getTorrentsWithoutId(provider) {
-  return Torrent.findAll({ where: { provider: provider, torrentId: { [Op.is]: null } }, limit: 100 });
+function getTorrentsWithoutSize() {
+  return Torrent.findAll({
+    where: literal(
+        'exists (select 1 from files where files."infoHash" = torrent."infoHash" and files.size = 300000000)'),
+    order: [
+      ['seeders', 'DESC']
+    ],
+    limit: 1000
+  });
 }
 
 function getTorrentsUpdatedBetween(provider, startDate, endDate) {
@@ -185,6 +192,6 @@ module.exports = {
   getSkipTorrent,
   createSkipTorrent,
   createFailedImdbTorrent,
-  getTorrentsWithoutId,
+  getTorrentsWithoutSize,
   getTorrentsUpdatedBetween
 };

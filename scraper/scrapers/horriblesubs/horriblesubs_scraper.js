@@ -5,7 +5,7 @@ const decode = require('magnet-uri');
 const horriblesubs = require('./horriblesubs_api.js');
 const repository = require('../../lib/repository');
 const { Type } = require('../../lib/types');
-const { updateCurrentSeeders } = require('../../lib/torrent');
+const { updateCurrentSeeders, updateTorrentSize } = require('../../lib/torrent');
 const { parseTorrentFiles } = require('../../lib/torrentFiles');
 const { getMetadata, getKitsuId } = require('../../lib/metadata');
 const showMappings = require('./horriblesubs_mapping.json');
@@ -153,7 +153,6 @@ async function _parseShowData(showData) {
             infoHash: decode(mirror.magnetLink).infoHash,
             trackers: decode(mirror.magnetLink).tr.join(','),
             title: formatTitle(episodeInfo, mirror),
-            size: 300000000,
             type: Type.ANIME,
             kitsuId: getKitsuId(episodeInfo.episode),
             uploadDate: episodeInfo.uploadDate,
@@ -161,12 +160,14 @@ async function _parseShowData(showData) {
       .reduce((a, b) => a.concat(b), [])
       .filter((incompleteTorrent) => incompleteTorrent.kitsuId)
       .map((incompleteTorrent) => entryLimiter.schedule(() => checkIfExists(incompleteTorrent)
+          .then((torrent) => torrent && updateTorrentSize(torrent))
           .then((torrent) => torrent && updateCurrentSeeders(torrent))
           .then((torrent) => torrent && parseTorrentFiles(torrent)
               .then((files) => verifyFiles(torrent, files))
               .then((files) => repository.createTorrent(torrent)
                   .then(() => files.forEach(file => repository.createFile(file)))
-                  .then(() => console.log(`Created entry for ${torrent.title}`)))))))
+                  .then(() => console.log(`Created entry for ${torrent.title}`))))
+          .catch(error => console.warn(`Failed creating entry for ${incompleteTorrent.title}:`, error)))))
       .then(() => console.log(`${NAME}: finished scrapping ${showData.title} data`));
 }
 
