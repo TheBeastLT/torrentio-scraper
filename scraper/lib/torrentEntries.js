@@ -35,13 +35,13 @@ async function createTorrentEntry(torrent) {
 
   const files = await parseTorrentFiles(torrent);
   if (!files || !files.length) {
-    console.log(`no video files found: ${torrent.title}`);
+    console.log(`no video files found for [${torrent.infoHash}] ${torrent.title}`);
     return;
   }
 
   return repository.createTorrent(torrent)
       .then(() => Promise.all(files.map(file => repository.createFile(file))))
-      .then(() => console.log(`Created entry for ${torrent.title}`));
+      .then(() => console.log(`Created entry for [${torrent.infoHash}] ${torrent.title}`));
 }
 
 async function createSkipTorrentEntry(torrent) {
