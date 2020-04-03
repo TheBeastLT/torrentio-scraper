@@ -6,7 +6,11 @@ const RESOLVER_HOST = process.env.RESOLVER_HOST || 'http://localhost:7000';
 async function applyMoch(streams, apiKey) {
   const RD = new RealDebridClient(apiKey);
   const hashes = streams.map(stream => stream.infoHash);
-  const available = await _instantAvailability(RD, hashes);
+  const available = await RD.torrents.instantAvailability(hashes)
+      .catch(error => {
+        console.warn('Failed cached torrent availability request: ', error);
+        return undefined;
+      });
   if (available) {
     streams.forEach(stream => {
       const cachedEntry = available[stream.infoHash];
@@ -21,14 +25,6 @@ async function applyMoch(streams, apiKey) {
   }
 
   return streams;
-}
-
-async function _instantAvailability(RD, hashes) {
-  return RD._get(`torrents/instantAvailability/${hashes.join('/')}`)
-      .catch(error => {
-        console.warn('Failed cached torrent availability request: ', error);
-        return undefined;
-      });
 }
 
 function getCachedFileIds(fileIndex, hosterResults) {
