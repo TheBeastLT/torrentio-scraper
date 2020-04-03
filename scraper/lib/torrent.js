@@ -3,7 +3,6 @@ const needle = require('needle');
 const parseTorrent = require('parse-torrent');
 const async = require('async');
 const decode = require('magnet-uri');
-const { retrieveTorrentFiles } = require('./cache');
 const isVideo = require('./video');
 
 const MAX_PEER_CONNECTIONS = process.env.MAX_PEER_CONNECTIONS || 20;
@@ -45,7 +44,6 @@ module.exports.torrentFiles = function (torrent) {
   return getFilesFromObject(torrent)
       .catch(() => filesFromTorrentFile(torrent))
       .catch(() => filesFromTorrentStream(torrent))
-      .catch(() => filesFromCache(torrent.infoHash))
       .then((files) => filterVideos(files))
       .then((files) => filterSamples(files))
       .then((files) => filterExtras(files));
@@ -56,16 +54,6 @@ function getFilesFromObject(torrent) {
     return Promise.resolve(torrent.files);
   }
   return Promise.reject("No files in the object");
-}
-
-function filesFromCache(infoHash) {
-  return retrieveTorrentFiles(infoHash)
-      .then((files) => files.map((file) => ({
-        fileIndex: parseInt(file.match(/^(\d+)@@/)[1]),
-        name: file.replace(/.+\/|^\d+@@/, ''),
-        path: file.replace(/^\d+@@/, ''),
-        size: 300000000
-      })));
 }
 
 async function filesFromTorrentFile(torrent) {
