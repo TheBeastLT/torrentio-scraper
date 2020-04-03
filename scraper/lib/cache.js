@@ -11,6 +11,7 @@ const TORRENT_FILES_KEY_PREFIX = `stremio-tpb|files`;
 
 const GLOBAL_TTL = process.env.METADATA_TTL || 7 * 24 * 60 * 60; // 7 days
 const MEMORY_TTL = process.env.METADATA_TTL || 2 * 60 * 60; // 2 hours
+const RESOLVED_URL_TTL = 2 * 60; // 2 minutes
 const PROXY_TTL = 8 * 60 * 60; // 8 hours
 
 const MONGO_URI = process.env.MONGODB_URI;
@@ -88,7 +89,7 @@ function cacheWrapMetadata(id, method) {
 }
 
 function cacheWrapResolvedUrl(id, method) {
-  return cacheWrap(memoryCache, `${RESOLVED_URL_KEY_PREFIX}:${id}`, method, { ttl: { MEMORY_TTL } });
+  return cacheWrap(memoryCache, `${RESOLVED_URL_KEY_PREFIX}:${id}`, method, { ttl: { RESOLVED_URL_TTL } });
 }
 
 function cacheWrapProxy(id, method) {
