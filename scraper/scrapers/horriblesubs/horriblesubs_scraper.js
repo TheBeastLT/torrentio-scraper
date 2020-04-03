@@ -166,7 +166,7 @@ async function _parseShowData(showData) {
               .then((files) => verifyFiles(torrent, files))
               .then((files) => repository.createTorrent(torrent)
                   .then(() => files.forEach(file => repository.createFile(file)))
-                  .then(() => console.log(`Created entry for ${torrent.title}`))))
+                  .then(() => console.log(`Created entry for [${torrent.infoHash}] ${torrent.title}`))))
           .catch(error => console.warn(`Failed creating entry for ${incompleteTorrent.title}:`, error)))))
       .then(() => console.log(`${NAME}: finished scrapping ${showData.title} data`));
 }
@@ -184,7 +184,9 @@ async function verifyFiles(torrent, files) {
     if (existingFiles && Object.keys(existingFiles).length) {
       return files
           .map(file => {
-            const mapping = existingFiles[file.fileIndex !== undefined ? file.fileIndex : null];
+            const mapping = files.length === 1 && Object.keys(existingFiles).length === 1
+                ? Object.values(existingFiles)[0]
+                : existingFiles[file.fileIndex !== undefined ? file.fileIndex : null];
             if (mapping) {
               const originalFile = mapping.shift();
               return { ...file, id: originalFile.id, size: originalFile.size || file.size };
