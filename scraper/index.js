@@ -50,7 +50,7 @@ server.get('/', function (req, res) {
 
 server.get('/realdebrid/:apiKey/:infoHash/:cachedFileIds/:fileIndex?', (req, res) => {
   const { apiKey, infoHash, cachedFileIds, fileIndex } = req.params;
-  realDebrid.resolve(apiKey, infoHash, cachedFileIds, isNaN(fileIndex) ? undefined : parseInt(fileIndex))
+  realDebrid.resolve(req.ip, apiKey, infoHash, cachedFileIds, isNaN(fileIndex) ? undefined : parseInt(fileIndex))
       .then(url => {
         res.writeHead(301, { Location: url });
         res.end();

@@ -6,10 +6,12 @@ const IMDB_ID_PREFIX = `${GLOBAL_KEY_PREFIX}|imdb_id`;
 const KITSU_ID_PREFIX = `${GLOBAL_KEY_PREFIX}|kitsu_id`;
 const METADATA_PREFIX = `${GLOBAL_KEY_PREFIX}|metadata`;
 const RESOLVED_URL_KEY_PREFIX = `${GLOBAL_KEY_PREFIX}|moch`;
+const PROXY_KEY_PREFIX = `${GLOBAL_KEY_PREFIX}|proxy`;
 const TORRENT_FILES_KEY_PREFIX = `stremio-tpb|files`;
 
 const GLOBAL_TTL = process.env.METADATA_TTL || 7 * 24 * 60 * 60; // 7 days
 const MEMORY_TTL = process.env.METADATA_TTL || 2 * 60 * 60; // 2 hours
+const PROXY_TTL = 8 * 60 * 60; // 8 hours
 
 const MONGO_URI = process.env.MONGODB_URI;
 
@@ -89,5 +91,16 @@ function cacheWrapResolvedUrl(id, method) {
   return cacheWrap(memoryCache, `${RESOLVED_URL_KEY_PREFIX}:${id}`, method, { ttl: { MEMORY_TTL } });
 }
 
-module.exports = { cacheWrapImdbId, cacheWrapKitsuId, cacheWrapMetadata, retrieveTorrentFiles, cacheWrapResolvedUrl };
+function cacheWrapProxy(id, method) {
+  return cacheWrap(memoryCache, `${PROXY_KEY_PREFIX}:${id}`, method, { ttl: { PROXY_TTL } });
+}
+
+module.exports = {
+  cacheWrapImdbId,
+  cacheWrapKitsuId,
+  cacheWrapMetadata,
+  retrieveTorrentFiles,
+  cacheWrapResolvedUrl,
+  cacheWrapProxy
+};
 

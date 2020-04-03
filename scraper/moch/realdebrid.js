@@ -1,28 +1,28 @@
 const { encode } = require('magnet-uri');
 const RealDebridClient = require('real-debrid-api');
 const namedQueue = require('named-queue');
-const { cacheWrapResolvedUrl } = require('../lib/cache');
+const { cacheWrapResolvedUrl, cacheWrapProxy } = require('../lib/cache');
 const { getRandomProxy, getRandomUserAgent } = require('../lib/request_helper');
 
 const unrestrictQueue = new namedQueue((task, callback) => task.method()
     .then(result => callback(false, result))
     .catch((error => callback(error))));
 
-async function resolve(apiKey, infoHash, cachedFileIds, fileIndex) {
+async function resolve(ip, apiKey, infoHash, cachedFileIds, fileIndex) {
   if (!apiKey || !infoHash || !cachedFileIds || !cachedFileIds.length) {
     return Promise.reject("No valid parameters passed");
   }
   const id = `${apiKey}_${infoHash}_${fileIndex}`;
-  const method = () => cacheWrapResolvedUrl(id, () => _unrestrict(apiKey, infoHash, cachedFileIds, fileIndex));
+  const method = () => cacheWrapResolvedUrl(id, () => _unrestrict(ip, apiKey, infoHash, cachedFileIds, fileIndex));
 
   return new Promise(((resolve, reject) => {
     unrestrictQueue.push({ id, method }, (error, result) => result ? resolve(result) : reject(error));
   }));
 }
 
-async function _unrestrict(apiKey, infoHash, cachedFileIds, fileIndex) {
+async function _unrestrict(ip, apiKey, infoHash, cachedFileIds, fileIndex) {
   console.log(`Unrestricting ${infoHash} [${fileIndex}]`);
-  const RD = new RealDebridClient(apiKey, getDefaultOptions());
+  const RD = await getDefaultOptions(ip).then(options => new RealDebridClient(apiKey, options));
   const torrentId = await _createOrFindTorrentId(RD, infoHash, cachedFileIds);
   if (torrentId) {
     const info = await RD.torrents.info(torrentId);
@@ -67,13 +67,14 @@ async function _unrestrictLink(RD, link) {
   // });
 }
 
-function getDefaultOptions() {
-  return {
+function getDefaultOptions(ip) {
+  const generateOptions = () => ({
     proxy: getRandomProxy(),
     headers: {
       'User-Agent': getRandomUserAgent()
     }
-  };
+  });
+  return cacheWrapProxy(ip, generateOptions).catch(() => generateOptions());
 }
 
 module.exports = { resolve };
