@@ -92,7 +92,7 @@ function cacheWrapResolvedUrl(id, method) {
   return cacheWrap(memoryCache, `${RESOLVED_URL_KEY_PREFIX}:${id}`, method, { ttl: { RESOLVED_URL_TTL } });
 }
 
-function cacheWrapProxy(id, method) {
+function cacheWrapOptions(id, method) {
   return cacheWrap(memoryCache, `${PROXY_KEY_PREFIX}:${id}`, method, { ttl: { PROXY_TTL } });
 }
 
@@ -102,6 +102,6 @@ module.exports = {
   cacheWrapMetadata,
   retrieveTorrentFiles,
   cacheWrapResolvedUrl,
-  cacheWrapProxy
+  cacheWrapOptions
 };
 

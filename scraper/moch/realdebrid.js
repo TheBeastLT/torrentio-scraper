@@ -1,7 +1,7 @@
 const { encode } = require('magnet-uri');
 const RealDebridClient = require('real-debrid-api');
 const namedQueue = require('named-queue');
-const { cacheWrapResolvedUrl, cacheWrapProxy } = require('../lib/cache');
+const { cacheWrapResolvedUrl, cacheWrapOptions } = require('../lib/cache');
 const { getRandomProxy, getRandomUserAgent } = require('../lib/request_helper');
 
 const unrestrictQueue = new namedQueue((task, callback) => task.method()
@@ -22,7 +22,8 @@ async function resolve(ip, apiKey, infoHash, cachedFileIds, fileIndex) {
 
 async function _unrestrict(ip, apiKey, infoHash, cachedFileIds, fileIndex) {
   console.log(`Unrestricting ${infoHash} [${fileIndex}]`);
-  const RD = await getDefaultOptions(ip).then(options => new RealDebridClient(apiKey, options));
+  const options = await getDefaultOptions(ip);
+  const RD = new RealDebridClient(apiKey, options);
   const torrentId = await _createOrFindTorrentId(RD, infoHash, cachedFileIds);
   if (torrentId) {
     const info = await RD.torrents.info(torrentId);
@@ -74,7 +75,7 @@ function getDefaultOptions(ip) {
       'User-Agent': getRandomUserAgent()
     }
   });
-  return cacheWrapProxy(ip, generateOptions).catch(() => generateOptions());
+  return cacheWrapOptions(ip, generateOptions).catch(() => generateOptions());
 }
 
 module.exports = { resolve };
