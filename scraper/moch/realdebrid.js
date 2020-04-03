@@ -2,7 +2,7 @@ const { encode } = require('magnet-uri');
 const RealDebridClient = require('real-debrid-api');
 const namedQueue = require('named-queue');
 const { cacheWrapResolvedUrl } = require('../lib/cache');
-const { getProxy } = require('../lib/request_helper');
+const { getRandomProxy, getRandomUserAgent } = require('../lib/request_helper');
 
 const unrestrictQueue = new namedQueue((task, callback) => task.method()
     .then(result => callback(false, result))
@@ -22,7 +22,7 @@ async function resolve(apiKey, infoHash, cachedFileIds, fileIndex) {
 
 async function _unrestrict(apiKey, infoHash, cachedFileIds, fileIndex) {
   console.log(`Unrestricting ${infoHash} [${fileIndex}]`);
-  const RD = new RealDebridClient(apiKey);
+  const RD = new RealDebridClient(apiKey, getDefaultOptions());
   const torrentId = await _createOrFindTorrentId(RD, infoHash, cachedFileIds);
   if (torrentId) {
     const info = await RD.torrents.info(torrentId);
@@ -56,7 +56,7 @@ async function _unrestrictLink(RD, link) {
   if (!link || !link.length) {
     return Promise.reject("No available links found");
   }
-  return RD._post('unrestrict/link', { form: { link }, proxy: getProxy() })
+  return RD.unrestrict.link(link)
       .then(unrestrictedLink => unrestrictedLink.download);
   // .then(unrestrictedLink => RD.streaming.transcode(unrestrictedLink.id))
   // .then(transcodedLink => {
@@ -65,6 +65,15 @@ async function _unrestrictLink(RD, link) {
   //   console.log(`Unrestricted ${link} to ${url}`);
   //   return url;
   // });
+}
+
+function getDefaultOptions() {
+  return {
+    proxy: getRandomProxy(),
+    headers: {
+      'User-Agent': getRandomUserAgent()
+    }
+  };
 }
 
 module.exports = { resolve };

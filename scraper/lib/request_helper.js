@@ -16,11 +16,4 @@ function getRandomProxy() {
   return undefined;
 }
 
-function getProxy() {
-  if (PROXY_HOSTS && PROXY_HOSTS.length && PROXY_USERNAME && PROXY_PASSWORD) {
-    return `http://${PROXY_USERNAME}:${PROXY_PASSWORD}@${PROXY_HOSTS[0]}`;
-  }
-  return undefined;
-}
-
-module.exports = { getRandomUserAgent, getRandomProxy, getProxy };
+module.exports = { getRandomUserAgent, getRandomProxy };
