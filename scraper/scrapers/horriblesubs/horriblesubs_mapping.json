@@ -5445,5 +5445,45 @@
   "Tower of God": {
     "showId": "1385",
     "kitsu_id": "43004"
+  },
+  "Arte": {
+    "showId": "1393",
+    "kitsu_id": "42479"
+  },
+  "Digimon Adventure (2020)": {
+    "showId": "1397",
+    "kitsu_id": "42954"
+  },
+  "Sakura Wars the Animation": {
+    "showId": "1391",
+    "kitsu_id": "42966"
+  },
+  "Yesterday wo Utatte": {
+    "showId": "1396",
+    "kitsu_id": "43063"
+  },
+  "Gal to Kyouryuu": {
+    "showId": "1394",
+    "kitsu_id": "42532"
+  },
+  "Gleipnir": {
+    "showId": "1401",
+    "kitsu_id": "42173"
+  },
+  "IDOLiSH7 S2": {
+    "showId": "1398",
+    "kitsu_id": "42453"
+  },
+  "Kingdom S3": {
+    "showId": "1402",
+    "kitsu_id": "43037"
+  },
+  "Shachou, Battle no Jikan desu!": {
+    "showId": "1400",
+    "kitsu_id": "42850"
+  },
+  "Tsugumomo S2": {
+    "showId": "1399",
+    "kitsu_id": "42180"
   }
 }
