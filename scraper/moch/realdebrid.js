@@ -1,7 +1,7 @@
 const { encode } = require('magnet-uri');
 const RealDebridClient = require('real-debrid-api');
 const namedQueue = require('named-queue');
-const { cacheWrapResolvedUrl, cacheWrapOptions } = require('../lib/cache');
+const { cacheWrapResolvedUrl, cacheWrapProxy, cacheUserAgent } = require('../lib/cache');
 const { getRandomProxy, getRandomUserAgent } = require('../lib/request_helper');
 
 const unrestrictQueue = new namedQueue((task, callback) => task.method()
@@ -68,14 +68,16 @@ async function _unrestrictLink(RD, link) {
   // });
 }
 
-function getDefaultOptions(ip) {
-  const generateOptions = () => ({
-    proxy: getRandomProxy(),
+async function getDefaultOptions(ip) {
+  const userAgent = await cacheUserAgent(ip, () => getRandomUserAgent()).catch(() => getRandomUserAgent());
+  const proxy = await cacheWrapProxy('realdebrid', () => getRandomProxy()).catch(() => getRandomProxy());
+
+  return {
+    proxy: proxy,
     headers: {
-      'User-Agent': getRandomUserAgent()
+      'User-Agent': userAgent
     }
-  });
-  return cacheWrapOptions(ip, generateOptions).catch(() => generateOptions());
+  };
 }
 
 module.exports = { resolve };

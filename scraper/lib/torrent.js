@@ -38,7 +38,7 @@ module.exports.updateTorrentSize = function (torrent) {
       .then(result => ({ ...torrent, size: result.size, files: result.files }));
 };
 
-module.exports.sizeAndFiles = torrent => filesAndSizeFromTorrentStream(torrent, 20000);
+module.exports.sizeAndFiles = torrent => filesAndSizeFromTorrentStream(torrent, 30000);
 
 module.exports.torrentFiles = function (torrent) {
   return getFilesFromObject(torrent)

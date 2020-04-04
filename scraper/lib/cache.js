@@ -7,33 +7,18 @@ const KITSU_ID_PREFIX = `${GLOBAL_KEY_PREFIX}|kitsu_id`;
 const METADATA_PREFIX = `${GLOBAL_KEY_PREFIX}|metadata`;
 const RESOLVED_URL_KEY_PREFIX = `${GLOBAL_KEY_PREFIX}|moch`;
 const PROXY_KEY_PREFIX = `${GLOBAL_KEY_PREFIX}|proxy`;
-const TORRENT_FILES_KEY_PREFIX = `stremio-tpb|files`;
+const USER_AGENT_KEY_PREFIX = `${GLOBAL_KEY_PREFIX}|agent`;
 
 const GLOBAL_TTL = process.env.METADATA_TTL || 7 * 24 * 60 * 60; // 7 days
 const MEMORY_TTL = process.env.METADATA_TTL || 2 * 60 * 60; // 2 hours
 const RESOLVED_URL_TTL = 2 * 60; // 2 minutes
-const PROXY_TTL = 8 * 60 * 60; // 8 hours
+const PROXY_TTL = 60 * 60; // 60 minutes
+const USER_AGENT_TTL = 2 * 24 * 60 * 60; // 2 days
 
 const MONGO_URI = process.env.MONGODB_URI;
 
 const memoryCache = initiateMemoryCache();
 const remoteCache = initiateRemoteCache();
-const torrentFilesCache = initiateTorrentFilesCache();
-
-function initiateTorrentFilesCache() {
-  if (MONGO_URI) {
-    return cacheManager.caching({
-      store: mangodbStore,
-      uri: MONGO_URI,
-      options: {
-        collection: 'cacheManager',
-        useUnifiedTopology: true,
-      },
-      ttl: GLOBAL_TTL,
-      ignoreCacheErrors: true
-    });
-  }
-}
 
 function initiateRemoteCache() {
   if (MONGO_URI) {
@@ -62,16 +47,6 @@ function initiateMemoryCache() {
   });
 }
 
-function retrieveTorrentFiles(infoHash) {
-  return torrentFilesCache.get(`${TORRENT_FILES_KEY_PREFIX}:${infoHash}`)
-      .then((results) => {
-        if (!results) {
-          throw new Error('No cached files found');
-        }
-        return results;
-      });
-}
-
 function cacheWrap(cache, key, method, options) {
   return cache.wrap(key, method, options);
 }
@@ -92,16 +67,20 @@ function cacheWrapResolvedUrl(id, method) {
   return cacheWrap(memoryCache, `${RESOLVED_URL_KEY_PREFIX}:${id}`, method, { ttl: { RESOLVED_URL_TTL } });
 }
 
-function cacheWrapOptions(id, method) {
+function cacheWrapProxy(id, method) {
   return cacheWrap(memoryCache, `${PROXY_KEY_PREFIX}:${id}`, method, { ttl: { PROXY_TTL } });
+}
+
+function cacheUserAgent(id, method) {
+  return cacheWrap(memoryCache, `${USER_AGENT_KEY_PREFIX}:${id}`, method, { ttl: { USER_AGENT_TTL } });
 }
 
 module.exports = {
   cacheWrapImdbId,
   cacheWrapKitsuId,
   cacheWrapMetadata,
-  retrieveTorrentFiles,
   cacheWrapResolvedUrl,
-  cacheWrapOptions
+  cacheWrapProxy,
+  cacheUserAgent
 };
 

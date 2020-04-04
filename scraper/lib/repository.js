@@ -28,7 +28,8 @@ const Torrent = database.define('torrent',
       seeders: { type: Sequelize.SMALLINT },
       trackers: { type: Sequelize.STRING(4096) },
       languages: { type: Sequelize.STRING(256) },
-      resolution: { type: Sequelize.STRING(16) }
+      resolution: { type: Sequelize.STRING(16) },
+      reviewed: { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false }
     }
 );
 
@@ -118,7 +119,7 @@ function getTorrentsBasedOnTitle(titleQuery, type) {
 function getTorrentsWithoutSize() {
   return Torrent.findAll({
     where: literal(
-        'exists (select 1 from files where files."infoHash" = torrent."infoHash" and files.size = 300000000)'),
+        'exists (select 1 from files where files."infoHash" = torrent."infoHash" and files.size = 300000000) and random() < 0.01'),
     order: [
       ['seeders', 'DESC']
     ],
