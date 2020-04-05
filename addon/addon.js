@@ -1,6 +1,6 @@
 const { addonBuilder } = require('stremio-addon-sdk');
 const { Type } = require('./lib/types');
-const { manifest } = require('./lib/manifest');
+const { manifest, Providers } = require('./lib/manifest');
 const { cacheWrapStream } = require('./lib/cache');
 const { toStreamInfo } = require('./lib/streamInfo');
 const repository = require('./lib/repository');
@@ -12,6 +12,7 @@ const CACHE_MAX_AGE_EMPTY = 30 * 60; // 30 minutes
 const STALE_REVALIDATE_AGE = 4 * 60 * 60; // 4 hours
 const STALE_ERROR_AGE = 7 * 24 * 60 * 60; // 7 days
 
+const defaultProviders = Providers.map(provider => provider.toLowerCase());
 const builder = new addonBuilder(manifest());
 
 builder.defineStreamHandler((args) => {
@@ -23,7 +24,7 @@ builder.defineStreamHandler((args) => {
       .then(records => records
           .sort((a, b) => b.torrent.seeders - a.torrent.seeders || b.torrent.uploadDate - a.torrent.uploadDate)
           .map(record => toStreamInfo(record))))
-      .then(streams => filterByProvider(streams, args.extra.providers))
+      .then(streams => filterByProvider(streams, args.extra.providers || defaultProviders))
       .then(streams => applySorting(streams, args.extra))
       .then(streams => applyMochs(streams, args.extra))
       .then(streams => ({
