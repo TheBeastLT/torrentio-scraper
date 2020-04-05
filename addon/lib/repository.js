@@ -49,7 +49,8 @@ function getImdbIdMovieEntries(imdbId) {
     where: {
       imdbId: { [Op.eq]: imdbId }
     },
-    include: [Torrent]
+    include: [Torrent],
+    limit: 500
   });
 }
 
@@ -60,7 +61,8 @@ function getImdbIdSeriesEntries(imdbId, season, episode) {
       imdbSeason: { [Op.eq]: season },
       imdbEpisode: { [Op.eq]: episode }
     },
-    include: [Torrent]
+    include: [Torrent],
+    limit: 500
   });
 }
 
@@ -69,7 +71,8 @@ function getKitsuIdMovieEntries(kitsuId) {
     where: {
       kitsuId: { [Op.eq]: kitsuId }
     },
-    include: [Torrent]
+    include: [Torrent],
+    limit: 500
   });
 }
 
@@ -79,7 +82,8 @@ function getKitsuIdSeriesEntries(kitsuId, episode) {
       kitsuId: { [Op.eq]: kitsuId },
       kitsuEpisode: { [Op.eq]: episode }
     },
-    include: [Torrent]
+    include: [Torrent],
+    limit: 500
   });
 }
 
