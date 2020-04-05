@@ -81,7 +81,11 @@ function filterByProvider(streams, providers) {
   if (!providers || !providers.length) {
     return streams;
   }
-  return streams.filter(stream => providers.includes(stream.name.split('\n')[1].toLowerCase()))
+  return streams.filter(stream => {
+    const parts = stream.title.split('\n');
+    const provider = parts[parts.length - 2].match(/\w+$/)[0];
+    return providers.includes(provider.toLowerCase());
+  })
 }
 
 module.exports = builder.getInterface();

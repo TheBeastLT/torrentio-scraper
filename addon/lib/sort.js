@@ -33,7 +33,7 @@ function sortBySeeders(streams) {
 function sortByVideoQuality(streams, limit) {
   const qualityMap = sortBySeeders(streams)
       .reduce((map, stream) => {
-        const quality = extractQuality(stream.title);
+        const quality = extractQuality(stream.name);
         map[quality] = (map[quality] || []).concat(stream);
         return map;
       }, {});
@@ -56,8 +56,7 @@ function sortByVideoQuality(streams, limit) {
 }
 
 function extractQuality(title) {
-  const qualityMatch = title.match(/📺 (.*)/);
-  const qualityDesc = qualityMatch && qualityMatch[1];
+  const qualityDesc = title.split('\n')[1];
   const resolutionMatch = qualityDesc && qualityDesc.match(/\d+p/);
   if (resolutionMatch) {
     return resolutionMatch[0];

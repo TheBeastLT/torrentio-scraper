@@ -16,7 +16,7 @@ async function applyMoch(streams, apiKey) {
       const cachedEntry = available[stream.infoHash];
       const cachedIds = getCachedFileIds(stream.fileIdx, cachedEntry).join(',');
       if (cachedIds.length) {
-        stream.name = `[RD Cached]\n${stream.name}`;
+        stream.name = `[RD+] ${stream.name}`;
         stream.url = `${RESOLVER_HOST}/realdebrid/${apiKey}/${stream.infoHash}/${cachedIds}/${stream.fileIdx}`;
         delete stream.infoHash;
         delete stream.fileIndex;
