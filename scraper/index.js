@@ -14,6 +14,8 @@ const thepiratebayDumpScraper = require('./scrapers/thepiratebay/thepiratebay_du
 const thepiratebayUnofficialDumpScraper = require('./scrapers/thepiratebay/thepiratebay_unofficial_dump_scraper');
 
 const PROVIDERS = [
+  // require('./scrapers/thepiratebay/thepiratebay_update_size_scraper')
+  // require('./scrapers/1337x/1337x_dump_scraper')
   horribleSubsScraper,
   rarbgScraper,
   thepiratebayScraper,
@@ -23,8 +25,8 @@ const PROVIDERS = [
   // thepiratebayDumpScraper
   // thepiratebayUnofficialDumpScraper
 ];
-const SCRAPE_CRON = process.env.SCRAPE_CRON || '0 0 */4 ? * *';
-const SEEDERS_CRON = '*/60 * * ? * *';
+const SCRAPE_CRON = process.env.SCRAPE_CRON || '0 0 */4 ? * *'; // every 4 hours
+const SEEDERS_CRON = '0 */2 * ? * *'; // every 2 minutes
 
 async function scrape() {
   return PROVIDERS
@@ -41,7 +43,8 @@ async function updateSeeders() {
   return getUpdateSeedersTorrents()
       .then(torrents => Promise.all(torrents
           .map(torrent => PROVIDERS.find(provider => provider.NAME === torrent.provider)
-              .updateSeeders(torrent))));
+              .updateSeeders(torrent))))
+      .then(() => console.log('Finished updating seeders'));
 }
 
 function enableScheduling() {

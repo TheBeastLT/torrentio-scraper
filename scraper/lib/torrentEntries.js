@@ -63,8 +63,6 @@ async function updateTorrentSeeders(torrent) {
       .catch(() => undefined)
       .then(stored => {
         if (stored) {
-          console.log(
-              `Updated seeder for ${torrent.provider} [${torrent.infoHash}] ${torrent.title} from ${stored.seeders} to ${torrent.seeders}`);
           stored.seeders = torrent.seeders;
           stored.changed('updatedAt', true);
           return stored.save()
