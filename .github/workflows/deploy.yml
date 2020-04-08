@@ -40,5 +40,5 @@ jobs:
           docker load -i /tmp/docker/torrentio_addon_latest.tar
           docker stop torrentio-addon
           docker rm torrentio-addon
-          docker run -p 80:7000 -d --name torrentio-addon --restart always -e MONGODB_URI=${{ secrets.MONGODB_URI }} -e DATABASE_URI=${{ secrets.DATABASE_URI }} -e RESOLVER_HOST=${{ secrets.RESOLVER_HOST }} torrentio-addon:latest
+          docker run -p 80:7000 -d --name torrentio-addon --restart always -e MONGODB_URI=${{ secrets.MONGODB_URI }} -e DATABASE_URI=${{ secrets.DATABASE_URI }} -e RESOLVER_HOST=${{ secrets.RESOLVER_HOST }} -e PROXY_HOSTS=${{ secrets.PROXY_HOSTS }} -e PROXY_USERNAME=${{ secrets.PROXY_USERNAME }} -e PROXY_PASSWORD=${{ secrets.PROXY_PASSWORD }} torrentio-addon:latest
           docker image prune -f
