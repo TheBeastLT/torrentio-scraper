@@ -1,3 +1,4 @@
+const moment = require('moment');
 const { Sequelize, fn, col, literal } = require('sequelize');
 const Op = Sequelize.Op;
 
@@ -119,11 +120,18 @@ function getTorrentsBasedOnTitle(titleQuery, type) {
 function getTorrentsWithoutSize() {
   return Torrent.findAll({
     where: literal(
-        'exists (select 1 from files where files."infoHash" = torrent."infoHash" and files.size = 300000000) and random() < 0.01'),
+        'exists (select 1 from files where files."infoHash" = torrent."infoHash" and files.size = 300000000)'),
     order: [
       ['seeders', 'DESC']
-    ],
-    limit: 1000
+    ]
+  });
+}
+
+function getUpdateSeedersTorrents() {
+  const until = moment().subtract(7, 'days').format('YYYY-MM-DD');
+  return Torrent.findAll({
+    where: literal(`torrent."updatedAt" < \'${until}\' and random() < 0.001`),
+    limit: 100
   });
 }
 
@@ -186,6 +194,7 @@ module.exports = {
   createTorrent,
   getTorrent,
   getTorrentsBasedOnTitle,
+  getUpdateSeedersTorrents,
   createFile,
   getFiles,
   getFilesBasedOnTitle,

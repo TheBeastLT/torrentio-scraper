@@ -4,6 +4,7 @@ const kickass = require('./kickass_api');
 const { Type } = require('../../lib/types');
 const repository = require('../../lib/repository');
 const Promises = require('../../lib/promises');
+const { updateCurrentSeeders } = require('../../lib/torrent');
 const { createTorrentEntry, getStoredTorrentEntry, updateTorrentSeeders } = require('../../lib/torrentEntries');
 
 const NAME = 'KickassTorrents';
@@ -23,6 +24,13 @@ async function scrape() {
         return lastScrape.save();
       })
       .then(() => console.log(`[${moment()}] finished ${NAME} scrape`));
+}
+
+async function updateSeeders(torrent) {
+  return limiter.schedule(() => kickass.torrent(torrent.torrentId)
+      .then(record => (torrent.seeders = record.seeders, torrent))
+      .catch(() => updateCurrentSeeders(torrent))
+      .then(updated => updateTorrentSeeders(updated)));
 }
 
 async function scrapeLatestTorrents() {
@@ -83,4 +91,4 @@ function typeMapping() {
   return mapping;
 }
 
-module.exports = { scrape, NAME };
+module.exports = { scrape, updateSeeders, NAME };

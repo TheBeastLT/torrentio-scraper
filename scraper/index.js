@@ -2,7 +2,7 @@ require('dotenv').config();
 const express = require("express");
 const server = express();
 const schedule = require('node-schedule');
-const { connect } = require('./lib/repository');
+const { connect, getUpdateSeedersTorrents } = require('./lib/repository');
 const realDebrid = require('./moch/realdebrid');
 const thepiratebayScraper = require('./scrapers/thepiratebay/thepiratebay_scraper');
 const horribleSubsScraper = require('./scrapers/horriblesubs/horriblesubs_scraper');
@@ -24,6 +24,7 @@ const PROVIDERS = [
   // thepiratebayUnofficialDumpScraper
 ];
 const SCRAPE_CRON = process.env.SCRAPE_CRON || '0 0 */4 ? * *';
+const SEEDERS_CRON = '*/60 * * ? * *';
 
 async function scrape() {
   return PROVIDERS
@@ -36,9 +37,19 @@ async function scrape() {
       }, Promise.resolve());
 }
 
+async function updateSeeders() {
+  return getUpdateSeedersTorrents()
+      .then(torrents => Promise.all(torrents
+          .map(torrent => PROVIDERS.find(provider => provider.NAME === torrent.provider)
+              .updateSeeders(torrent))));
+}
+
 function enableScheduling() {
   if (process.env.ENABLE_SCHEDULING) {
-    schedule.scheduleJob(SCRAPE_CRON, () => scrape().catch(error => console.error('Failed scraping: ', error)));
+    schedule.scheduleJob(SCRAPE_CRON,
+        () => scrape().catch(error => console.error('Failed scraping: ', error)));
+    // schedule.scheduleJob(SEEDERS_CRON,
+    //     () => updateSeeders().catch(error => console.error('Failed update seeders: ', error)));
   } else {
     scrape().catch(error => console.error('Failed scraping: ', error));
   }

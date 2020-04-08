@@ -8,6 +8,7 @@ const Promises = require('../../lib/promises');
 const { createTorrentEntry, getStoredTorrentEntry, updateTorrentSeeders } = require('../../lib/torrentEntries');
 
 const NAME = 'RARBG';
+const SEARCH_OPTIONS = { limit: 100, sort: 'seeders', format: 'json_extended', ranked: 0 };
 
 const limiter = new Bottleneck({ maxConcurrent: 1, minTime: 2500 });
 const entryLimiter = new Bottleneck({ maxConcurrent: 40 });
@@ -23,6 +24,17 @@ async function scrape() {
         return lastScrape.save();
       })
       .then(() => console.log(`[${moment()}] finished ${NAME} scrape`));
+}
+
+async function updateSeeders(torrent) {
+  const imdbIds = await repository.getFiles(torrent)
+      .then(files => files.map(file => file.imdbId))
+      .then(ids => Array.from(new Set(ids)));
+
+  return Promise.all(imdbIds.map(imdbId => limiter.schedule(() => rarbg.search(imdbId, SEARCH_OPTIONS, 'imdb'))))
+      .then(results => results.reduce((a, b) => a.concat(b), []))
+      .then(results => results.map(result => toTorrent(result)))
+      .then(torrents => Promise.all(torrents.map(updated => updateTorrentSeeders(updated))));
 }
 
 async function scrapeLatestTorrents() {
@@ -51,17 +63,7 @@ async function scrapeLatestTorrents() {
 async function scrapeLatestTorrentsForCategory(category) {
   console.log(`Scrapping ${NAME} ${category} category`);
   return rarbg.list({ category: category, limit: 100, sort: 'last', format: 'json_extended', ranked: 0 })
-      .then(torrents => torrents.map(torrent => ({
-        name: torrent.title,
-        infoHash: decode(torrent.download).infoHash,
-        magnetLink: torrent.download,
-        seeders: torrent.seeders,
-        leechers: torrent.leechers,
-        category: torrent.category,
-        size: torrent.size,
-        uploadDate: new Date(torrent.pubdate),
-        imdbId: torrent.episode_info && torrent.episode_info.imdb
-      })))
+      .then(results => results.map(result => toTorrent(result)))
       .then(torrents => Promise.all(torrents.map(t => entryLimiter.schedule(() => processTorrentRecord(t)))))
       .catch(error => {
         console.warn(`Failed ${NAME} scrapping for ${category} due: `, error);
@@ -77,7 +79,7 @@ async function processTorrentRecord(record) {
   const torrent = {
     provider: NAME,
     infoHash: record.infoHash,
-    title: record.name,
+    title: record.title,
     type: getType(record.category),
     seeders: record.seeders,
     size: record.size,
@@ -86,6 +88,21 @@ async function processTorrentRecord(record) {
   };
 
   return createTorrentEntry(torrent);
+}
+
+function toTorrent(result) {
+  return {
+    title: result.title,
+    provider: NAME,
+    infoHash: decode(result.download).infoHash,
+    magnetLink: result.download,
+    seeders: result.seeders,
+    leechers: result.leechers,
+    category: result.category,
+    size: result.size,
+    uploadDate: new Date(result.pubdate),
+    imdbId: result.episode_info && result.episode_info.imdb
+  };
 }
 
 const seriesCategories = [
@@ -101,4 +118,4 @@ function getType(category) {
   return Type.MOVIE;
 }
 
-module.exports = { scrape, NAME };
+module.exports = { scrape, updateSeeders, NAME };

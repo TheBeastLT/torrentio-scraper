@@ -7,6 +7,7 @@ const repository = require('../../lib/repository');
 const { Type } = require('../../lib/types');
 const { updateCurrentSeeders, updateTorrentSize } = require('../../lib/torrent');
 const { parseTorrentFiles } = require('../../lib/torrentFiles');
+const { updateTorrentSeeders } = require('../../lib/torrentEntries');
 const { getMetadata, getKitsuId } = require('../../lib/metadata');
 const showMappings = require('./horriblesubs_mapping.json');
 
@@ -34,6 +35,11 @@ async function scrape() {
     return _scrapeLatestEntries()
         .then(() => console.log(`[${moment()}] finished scrapping latest ${NAME} entries`));
   }
+}
+
+async function updateSeeders(torrent) {
+  return entryLimiter.schedule(() => updateCurrentSeeders(torrent)
+      .then(updated => updateTorrentSeeders(updated)));
 }
 
 async function _scrapeLatestEntries() {
@@ -209,4 +215,4 @@ async function checkIfExists(torrent) {
   return { ...torrent, size: existingTorrent.size, seeders: existingTorrent.seeders };
 }
 
-module.exports = { scrape, NAME };
+module.exports = { scrape, updateSeeders, NAME };

@@ -4,20 +4,22 @@ const parseTorrent = require('parse-torrent');
 const async = require('async');
 const decode = require('magnet-uri');
 const isVideo = require('./video');
+const { cacheTrackers } = require('./cache');
 
+const TRACKERS_URL = 'https://ngosang.github.io/trackerslist/trackers_best.txt';
 const MAX_PEER_CONNECTIONS = process.env.MAX_PEER_CONNECTIONS || 20;
 const SEEDS_CHECK_TIMEOUT = process.env.SEEDS_CHECK_TIMEOUT || 10 * 1000; // 10 secs
 
 module.exports.updateCurrentSeeders = function (torrent) {
-  return new Promise((resolve) => {
-    if (!torrent.magnetLink) {
+  return new Promise(async (resolve) => {
+    if (!torrent.magnetLink && !torrent.infoHash) {
       return resolve(0);
     }
     const Tracker = require("peer-search/tracker");
 
     const seeders = {};
-    const decodedMagnetLink = decode(torrent.magnetLink);
-    const trackers = decodedMagnetLink && decodedMagnetLink.tr;
+    const decodedMagnetLink = torrent.magnetLink && decode(torrent.magnetLink);
+    const trackers = decodedMagnetLink && decodedMagnetLink.tr || torrent.trackers || await getDefaultTrackers();
     const callback = () => resolve(Math.max(...Object.values(seeders).map(values => values[0]).concat(0)));
     setTimeout(callback, SEEDS_CHECK_TIMEOUT);
 
@@ -30,12 +32,19 @@ module.exports.updateCurrentSeeders = function (torrent) {
         ready();
       });
     }, callback);
-  }).then(seeders => ({ ...torrent, seeders: torrent.seeders || seeders }));
+  }).then(seeders => {
+    torrent.seeders = seeders;
+    return torrent;
+  });
 };
 
 module.exports.updateTorrentSize = function (torrent) {
   return filesAndSizeFromTorrentStream(torrent, SEEDS_CHECK_TIMEOUT)
-      .then(result => ({ ...torrent, size: result.size, files: result.files }));
+      .then(result => {
+        torrent.size = result.size;
+        torrent.files = result.files;
+        return torrent;
+      });
 };
 
 module.exports.sizeAndFiles = torrent => filesAndSizeFromTorrentStream(torrent, 30000);
@@ -124,19 +133,9 @@ function filterExtras(files) {
   return files.filter(file => !isExtra(file));
 }
 
-function dynamicTimeout(torrent) {
-  if (torrent.seeders < 5) {
-    return 5000;
-  } else if (torrent.seeders < 10) {
-    return 7000;
-  } else if (torrent.seeders < 20) {
-    return 10000;
-  } else if (torrent.seeders < 30) {
-    return 15000;
-  } else if (torrent.seeders < 50) {
-    return 20000;
-  } else {
-    return 30000;
-  }
+async function getDefaultTrackers() {
+  return cacheTrackers(() => needle('get', TRACKERS_URL, { open_timeout: SEEDS_CHECK_TIMEOUT })
+      .then(response => response.body && response.body.trim())
+      .then(body => body && body.split('\n\n') || []));
 }
 

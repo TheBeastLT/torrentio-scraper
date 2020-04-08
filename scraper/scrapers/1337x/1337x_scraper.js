@@ -4,6 +4,7 @@ const leetx = require('./1337x_api');
 const { Type } = require('../../lib/types');
 const repository = require('../../lib/repository');
 const Promises = require('../../lib/promises');
+const { updateCurrentSeeders } = require('../../lib/torrent');
 const { createTorrentEntry, getStoredTorrentEntry, updateTorrentSeeders } = require('../../lib/torrentEntries');
 
 const NAME = '1337x';
@@ -23,6 +24,13 @@ async function scrape() {
         return lastScrape.save();
       })
       .then(() => console.log(`[${moment()}] finished ${NAME} scrape`));
+}
+
+async function updateSeeders(torrent) {
+  return limiter.schedule(() => leetx.torrent(torrent.torrentId)
+      .then(record => (torrent.seeders = record.seeders, torrent))
+      .catch(() => updateCurrentSeeders(torrent))
+      .then(updated => updateTorrentSeeders(updated)));
 }
 
 async function scrapeLatestTorrents() {
@@ -80,15 +88,6 @@ async function processTorrentRecord(record) {
   return createTorrentEntry(torrent);
 }
 
-async function updateSeeders() {
-  const startDate = moment().subtract(7, 'day').toDate();
-  const endDate = moment().subtract(1, 'day').toDate();
-  return repository.getTorrentsUpdatedBetween(NAME, startDate, endDate)
-      .then(torrents => Promise.all(torrents.map(torrent => limiter.schedule(() => leetx.torrent(torrent.torrentId)
-          .then(foundTorrent => updateTorrentSeeders(foundTorrent))
-          .catch(error => console.warn(error))))))
-}
-
 function typeMapping() {
   const mapping = {};
   mapping[leetx.Categories.MOVIE] = Type.MOVIE;
@@ -98,4 +97,4 @@ function typeMapping() {
   return mapping;
 }
 
-module.exports = { scrape, NAME };
+module.exports = { scrape, updateSeeders, NAME };

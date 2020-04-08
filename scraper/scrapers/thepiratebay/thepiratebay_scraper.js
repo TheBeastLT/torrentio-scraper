@@ -4,6 +4,7 @@ const thepiratebay = require('./thepiratebay_api.js');
 const { Type } = require('../../lib/types');
 const repository = require('../../lib/repository');
 const Promises = require('../../lib/promises');
+const { updateCurrentSeeders } = require('../../lib/torrent');
 const { createTorrentEntry, getStoredTorrentEntry, updateTorrentSeeders } = require('../../lib/torrentEntries');
 
 const NAME = 'ThePirateBay';
@@ -35,6 +36,13 @@ async function scrape() {
         return lastScrape.save();
       })
       .then(() => console.log(`[${moment()}] finished ${NAME} scrape`));
+}
+
+async function updateSeeders(torrent) {
+  return limiter.schedule(() => thepiratebay.torrent(torrent.torrentId)
+      .then(record => (torrent.seeders = record.seeders, torrent))
+      .catch(() => updateCurrentSeeders(torrent))
+      .then(updated => updateTorrentSeeders(updated)));
 }
 
 async function scrapeLatestTorrents() {
@@ -81,4 +89,4 @@ async function processTorrentRecord(record) {
   return createTorrentEntry(torrent);
 }
 
-module.exports = { scrape, NAME };
+module.exports = { scrape, updateSeeders, NAME };

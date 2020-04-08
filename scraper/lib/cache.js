@@ -8,12 +8,14 @@ const METADATA_PREFIX = `${GLOBAL_KEY_PREFIX}|metadata`;
 const RESOLVED_URL_KEY_PREFIX = `${GLOBAL_KEY_PREFIX}|moch`;
 const PROXY_KEY_PREFIX = `${GLOBAL_KEY_PREFIX}|proxy`;
 const USER_AGENT_KEY_PREFIX = `${GLOBAL_KEY_PREFIX}|agent`;
+const TRACKERS_KEY_PREFIX = `${GLOBAL_KEY_PREFIX}|trackers`;
 
 const GLOBAL_TTL = process.env.METADATA_TTL || 7 * 24 * 60 * 60; // 7 days
 const MEMORY_TTL = process.env.METADATA_TTL || 2 * 60 * 60; // 2 hours
 const RESOLVED_URL_TTL = 2 * 60; // 2 minutes
 const PROXY_TTL = 60 * 60; // 60 minutes
 const USER_AGENT_TTL = 2 * 24 * 60 * 60; // 2 days
+const TRACKERS_TTL = 2 * 24 * 60 * 60; // 2 days
 
 const MONGO_URI = process.env.MONGODB_URI;
 
@@ -75,12 +77,17 @@ function cacheUserAgent(id, method) {
   return cacheWrap(memoryCache, `${USER_AGENT_KEY_PREFIX}:${id}`, method, { ttl: { USER_AGENT_TTL } });
 }
 
+function cacheTrackers(method) {
+  return cacheWrap(memoryCache, `${TRACKERS_KEY_PREFIX}`, method, { ttl: { TRACKERS_TTL } });
+}
+
 module.exports = {
   cacheWrapImdbId,
   cacheWrapKitsuId,
   cacheWrapMetadata,
   cacheWrapResolvedUrl,
   cacheWrapProxy,
-  cacheUserAgent
+  cacheUserAgent,
+  cacheTrackers
 };
 
