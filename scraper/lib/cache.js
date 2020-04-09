@@ -5,16 +5,10 @@ const GLOBAL_KEY_PREFIX = 'stremio-torrentio';
 const IMDB_ID_PREFIX = `${GLOBAL_KEY_PREFIX}|imdb_id`;
 const KITSU_ID_PREFIX = `${GLOBAL_KEY_PREFIX}|kitsu_id`;
 const METADATA_PREFIX = `${GLOBAL_KEY_PREFIX}|metadata`;
-const RESOLVED_URL_KEY_PREFIX = `${GLOBAL_KEY_PREFIX}|moch`;
-const PROXY_KEY_PREFIX = `${GLOBAL_KEY_PREFIX}|proxy`;
-const USER_AGENT_KEY_PREFIX = `${GLOBAL_KEY_PREFIX}|agent`;
 const TRACKERS_KEY_PREFIX = `${GLOBAL_KEY_PREFIX}|trackers`;
 
 const GLOBAL_TTL = process.env.METADATA_TTL || 7 * 24 * 60 * 60; // 7 days
 const MEMORY_TTL = process.env.METADATA_TTL || 2 * 60 * 60; // 2 hours
-const RESOLVED_URL_TTL = 2 * 60; // 2 minutes
-const PROXY_TTL = 60 * 60; // 60 minutes
-const USER_AGENT_TTL = 2 * 24 * 60 * 60; // 2 days
 const TRACKERS_TTL = 2 * 24 * 60 * 60; // 2 days
 
 const MONGO_URI = process.env.MONGODB_URI;
@@ -65,18 +59,6 @@ function cacheWrapMetadata(id, method) {
   return cacheWrap(memoryCache, `${METADATA_PREFIX}:${id}`, method, { ttl: MEMORY_TTL });
 }
 
-function cacheWrapResolvedUrl(id, method) {
-  return cacheWrap(memoryCache, `${RESOLVED_URL_KEY_PREFIX}:${id}`, method, { ttl: { RESOLVED_URL_TTL } });
-}
-
-function cacheWrapProxy(id, method) {
-  return cacheWrap(memoryCache, `${PROXY_KEY_PREFIX}:${id}`, method, { ttl: { PROXY_TTL } });
-}
-
-function cacheUserAgent(id, method) {
-  return cacheWrap(memoryCache, `${USER_AGENT_KEY_PREFIX}:${id}`, method, { ttl: { USER_AGENT_TTL } });
-}
-
 function cacheTrackers(method) {
   return cacheWrap(memoryCache, `${TRACKERS_KEY_PREFIX}`, method, { ttl: { TRACKERS_TTL } });
 }
@@ -85,9 +67,6 @@ module.exports = {
   cacheWrapImdbId,
   cacheWrapKitsuId,
   cacheWrapMetadata,
-  cacheWrapResolvedUrl,
-  cacheWrapProxy,
-  cacheUserAgent,
   cacheTrackers
 };
 
