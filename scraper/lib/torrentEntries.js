@@ -4,7 +4,7 @@ const repository = require('./repository');
 const { getImdbId, getKitsuId } = require('./metadata');
 const { parseTorrentFiles } = require('./torrentFiles');
 
-async function createTorrentEntry(torrent) {
+async function createTorrentEntry(torrent, overwrite = false) {
   const titleInfo = parse(torrent.title);
 
   if (titleInfo.seasons && torrent.type === Type.MOVIE) {
@@ -33,7 +33,8 @@ async function createTorrentEntry(torrent) {
     return;
   }
 
-  const files = await parseTorrentFiles(torrent);
+  const files = await parseTorrentFiles(torrent)
+      .then(files => overwrite ? overwriteExistingFiles(torrent, files) : files);
   if (!files || !files.length) {
     console.log(`no video files found for [${torrent.infoHash}] ${torrent.title}`);
     return;
@@ -42,6 +43,34 @@ async function createTorrentEntry(torrent) {
   return repository.createTorrent(torrent)
       .then(() => Promise.all(files.map(file => repository.createFile(file))))
       .then(() => console.log(`Created entry for [${torrent.infoHash}] ${torrent.title}`));
+}
+
+async function overwriteExistingFiles(torrent, files) {
+  if (files && files.length) {
+    const existingFiles = await repository.getFiles({ infoHash: files[0].infoHash })
+        .then((existing) => existing
+            .reduce((map, next) => {
+              const fileIndex = next.fileIndex !== undefined ? next.fileIndex : null;
+              map[fileIndex] = (map[fileIndex] || []).concat(next);
+              return map;
+            }, {}))
+        .catch(() => undefined);
+    if (existingFiles && Object.keys(existingFiles).length) {
+      return files
+          .map(file => {
+            const mapping = files.length === 1 && Object.keys(existingFiles).length === 1
+                ? Object.values(existingFiles)[0]
+                : existingFiles[file.fileIndex !== undefined ? file.fileIndex : null];
+            if (mapping) {
+              const originalFile = mapping.shift();
+              return { ...file, id: originalFile.id, size: originalFile.size || file.size };
+            }
+            return file;
+          })
+    }
+    return files;
+  }
+  return Promise.reject(`No video files found for: ${torrent.title}`);
 }
 
 async function createSkipTorrentEntry(torrent) {

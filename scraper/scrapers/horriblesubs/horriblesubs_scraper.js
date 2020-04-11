@@ -6,8 +6,7 @@ const horriblesubs = require('./horriblesubs_api.js');
 const repository = require('../../lib/repository');
 const { Type } = require('../../lib/types');
 const { updateCurrentSeeders, updateTorrentSize } = require('../../lib/torrent');
-const { parseTorrentFiles } = require('../../lib/torrentFiles');
-const { updateTorrentSeeders } = require('../../lib/torrentEntries');
+const { createTorrentEntry, updateTorrentSeeders } = require('../../lib/torrentEntries');
 const { getMetadata, getKitsuId } = require('../../lib/metadata');
 const showMappings = require('./horriblesubs_mapping.json');
 
@@ -151,9 +150,9 @@ async function _parseShowData(showData) {
   };
 
   return Promise.all([].concat(showData.singleEpisodes || []).concat(showData.packEpisodes || [])
-      .map((episodeInfo) => episodeInfo.mirrors
-          .filter((mirror) => mirror.magnetLink && mirror.magnetLink.length)
-          .map((mirror) => ({
+      .map(episodeInfo => episodeInfo.mirrors
+          .filter(mirror => mirror.magnetLink && mirror.magnetLink.length)
+          .map(mirror => ({
             provider: NAME,
             ...mirror,
             infoHash: decode(mirror.magnetLink).infoHash,
@@ -164,55 +163,22 @@ async function _parseShowData(showData) {
             uploadDate: episodeInfo.uploadDate,
           })))
       .reduce((a, b) => a.concat(b), [])
-      .filter((incompleteTorrent) => incompleteTorrent.kitsuId)
-      .map((incompleteTorrent) => entryLimiter.schedule(() => checkIfExists(incompleteTorrent)
-          .then((torrent) => torrent && updateTorrentSize(torrent))
-          .then((torrent) => torrent && updateCurrentSeeders(torrent))
-          .then((torrent) => torrent && parseTorrentFiles(torrent)
-              .then((files) => verifyFiles(torrent, files))
-              .then((files) => repository.createTorrent(torrent)
-                  .then(() => files.forEach(file => repository.createFile(file)))
-                  .then(() => console.log(`Created entry for [${torrent.infoHash}] ${torrent.title}`))))
-          .catch(error => console.warn(`Failed creating entry for ${incompleteTorrent.title}:`, error)))))
+      .filter(torrent => torrent.kitsuId)
+      .map(torrent => entryLimiter.schedule(() => processTorrentRecord(torrent))))
       .then(() => console.log(`${NAME}: finished scrapping ${showData.title} data`));
 }
 
-async function verifyFiles(torrent, files) {
-  if (files && files.length) {
-    const existingFiles = await repository.getFiles({ infoHash: files[0].infoHash })
-        .then((existing) => existing
-            .reduce((map, next) => {
-              const fileIndex = next.fileIndex !== undefined ? next.fileIndex : null;
-              map[fileIndex] = (map[fileIndex] || []).concat(next);
-              return map;
-            }, {}))
-        .catch(() => undefined);
-    if (existingFiles && Object.keys(existingFiles).length) {
-      return files
-          .map(file => {
-            const mapping = files.length === 1 && Object.keys(existingFiles).length === 1
-                ? Object.values(existingFiles)[0]
-                : existingFiles[file.fileIndex !== undefined ? file.fileIndex : null];
-            if (mapping) {
-              const originalFile = mapping.shift();
-              return { ...file, id: originalFile.id, size: originalFile.size || file.size };
-            }
-            return file;
-          })
-    }
-    return files;
-  }
-  return Promise.reject(`No video files found for: ${torrent.title}`);
-}
-
-async function checkIfExists(torrent) {
+async function processTorrentRecord(torrent) {
   const existingTorrent = await repository.getTorrent(torrent).catch(() => undefined);
-  if (!existingTorrent) {
-    return torrent; // no torrent exists yet
-  } else if (existingTorrent.provider === NAME) {
-    return undefined; // torrent by this provider already exists
+
+  if (existingTorrent && existingTorrent.provider === NAME) {
+    return updateCurrentSeeders(torrent).then(updatedSeeders => updateTorrentSeeders(updatedSeeders))
   }
-  return { ...torrent, size: existingTorrent.size, seeders: existingTorrent.seeders };
+
+  return updateTorrentSize(torrent)
+      .then(updated => updateCurrentSeeders(updated))
+      .then(updated => createTorrentEntry(updated, true))
+      .catch(error => console.warn(`Failed creating entry for ${torrent.title}:`, error));
 }
 
 module.exports = { scrape, updateSeeders, NAME };
