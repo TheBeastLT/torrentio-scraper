@@ -5,17 +5,20 @@ const Providers = [
   'KickassTorrents',
   'HorribleSubs'
 ];
+const DefaultProviders = Providers
 
 function manifest({ providers, realdebrid } = {}) {
-  const providersList = Array.isArray(providers) && providers.map(provider => getProvider(provider)) || Providers;
-  const providersDesc = providers && providers.length ? 'Enabled providers -' : 'Currently supports';
+  const providersList = providers && providers.map(provider => getProvider(provider)) || DefaultProviders;
+  const enabledProvidersDesc = Providers
+      .map(provider => `${provider}${providersList.includes(provider) ? '(+)' : '(-)'}`)
+      .join(', ')
   const realDebridDesc = realdebrid ? ' and RealDebrid enabled' : '';
   return {
     id: 'com.stremio.torrentio.addon',
     version: '0.0.2',
     name: 'Torrentio',
     description: 'Provides torrent streams from scraped torrent providers.'
-        + ` ${providersDesc} ${providersList.join(', ')}${realDebridDesc}.`
+        + ` Currently supports ${enabledProvidersDesc}${realDebridDesc}.`
         + ' To configure providers, RealDebrid support and other settings visit https://torrentio.strem.fun',
     catalogs: [],
     resources: ['stream'],
@@ -30,4 +33,4 @@ function getProvider(configProvider) {
   return Providers.find(provider => provider.toLowerCase() === configProvider);
 }
 
-module.exports = { manifest, Providers };
+module.exports = { manifest, Providers, DefaultProviders };
