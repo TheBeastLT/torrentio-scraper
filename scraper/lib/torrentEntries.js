@@ -91,7 +91,7 @@ async function updateTorrentSeeders(torrent) {
   return repository.getTorrent(torrent)
       .catch(() => undefined)
       .then(stored => {
-        if (stored) {
+        if (stored && (!torrent.provider || torrent.provider === stored.provider)) {
           stored.seeders = torrent.seeders;
           stored.changed('updatedAt', true);
           return stored.save()
