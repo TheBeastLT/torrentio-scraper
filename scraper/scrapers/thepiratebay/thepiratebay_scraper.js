@@ -8,7 +8,7 @@ const { updateCurrentSeeders } = require('../../lib/torrent');
 const { createTorrentEntry, getStoredTorrentEntry, updateTorrentSeeders } = require('../../lib/torrentEntries');
 
 const NAME = 'ThePirateBay';
-const UNTIL_PAGE = 10;
+const UNTIL_PAGE = 5;
 
 const limiter = new Bottleneck({ maxConcurrent: 40 });
 
