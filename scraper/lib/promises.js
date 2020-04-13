@@ -1,5 +1,5 @@
 /**
- * Exxecute promises in sequence one after another.
+ * Execute promises in sequence one after another.
  */
 async function sequence(promises) {
   return promises.reduce((promise, func) =>
@@ -9,7 +9,7 @@ async function sequence(promises) {
 /**
  * Return first resolved promise as the result.
  */
-function first(promises) {
+async function first(promises) {
   return Promise.all(promises.map((p) => {
     // If a request fails, count that as a resolution so it will keep
     // waiting for other possible successes. If a request succeeds,
@@ -26,4 +26,11 @@ function first(promises) {
   );
 }
 
-module.exports = { sequence, first };
+/**
+ * Delay promise
+ */
+async function delay(duration) {
+  return new Promise((resolve) => setTimeout(resolve, duration));
+}
+
+module.exports = { sequence, first, delay };
