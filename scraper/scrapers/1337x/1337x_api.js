@@ -128,7 +128,7 @@ function parseTorrentPage(body) {
       seeders: parseInt(details.find('strong:contains(\'Seeders\')').next().text(), 10),
       leechers: parseInt(details.find('strong:contains(\'Leechers\')').next().text(), 10),
       category: details.find('strong:contains(\'Category\')').next().text(),
-      language: details.find('strong:contains(\'Language\')').next().text(),
+      languages: details.find('strong:contains(\'Language\')').next().text(),
       size: parseSize(details.find('strong:contains(\'Total size\')').next().text()),
       uploadDate: parseDate(details.find('strong:contains(\'Date uploaded\')').next().text()),
       imdbId: imdbIdMatch && imdbIdMatch[1],

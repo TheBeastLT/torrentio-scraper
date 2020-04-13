@@ -136,7 +136,7 @@ function parseTorrentPage(body) {
       seeders: parseInt(info.find('span[class="torrent_stats__seed_count mr-2"]').first().text().match(/\d+/)[0], 10),
       leechers: parseInt(info.find('span[class="torrent_stats__leech_count mr-2"]').first().text().match(/\d+/)[0], 10),
       category: info.find('small').first().children('a').first().attr('href').match(/\/category\/([^\/]+)/)[1],
-      language: description.find('span:contains(\'Audio\')').next().children().eq(0).text(),
+      languages: description.find('span:contains(\'Audio\')').next().children().eq(0).text(),
       size: parseSize(description.find('ul[class="file_list"]').first().find('li').first().contents().eq(2).text()
           .match(/\(Size: (.+)\)/)[1]),
       uploadDate: moment(info.find('time').first().text()).toDate(),
