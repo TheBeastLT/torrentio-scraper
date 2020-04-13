@@ -6,6 +6,7 @@ const { getMetadata, getImdbId } = require('../lib/metadata');
 const { Type } = require('./types');
 
 const MIN_SIZE = 10 * 1024 * 1024; // 10 MB
+const MULTIPLE_FILES_SIZE = 4 * 1024 * 1024 * 1024; // 4 GB
 
 async function parseTorrentFiles(torrent) {
   const parsedTorrentName = parse(torrent.title);
@@ -49,9 +50,6 @@ async function parseTorrentFiles(torrent) {
     }];
   }
 
-  // const parsedSeriesTorrentName = seriesParser.parse(torrent.title);
-  // parsedTorrentName.episodes = parsedSeriesTorrentName.episodes;
-  // parsedTorrentName.episode = parsedSeriesTorrentName.episode;
   return getSeriesFiles(torrent, parsedTorrentName)
       .then((files) => files
           .filter((file) => file.size > MIN_SIZE)
@@ -68,10 +66,10 @@ async function parseTorrentFiles(torrent) {
       });
 }
 
-async function getSeriesFiles(torrent, parsedTorrentName) {
-  if (!parsedTorrentName.complete && !parsedTorrentName.hasMovies &&
-      ((parsedTorrentName.episode && (!parsedTorrentName.seasons || parsedTorrentName.seasons.length <= 1)) ||
-          (!parsedTorrentName.episodes && parsedTorrentName.date))) {
+async function getSeriesFiles(torrent, parsedName) {
+  const hasMultipleEpisodes = parsedName.complete || parsedName.hasMovies || torrent.size > MULTIPLE_FILES_SIZE ||
+      (parsedName.seasons && parsedName.seasons.length > 1);
+  if (!hasMultipleEpisodes && (Number.isInteger(parsedName.episode) || (!parsedName.episodes && parsedName.date))) {
     return [{
       name: torrent.title,
       path: torrent.title,
@@ -133,9 +131,14 @@ function parseSeriesFile(file, parsedTorrentName) {
   if (!fileInfo.season && parsedTorrentName.season) {
     fileInfo.season = parsedTorrentName.season;
   }
+  if (!fileInfo.season && fileInfo.seasons.length > 1) {
+    // in case single file was interpreted as having multiple seasons
+    fileInfo.season = fileInfo.seasons[0];
+  }
   // force episode to any found number if it was not parsed
   if (!fileInfo.episodes && !fileInfo.date) {
-    const epMatcher = fileInfo.title.match(/(?<!movie\W*|film\W*)(?:^|\W)(\d{1,4})(?:a|b|v\d)?(?:\W|$)(?!movie|film)/i);
+    const epMatcher = fileInfo.title.match(
+        /(?<!season\W*|disk\W*|movie\W*|film\W*)(?:^|\W)(\d{1,4})(?:a|b|c|v\d)?(?:\W|$)(?!disk|movie|film)/i);
     fileInfo.episodes = epMatcher && [parseInt(epMatcher[1], 10)];
     fileInfo.episode = fileInfo.episodes && fileInfo.episodes[0];
   }
