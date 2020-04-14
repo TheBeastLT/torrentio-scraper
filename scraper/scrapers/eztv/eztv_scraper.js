@@ -34,7 +34,7 @@ async function updateSeeders(torrent) {
 }
 
 async function scrapeLatestTorrents() {
-  return scrapeLatestTorrentsForCategory(1654);
+  return scrapeLatestTorrentsForCategory();
 }
 
 async function scrapeLatestTorrentsForCategory(page = 1) {

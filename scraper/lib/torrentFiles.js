@@ -131,7 +131,7 @@ function parseSeriesFile(file, parsedTorrentName) {
   if (!fileInfo.season && parsedTorrentName.season) {
     fileInfo.season = parsedTorrentName.season;
   }
-  if (!fileInfo.season && fileInfo.seasons.length > 1) {
+  if (!fileInfo.season && fileInfo.seasons && fileInfo.seasons.length > 1) {
     // in case single file was interpreted as having multiple seasons
     fileInfo.season = fileInfo.seasons[0];
   }
