@@ -6,6 +6,7 @@ const { connect, getUpdateSeedersTorrents } = require('./lib/repository');
 const thepiratebayScraper = require('./scrapers/thepiratebay/thepiratebay_scraper');
 const horribleSubsScraper = require('./scrapers/horriblesubs/horriblesubs_scraper');
 const ytsScraper = require('./scrapers/yts/yts_scraper');
+const eztvScraper = require('./scrapers/eztv/eztv_scraper');
 const leetxScraper = require('./scrapers/1337x/1337x_scraper');
 const kickassScraper = require('./scrapers/kickass/kickass_scraper');
 const rarbgScraper = require('./scrapers/rarbg/rarbg_scraper');
@@ -17,6 +18,7 @@ const PROVIDERS = [
   // require('./scrapers/thepiratebay/thepiratebay_update_size_scraper')
   // require('./scrapers/1337x/1337x_dump_scraper')
   ytsScraper,
+  eztvScraper,
   horribleSubsScraper,
   rarbgScraper,
   thepiratebayScraper,
