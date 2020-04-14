@@ -1,7 +1,9 @@
 const Providers = [
-  'ThePirateBay',
+  'YTS',
+  'EZTV',
   'RARBG',
   '1337x',
+  'ThePirateBay',
   'KickassTorrents',
   'HorribleSubs'
 ];
@@ -15,7 +17,7 @@ function manifest({ providers, realdebrid } = {}) {
   const realDebridDesc = realdebrid ? ' and RealDebrid enabled' : '';
   return {
     id: 'com.stremio.torrentio.addon',
-    version: '0.0.2',
+    version: '0.0.3',
     name: 'Torrentio',
     description: 'Provides torrent streams from scraped torrent providers.'
         + ` Currently supports ${enabledProvidersDesc}${realDebridDesc}.`
