@@ -79,11 +79,12 @@ async function processTorrentRecord(record) {
     provider: NAME,
     torrentId: torrentFound.torrentId,
     title: torrentFound.name.replace(/\t|\s+/g, ' '),
-    size: torrentFound.size,
     type: seriesCategories.includes(torrentFound.subcategory) ? Type.SERIES : Type.MOVIE,
-    imdbId: seriesCategories.includes(torrentFound.subcategory) && torrentFound.imdbId || undefined,
-    uploadDate: torrentFound.uploadDate,
+    size: torrentFound.size,
     seeders: torrentFound.seeders,
+    uploadDate: torrentFound.uploadDate,
+    imdbId: seriesCategories.includes(torrentFound.subcategory) && torrentFound.imdbId || undefined,
+    languages: torrentFound.languages && torrentFound.languages.trim() || undefined
   };
 
   return createTorrentEntry(torrent);

@@ -10,6 +10,7 @@ const defaultProxies = [
   'https://ukpiratebayproxy.com',
   'https://thepiratebayproxy.info',
   'https://mypiratebay.co',
+  'https://thehiddenbay.com',
   // 'https://thepiratebay10.org',
   // 'https://thepiratebay0.org',
 ];
@@ -179,9 +180,9 @@ function parseBody(body) {
       }
       torrents.push({
         name: name,
-        magnetLink: magnetLink,
-        infoHash: decode(magnetLink).infoHash,
         torrentId: $(this).find('.detLink').attr('href').match(/torrent\/([^/]+)/)[1],
+        infoHash: decode(magnetLink).infoHash,
+        magnetLink: magnetLink,
         seeders: parseInt($(this).find('td[align=\'right\']').eq(0).text(), 10),
         leechers: parseInt($(this).find('td[align=\'right\']').eq(1).text(), 10),
 
@@ -206,17 +207,19 @@ function parseTorrentPage(body) {
     const details = $('div[id=\'details\']');
     const col1 = details.find('dl[class=\'col1\']');
     const imdbIdMatch = col1.html().match(/imdb\.com\/title\/(tt\d+)/i);
+    const magnetLink = details.find('a[title=\'Get this torrent\']').attr('href');
 
     const torrent = {
       name: $('div[id=\'title\']').text().trim(),
+      infoHash: decode(magnetLink).infoHash,
+      magnetLink: magnetLink,
       seeders: parseInt(details.find('dt:contains(\'Seeders:\')').next().text(), 10),
       leechers: parseInt(details.find('dt:contains(\'Leechers:\')').next().text(), 10),
-      magnetLink: details.find('a[title=\'Get this torrent\']').attr('href'),
-      infoHash: decode(details.find('a[title=\'Get this torrent\']').attr('href')).infoHash,
       category: Categories.VIDEO.ALL,
       subcategory: parseInt(col1.find('a[title=\'More from this category\']').eq(0).attr('href').match(/\d+$/)[0], 10),
       size: parseSize(details.find('dt:contains(\'Size:\')').next().text().match(/(\d+)(?:.?Bytes)/)[1]),
       uploadDate: new Date(details.find('dt:contains(\'Uploaded:\')').next().text()),
+      languages: details.find('dt:contains(\'Spoken language(s):\')').next().text(),
       imdbId: imdbIdMatch && imdbIdMatch[1]
     };
     resolve(torrent);
