@@ -17,7 +17,7 @@ function toStreamInfo(record) {
         joinDetailParts([
           joinDetailParts([record.torrent.seeders], '👤 '),
           joinDetailParts([formatSize(record.size)], '💾 '),
-          joinDetailParts([record.torrent.provider], '🛈 ')
+          joinDetailParts([record.torrent.provider], '⚙️ ')
         ]),
         joinDetailParts(getLanguages(record, torrentInfo, fileInfo), '', ' / '),
       ],
