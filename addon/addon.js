@@ -82,9 +82,9 @@ function filterByProvider(streams, providers) {
     return streams;
   }
   return streams.filter(stream => {
-    const parts = stream.title.split('\n');
-    const provider = parts[parts.length - 2].match(/\w+$/)[0];
-    return providers.includes(provider.toLowerCase());
+    const match = stream.title.match(/[🛈⚙].* ([^ \n]+)/);
+    const provider = match && match[1].toLowerCase();
+    return providers.includes(provider);
   })
 }
 

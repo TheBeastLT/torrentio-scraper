@@ -1,4 +1,6 @@
 const titleParser = require('parse-torrent-title');
+const { Type } = require('./types');
+const { mapLanguages } = require('./languages');
 
 const ADDON_NAME = 'Torrentio';
 const UNKNOWN_SIZE = 300000000;
@@ -12,8 +14,12 @@ function toStreamInfo(record) {
       [
         joinDetailParts([record.torrent.title.replace(/[, ]+/g, ' ')]),
         joinDetailParts([!sameInfo && record.title.replace(/[, ]+/g, ' ') || undefined]),
-        joinDetailParts([formatSize(record.size), record.torrent.provider], '⚙️️ '),
-        joinDetailParts([record.torrent.seeders], '👤 ')
+        joinDetailParts([
+          joinDetailParts([record.torrent.seeders], '👤 '),
+          joinDetailParts([formatSize(record.size)], '💾 '),
+          joinDetailParts([record.torrent.provider], '🛈 ')
+        ]),
+        joinDetailParts(getLanguages(record, torrentInfo, fileInfo), '', ' / '),
       ],
       '',
       '\n'
@@ -21,7 +27,7 @@ function toStreamInfo(record) {
   const name = joinDetailParts(
       [
         joinDetailParts([ADDON_NAME]),
-        joinDetailParts([getQuality(record, fileInfo, torrentInfo)])
+        joinDetailParts([getQuality(record, torrentInfo, fileInfo)])
       ],
       '',
       '\n'
@@ -35,13 +41,31 @@ function toStreamInfo(record) {
   };
 }
 
-function getQuality(record, fileInfo, torrentInfo) {
+function getQuality(record, torrentInfo, fileInfo) {
   const resolution = fileInfo.resolution || torrentInfo.resolution || record.torrent.resolution;
   const source = fileInfo.source || torrentInfo.source;
   if (['CAM', 'TeleSync'].includes(source)) {
     return source;
   }
   return resolution || source;
+}
+
+function getLanguages(record, torrentInfo, fileInfo) {
+  const providerLanguages = record.torrent.languages && titleParser.parse(record.torrent.languages).languages || [];
+  const torrentLanguages = torrentInfo.languages || [];
+  let languages = [].concat(torrentLanguages).concat(providerLanguages);
+  if (record.kitsuId || record.torrent.type === Type.ANIME) {
+    const dubbed = torrentInfo.dubbed || fileInfo.dubbed || languages.includes('multi');
+    // no need to display japanese for anime or english if anime is dubbed
+    languages = languages.concat(dubbed ? ['dubbed'] : [])
+        .filter(lang => lang !== 'japanese')
+        .filter(lang => dubbed && lang !== 'english' || !dubbed);
+  }
+  if (languages.length === 1 && languages.includes('english')) {
+    // no need to display languages if only english is present
+    languages = [];
+  }
+  return mapLanguages(languages);
 }
 
 function joinDetailParts(parts, prefix = '', delimiter = ' ') {
