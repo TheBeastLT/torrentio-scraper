@@ -21,13 +21,7 @@ function toStreamInfo(record) {
   const name = joinDetailParts(
       [
         joinDetailParts([ADDON_NAME]),
-        joinDetailParts([
-          fileInfo.resolution ||
-          torrentInfo.resolution ||
-          record.torrent.resolution ||
-          fileInfo.source ||
-          torrentInfo.source
-        ])
+        joinDetailParts([getQuality(record, fileInfo, torrentInfo)])
       ],
       '',
       '\n'
@@ -39,6 +33,15 @@ function toStreamInfo(record) {
     infoHash: record.infoHash,
     fileIdx: record.fileIndex
   };
+}
+
+function getQuality(record, fileInfo, torrentInfo) {
+  const resolution = fileInfo.resolution || torrentInfo.resolution || record.torrent.resolution;
+  const source = fileInfo.source || torrentInfo.source;
+  if (['CAM', 'TeleSync'].includes(source)) {
+    return source;
+  }
+  return resolution || source;
 }
 
 function joinDetailParts(parts, prefix = '', delimiter = ' ') {
