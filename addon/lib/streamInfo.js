@@ -3,13 +3,13 @@ const { Type } = require('./types');
 const { mapLanguages } = require('./languages');
 
 const ADDON_NAME = 'Torrentio';
+const SIZE_DELTA = 0.02;
 const UNKNOWN_SIZE = 300000000;
 
 function toStreamInfo(record) {
   const torrentInfo = titleParser.parse(record.torrent.title);
   const fileInfo = titleParser.parse(record.title);
-  const sameInfo = !Number.isInteger(record.fileIndex)
-      || record.size !== UNKNOWN_SIZE && record.size === record.torrent.size;
+  const sameInfo = !Number.isInteger(record.fileIndex) || Math.abs(record.size / record.torrent.size - 1) < SIZE_DELTA;
   const title = joinDetailParts(
       [
         joinDetailParts([record.torrent.title.replace(/[, ]+/g, ' ')]),
