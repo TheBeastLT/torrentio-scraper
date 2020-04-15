@@ -60,12 +60,16 @@ async function scrapeLatestTorrents() {
       .then(entries => entries.reduce((a, b) => a.concat(b), []));
 }
 
-async function scrapeLatestTorrentsForCategory(category) {
+async function scrapeLatestTorrentsForCategory(category, retries = 5) {
   console.log(`Scrapping ${NAME} ${category} category`);
   return rarbg.list({ category: category, limit: 100, sort: 'last', format: 'json_extended', ranked: 0 })
       .then(results => results.map(result => toTorrent(result)))
       .then(torrents => Promise.all(torrents.map(t => entryLimiter.schedule(() => processTorrentRecord(t)))))
       .catch(error => {
+        if (retries > 0) {
+          console.log(`Retrying ${NAME} request for ${category}...`);
+          return scrapeLatestTorrentsForCategory(category, retries - 1);
+        }
         console.warn(`Failed ${NAME} scrapping for ${category} due: `, error);
         return Promise.resolve([]);
       });

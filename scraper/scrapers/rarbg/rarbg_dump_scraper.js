@@ -17,7 +17,7 @@ const entryLimiter = new Bottleneck({ maxConcurrent: 40 });
 async function scrape() {
   console.log(`[${moment()}] starting ${NAME} dump scrape...`);
   //const movieImdbIds = require('./rargb_movie_imdb_ids_2020-03-09.json');
-  const seriesImdbIds = require('./rargb_series_imdb_ids_2020-03-09.json').slice(800);
+  const seriesImdbIds = require('./rargb_series_imdb_ids_2020-03-09.json');
   //const allImdbIds = [].concat(movieImdbIds).concat(seriesImdbIds);
 
   return Promise.all(
@@ -26,7 +26,7 @@ async function scrape() {
       .then(() => console.log(`[${moment()}] finished ${NAME} dump scrape`));
 }
 
-async function getTorrentsForImdbId(imdbId) {
+async function getTorrentsForImdbId(imdbId, retries = 5) {
   return rarbg.search(imdbId, { limit: 100, sort: 'seeders', format: 'json_extended', ranked: 0 }, 'imdb')
       .then(torrents => torrents.map(torrent => ({
         name: torrent.title,
@@ -44,6 +44,10 @@ async function getTorrentsForImdbId(imdbId) {
         return torrents;
       })
       .catch(error => {
+        if (retries > 0) {
+          console.log(`Retrying ${NAME} request for ${imdbId}...`);
+          return getTorrentsForImdbId(imdbId, retries - 1);
+        }
         console.warn(`Failed ${NAME} request for ${imdbId}: `, error);
         return [];
       });
