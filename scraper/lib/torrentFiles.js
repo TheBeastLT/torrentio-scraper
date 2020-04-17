@@ -272,7 +272,9 @@ function decomposeEpisodeTitleFiles(torrent, files, metadata) {
   files
       // .filter(file => !file.season)
       .map(file => {
-        const episodeTitle = file.name.replace('_', ' ').replace(/^.*(?:E\d+[abc]?|-)\s?(.+)\.\w{1,4}$/, '$1').trim();
+        const episodeTitle = file.name.replace('_', ' ')
+            .replace(/^.*(?:E\d+[abc]?|- )\s?(.+)\.\w{1,4}$/, '$1')
+            .trim();
         const foundEpisode = metadata.videos
             .map(video => ({ ...video, distance: distance(episodeTitle, video.name) }))
             .sort((a, b) => b.distance - a.distance)[0];
