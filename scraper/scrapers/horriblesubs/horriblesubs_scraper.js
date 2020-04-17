@@ -19,7 +19,7 @@ const entryLimiter = new Bottleneck({ maxConcurrent: 10 });
 async function scrape() {
   const scrapeStart = moment();
   const lastScrape = await repository.getProvider({ name: NAME });
-  const lastScraped = lastScrape.lastScraped && moment.unix(lastScrape.lastScraped);
+  const lastScraped = lastScrape.lastScraped && moment(lastScrape.lastScraped);
 
   if (!lastScraped || lastScraped.add(NEXT_FULL_SCRAPE_OFFSET, 'seconds') < scrapeStart) {
     console.log(`[${scrapeStart}] scrapping all ${NAME} shows...`);
@@ -54,7 +54,7 @@ async function _scrapeAllShows() {
 
   return Promise.all(shows
       .map((show) => limiter.schedule(() => horriblesubs.showData(show)
-          .then((showData) => _parseShowData(showData))
+          .then((showData) => _parseShowData(showData, false))
           .catch((err) => console.log(err)))));
 }
 
@@ -110,7 +110,7 @@ async function enrichShow(show) {
   }
 }
 
-async function _parseShowData(showData) {
+async function _parseShowData(showData, updateSeeders = true) {
   console.log(`${NAME}: scrapping ${showData.title} data...`);
   const showMapping = showMappings[showData.title];
   const kitsuId = showMapping && showMapping.kitsu_id;
@@ -164,15 +164,18 @@ async function _parseShowData(showData) {
           })))
       .reduce((a, b) => a.concat(b), [])
       .filter(torrent => torrent.kitsuId)
-      .map(torrent => entryLimiter.schedule(() => processTorrentRecord(torrent))))
+      .map(torrent => entryLimiter.schedule(() => processTorrentRecord(torrent, updateSeeders))))
       .then(() => console.log(`${NAME}: finished scrapping ${showData.title} data`));
 }
 
-async function processTorrentRecord(torrent) {
+async function processTorrentRecord(torrent, updateSeeders = true) {
   const existingTorrent = await repository.getTorrent(torrent).catch(() => undefined);
 
   if (existingTorrent && existingTorrent.provider === NAME) {
-    return updateCurrentSeeders(torrent).then(updatedSeeders => updateTorrentSeeders(updatedSeeders))
+    if (updateSeeders) {
+      return updateCurrentSeeders(torrent).then(updatedSeeders => updateTorrentSeeders(updatedSeeders))
+    }
+    return Promise.resolve(torrent)
   }
 
   return updateTorrentSize(torrent)
