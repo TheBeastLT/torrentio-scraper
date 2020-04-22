@@ -14,10 +14,10 @@
     "named-queue": "^2.2.1",
     "needle": "^2.2.4",
     "magnet-uri": "^5.1.7",
-    "parse-torrent-title": "git://github.com/TheBeastLT/parse-torrent-title.git#86dc66fc3b05d798f400d3a457720890dced4901",
+    "parse-torrent-title": "git://github.com/TheBeastLT/parse-torrent-title.git#9e751ef6e0b4adb31d306d618c92f9feb84963bb",
     "pg": "^7.8.2",
     "pg-hstore": "^2.3.2",
-    "real-debrid-api": "git://github.com/TheBeastLT/node-real-debrid.git#935a5c23ae809edbcd2a111526a7f74d6767c50d",
+    "real-debrid-api": "git://github.com/TheBeastLT/node-real-debrid.git#9e751ef6e0b4adb31d306d618c92f9feb84963bb",
     "sequelize": "^4.43.0",
     "stremio-addon-sdk": "^1.6.1",
     "user-agents": "^1.0.559"

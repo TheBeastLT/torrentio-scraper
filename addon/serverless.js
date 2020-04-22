@@ -73,7 +73,7 @@ router.get('/realdebrid/:apiKey/:infoHash/:cachedFileIds/:fileIndex?', (req, res
   const { apiKey, infoHash, cachedFileIds, fileIndex } = req.params;
   realDebrid.resolve(apiKey, infoHash, cachedFileIds, isNaN(fileIndex) ? undefined : parseInt(fileIndex))
       .then(url => {
-        res.writeHead(301, { Location: url });
+        res.writeHead(302, { Location: url });
         res.end();
       })
       .catch(error => {
