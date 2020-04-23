@@ -12,7 +12,7 @@ const limit = 100;
 const maxPage = 5;
 
 function torrent(torrentId, config = {}, retries = 2) {
-  if (!torrentId || retries === 0) {
+  if (!torrentId) {
     return Promise.reject(new Error(`Failed ${torrentId} search`));
   }
 
@@ -20,11 +20,11 @@ function torrent(torrentId, config = {}, retries = 2) {
       .map(proxyUrl => singleRequest(`${proxyUrl}/ep/${torrentId}`, config)))
       .then(body => parseTorrentPage(body))
       .then(torrent => ({ torrentId, ...torrent }))
-      .catch(error => torrent(torrentId, config, retries - 1));
+      .catch(error => retries ? torrent(torrentId, config, retries - 1) : Promise.reject(error));
 }
 
 function search(imdbId, config = {}, retries = 2) {
-  if (!imdbId || retries === 0) {
+  if (!imdbId) {
     return Promise.reject(new Error(`Failed ${imdbId} search`));
   }
   const id = imdbId.replace('tt', '');
@@ -33,24 +33,20 @@ function search(imdbId, config = {}, retries = 2) {
   return Promises.first(defaultProxies
       .map(proxyUrl => singleRequest(`${proxyUrl}/api/get-torrents?limit=${limit}&page=${page}&imdb_id=${id}`, config)))
       .then(results => parseResults(results))
-      .then(torrents => torrents.length === limit && page < maxPage && !torrents.find(t => t.imdbId === imdbId)
-          ? search(imdbId, { ...config, page: page + 1 })
-              .catch(() => [])
+      .then(torrents => torrents.length === limit && page < maxPage
+          ? search(imdbId, { ...config, page: page + 1 }).catch(() => [])
               .then(nextTorrents => torrents.concat(nextTorrents))
           : torrents)
-      .catch(error => search(imdbId, config, retries - 1));
+      .catch(error => retries ? search(imdbId, config, retries - 1) : Promise.reject(error));
 }
 
 function browse(config = {}, retries = 2) {
-  if (retries === 0) {
-    return Promise.reject(new Error(`Failed browse request`));
-  }
   const page = config.page || 1;
 
   return Promises.first(defaultProxies
       .map(proxyUrl => singleRequest(`${proxyUrl}/api/get-torrents?limit=${limit}&page=${page}`, config)))
       .then(results => parseResults(results))
-      .catch(error => browse(config, retries - 1));
+      .catch(error => retries ? browse(config, retries - 1) : Promise.reject(error));
 }
 
 function singleRequest(requestUrl, config = {}) {
@@ -68,8 +64,7 @@ function singleRequest(requestUrl, config = {}) {
 
 function parseResults(results) {
   if (!results || !Array.isArray(results.torrents)) {
-    console.log('Incorrect results: ', results);
-    return Promise.reject('Incorrect results')
+    return Promise.reject(`Incorrect results ${results}`)
   }
   return results.torrents.map(torrent => parseTorrent(torrent));
 }
