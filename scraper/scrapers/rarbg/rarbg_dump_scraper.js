@@ -16,8 +16,8 @@ const entryLimiter = new Bottleneck({ maxConcurrent: 40 });
 
 async function scrape() {
   console.log(`[${moment()}] starting ${NAME} dump scrape...`);
-  //const movieImdbIds = require('./rargb_movie_imdb_ids_2020-03-09.json');
-  const seriesImdbIds = require('./rargb_series_imdb_ids_2020-03-09.json');
+  // const movieImdbIds = require('./rargb_movie_imdb_ids_2020-04-22.json');
+  const seriesImdbIds = require('./rargb_series_imdb_ids_2020-04-22.json');
   //const allImdbIds = [].concat(movieImdbIds).concat(seriesImdbIds);
 
   return Promise.all(
