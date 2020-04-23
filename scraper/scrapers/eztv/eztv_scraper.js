@@ -2,7 +2,6 @@ const moment = require('moment');
 const Bottleneck = require('bottleneck');
 const eztv = require('./eztv_api');
 const { Type } = require('../../lib/types');
-const Promises = require('../../lib/promises');
 const repository = require('../../lib/repository');
 const { createTorrentEntry, getStoredTorrentEntry, updateTorrentSeeders } = require('../../lib/torrentEntries');
 
@@ -27,7 +26,8 @@ async function scrape() {
 async function updateSeeders(torrent, getImdbIdsMethod) {
   return getImdbIdsMethod()
       .then(imdbIds => Promise.all(imdbIds.map(imdbId => limiter.schedule(() => eztv.search(imdbId)))))
-      .then(results => results.reduce((a, b) => a.concat(b), []));
+      .then(results => results.reduce((a, b) => a.concat(b), []))
+      .catch(() => limiter.schedule(() => eztv.torrent(torrent.torrentId)));
 }
 
 async function scrapeLatestTorrents() {

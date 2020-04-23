@@ -7,6 +7,7 @@ const { updateTorrentSeeders } = require('../lib/torrentEntries')
 
 const DELAY = 15 * 1000; // 15 seconds
 const limiter = new Bottleneck({ maxConcurrent: 20, minTime: 250 });
+const updateLimiter = new Bottleneck({ maxConcurrent: 20 });
 const forceSeedersLimiter = new Bottleneck({ maxConcurrent: 5 });
 
 function scheduleUpdateSeeders() {
@@ -37,7 +38,7 @@ async function _updateSeeders(torrent) {
         .then(updated => updatedTorrents.push(updated));
   }
 
-  return Promise.all(updatedTorrents.map(updated => updateTorrentSeeders(updated)))
+  return Promise.all(updatedTorrents.map(updated => updateLimiter.schedule(() => updateTorrentSeeders(updated))));
 }
 
 function getImdbIdsMethod(torrent) {

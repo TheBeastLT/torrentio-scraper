@@ -8,10 +8,12 @@ const defaultProxies = [
   'https://eztv.io'
 ];
 const defaultTimeout = 30000;
+const minDelay = 3000;
+const jitterDelay = minDelay;
 const limit = 100;
 const maxPage = 5;
 
-function torrent(torrentId, config = {}, retries = 2) {
+function torrent(torrentId, config = {}, retries = 1) {
   if (!torrentId) {
     return Promise.reject(new Error(`Failed ${torrentId} search`));
   }
@@ -20,10 +22,10 @@ function torrent(torrentId, config = {}, retries = 2) {
       .map(proxyUrl => singleRequest(`${proxyUrl}/ep/${torrentId}`, config)))
       .then(body => parseTorrentPage(body))
       .then(torrent => ({ torrentId, ...torrent }))
-      .catch(error => retries ? torrent(torrentId, config, retries - 1) : Promise.reject(error));
+      .catch(error => retries ? jitter().then(() => torrent(torrentId, config, retries - 1)) : Promise.reject(error));
 }
 
-function search(imdbId, config = {}, retries = 2) {
+function search(imdbId, config = {}, retries = 1) {
   if (!imdbId) {
     return Promise.reject(new Error(`Failed ${imdbId} search`));
   }
@@ -37,16 +39,16 @@ function search(imdbId, config = {}, retries = 2) {
           ? search(imdbId, { ...config, page: page + 1 }).catch(() => [])
               .then(nextTorrents => torrents.concat(nextTorrents))
           : torrents)
-      .catch(error => retries ? search(imdbId, config, retries - 1) : Promise.reject(error));
+      .catch(error => retries ? jitter().then(() => search(imdbId, config, retries - 1)) : Promise.reject(error));
 }
 
-function browse(config = {}, retries = 2) {
+function browse(config = {}, retries = 1) {
   const page = config.page || 1;
 
   return Promises.first(defaultProxies
       .map(proxyUrl => singleRequest(`${proxyUrl}/api/get-torrents?limit=${limit}&page=${page}`, config)))
       .then(results => parseResults(results))
-      .catch(error => retries ? browse(config, retries - 1) : Promise.reject(error));
+      .catch(error => retries ? jitter().then(() => browse(config, retries - 1)) : Promise.reject(error));
 }
 
 function singleRequest(requestUrl, config = {}) {
@@ -118,6 +120,10 @@ function parseSize(sizeText) {
     scale = 1024;
   }
   return Math.floor(parseFloat(sizeText.replace(/[',]/g, '')) * scale);
+}
+
+function jitter() {
+  return Promises.delay(minDelay + Math.round(Math.random() * jitterDelay))
 }
 
 module.exports = { torrent, search, browse };
