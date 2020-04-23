@@ -1,21 +1,8 @@
-const cheerio = require('cheerio');
 const needle = require('needle');
-const moment = require('moment');
-const decode = require('magnet-uri');
-const Promises = require('../../lib/promises');
+const { escapeHTML } = require('../../lib/metadata');
 
-const defaultProxies = [
-  // 'https://thepiratebay.org',
-  'https://proxybay.pro',
-  'https://ukpiratebayproxy.com',
-  'https://thepiratebayproxy.info',
-  'https://mypiratebay.co',
-  'https://thehiddenbay.com',
-  // 'https://thepiratebay10.org',
-  // 'https://thepiratebay0.org',
-];
-const dumpUrl = '/static/dump/csv/';
-const defaultTimeout = 10000;
+const baseUrl = 'https://apibay.org';
+const timeout = 5000;
 
 const Categories = {
   AUDIO: {
@@ -82,163 +69,55 @@ const Categories = {
   }
 };
 
-function torrent(torrentId, config = {}, retries = 2) {
-  if (!torrentId || retries === 0) {
-    return Promise.reject(new Error(`Failed ${torrentId} search`));
+function torrent(torrentId, retries = 2) {
+  if (!torrentId) {
+    return Promise.reject(new Error('No valid torrentId provider'));
   }
-  const proxyList = config.proxyList || defaultProxies;
 
-  return Promises.first(proxyList
-      .map((proxyUrl) => singleRequest(`${proxyUrl}/torrent/${torrentId}/`, config)
-          .then((body) => parseTorrentPage(body))))
-      .then((torrent) => ({ torrentId, ...torrent }))
-      .catch((err) => torrent(torrentId, config, retries - 1));
+  return _request(`t.php?id=${torrentId}`)
+      .then(result => toTorrent(result))
+      .catch(error => retries ? torrent(torrentId, retries - 1) : Promise.reject(error));
 }
 
 function search(keyword, config = {}, retries = 2) {
-  if (!keyword || retries === 0) {
-    return Promise.reject(new Error(`Failed ${keyword} search`));
+  if (!keyword) {
+    return Promise.reject(new Error('No valid keyword provided'));
   }
-  const proxyList = config.proxyList || defaultProxies;
-  const page = config.page || 0;
-  const category = config.category || 0;
+  const q = keyword;
+  const cat = config.category || Categories.VIDEO.ALL;
 
-  return Promises.first(proxyList
-      .map((proxyUrl) => singleRequest(`${proxyUrl}/search/${keyword}/${page}/99/${category}`, config)
-          .then((body) => parseBody(body))))
-      .catch((err) => search(keyword, config, retries - 1));
+  return _request(`q.php?q=${q}&cat=${cat}`)
+      .then(results => results.map((result) => toTorrent(result)))
+      .catch(error => retries ? search(keyword, config, retries - 1) : Promise.reject(error));
 }
 
 function browse(config = {}, retries = 2) {
-  if (retries === 0) {
-    return Promise.reject(new Error(`Failed browse request`));
-  }
-  const proxyList = config.proxyList || defaultProxies;
-  const page = config.page || 0;
   const category = config.category || 0;
 
-  return Promises.first(proxyList
-      .map((proxyUrl) => singleRequest(`${proxyUrl}/browse/${category}/${page}/3`, config)
-          .then((body) => parseBody(body))))
-      .catch((err) => browse(config, retries - 1));
+  return _request(`q.php?q=category:${category}`)
+      .then(results => results.map((result) => toTorrent(result)))
+      .catch(error => retries ? browse(config, retries - 1) : Promise.reject(error));
 }
 
-function dumps(config = {}, retries = 2) {
-  if (retries === 0) {
-    return Promise.reject(new Error(`Failed dump search`));
-  }
-  const proxyList = config.proxyList || defaultProxies;
-
-  return Promises.first(proxyList
-      .map((proxyUrl) => singleRequest(`${proxyUrl}${dumpUrl}`, config)
-          .then((body) => body.match(/(<a href="[^"]+">[^<]+<\/a>.+\d)/g)
-              .map((group) => ({
-                url: `${proxyUrl}${dumpUrl}` + group.match(/<a href="([^"]+)">/)[1],
-                updatedAt: moment(group.match(/\s+([\w-]+\s+[\d:]+)\s+\d+$/)[1], 'DD-MMM-YYYY HH:mm').toDate()
-              })))))
-      .catch(() => dumps(config, retries - 1));
+async function _request(endpoint) {
+  const url = `${baseUrl}/${endpoint}`;
+  return needle('get', url, { open_timeout: timeout })
+      .then(response => response.body);
 }
 
-function singleRequest(requestUrl, config = {}) {
-  const timeout = config.timeout || defaultTimeout;
-
-  return needle('get', requestUrl, { open_timeout: timeout, follow: 2 })
-      .then((response) => {
-        const body = response.body;
-        if (!body) {
-          throw new Error(`No body: ${requestUrl}`);
-        } else if (body.includes('Access Denied') && !body.includes('<title>The Pirate Bay')) {
-          console.log(`Access Denied: ${requestUrl}`);
-          throw new Error(`Access Denied: ${requestUrl}`);
-        } else if (body.includes('502: Bad gateway') ||
-            body.includes('403 Forbidden') ||
-            body.includes('Database maintenance') ||
-            body.includes('Origin DNS error') ||
-            !(body.includes('<title>The Pirate Bay') || body.includes('TPB</title>') || body.includes(dumpUrl))) {
-          throw new Error(`Invalid body contents: ${requestUrl}`);
-        }
-        return body;
-      });
+function toTorrent(result) {
+  return {
+    torrentId: result.id,
+    name: escapeHTML(result.name),
+    infoHash: result.info_hash.toLowerCase(),
+    size: parseInt(result.size),
+    seeders: parseInt(result.seeders),
+    leechers: parseInt(result.leechers),
+    subcategory: parseInt(result.category),
+    uploadDate: new Date(result.added * 1000),
+    imdbId: result.imdb || undefined,
+    filesCount: result.num_files && parseInt(result.num_files) || undefined
+  };
 }
 
-function parseBody(body) {
-  return new Promise((resolve, reject) => {
-    const $ = cheerio.load(body);
-
-    if (!$) {
-      reject(new Error('Failed loading body'));
-    }
-
-    const torrents = [];
-
-    $('table[id=\'searchResult\'] tr').each(function () {
-      const name = $(this).find('.detLink').text();
-      const sizeMatcher = $(this).find('.detDesc').text().match(/(?:,\s?Size\s)(.+),/);
-      const magnetLink = $(this).find('a[title=\'Download this torrent using magnet\']').attr('href');
-      if (!name || !sizeMatcher) {
-        return;
-      }
-      torrents.push({
-        name: name,
-        torrentId: $(this).find('.detLink').attr('href').match(/torrent\/([^/]+)/)[1],
-        infoHash: decode(magnetLink).infoHash,
-        magnetLink: magnetLink,
-        seeders: parseInt($(this).find('td[align=\'right\']').eq(0).text(), 10),
-        leechers: parseInt($(this).find('td[align=\'right\']').eq(1).text(), 10),
-
-        category: parseInt($(this).find('a[title=\'More from this category\']').eq(0).attr('href').match(/\d+$/)[0],
-            10),
-        subcategory: parseInt($(this).find('a[title=\'More from this category\']').eq(1).attr('href').match(/\d+$/)[0],
-            10),
-        size: parseSize(sizeMatcher[1])
-      });
-    });
-    resolve(torrents);
-  });
-}
-
-function parseTorrentPage(body) {
-  return new Promise((resolve, reject) => {
-    const $ = cheerio.load(body);
-
-    if (!$) {
-      reject(new Error('Failed loading body'));
-    }
-    const details = $('div[id=\'details\']');
-    const col1 = details.find('dl[class=\'col1\']');
-    const imdbIdMatch = col1.html().match(/imdb\.com\/title\/(tt\d+)/i);
-    const magnetLink = details.find('a[title=\'Get this torrent\']').attr('href');
-
-    const torrent = {
-      name: $('div[id=\'title\']').text().trim(),
-      infoHash: decode(magnetLink).infoHash,
-      magnetLink: magnetLink,
-      seeders: parseInt(details.find('dt:contains(\'Seeders:\')').next().text(), 10),
-      leechers: parseInt(details.find('dt:contains(\'Leechers:\')').next().text(), 10),
-      category: Categories.VIDEO.ALL,
-      subcategory: parseInt(col1.find('a[title=\'More from this category\']').eq(0).attr('href').match(/\d+$/)[0], 10),
-      size: parseSize(details.find('dt:contains(\'Size:\')').next().text().match(/(\d+)(?:.?Bytes)/)[1]),
-      uploadDate: new Date(details.find('dt:contains(\'Uploaded:\')').next().text()),
-      languages: details.find('dt:contains(\'Spoken language(s):\')').next().text(),
-      imdbId: imdbIdMatch && imdbIdMatch[1]
-    };
-    resolve(torrent);
-  });
-}
-
-function parseSize(sizeText) {
-  if (!sizeText) {
-    return undefined;
-  }
-  let scale = 1;
-  if (sizeText.includes('GiB')) {
-    scale = 1024 * 1024 * 1024
-  } else if (sizeText.includes('MiB')) {
-    scale = 1024 * 1024;
-  } else if (sizeText.includes('KiB')) {
-    scale = 1024;
-  }
-  return Math.floor(parseFloat(sizeText) * scale);
-}
-
-module.exports = { torrent, search, browse, dumps, Categories };
+module.exports = { torrent, search, browse, Categories };
