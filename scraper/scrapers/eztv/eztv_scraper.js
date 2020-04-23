@@ -25,8 +25,9 @@ async function scrape() {
 }
 
 async function updateSeeders(torrent, getImdbIdsMethod) {
-  return getImdbIdsMethod().then(imdbIds => Promises.sequence(imdbIds
-      .map(imdbId => limiter.schedule(() => eztv.search(imdbId)))));
+  return getImdbIdsMethod()
+      .then(imdbIds => Promise.all(imdbIds.map(imdbId => limiter.schedule(() => eztv.search(imdbId)))))
+      .then(results => results.reduce((a, b) => a.concat(b), []));
 }
 
 async function scrapeLatestTorrents() {

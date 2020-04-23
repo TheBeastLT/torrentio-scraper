@@ -27,8 +27,9 @@ async function scrape() {
 }
 
 async function updateSeeders(torrent, getImdbIdsMethod) {
-  return getImdbIdsMethod().then(imdbIds => Promises.sequence(imdbIds
-      .map(imdbId => limiter.schedule(() => rarbg.search(imdbId, SEARCH_OPTIONS, 'imdb')))));
+  return getImdbIdsMethod()
+      .then(imdbIds => Promise.all(imdbIds.map(imdbId => limiter.schedule(() => search(imdbId)))))
+      .then(results => results.reduce((a, b) => a.concat(b), []));
 }
 
 async function scrapeLatestTorrents() {
@@ -86,6 +87,18 @@ async function processTorrentRecord(record) {
   };
 
   return createTorrentEntry(torrent);
+}
+
+async function search(imdbId, retries = 5) {
+  return rarbg.search(imdbId, SEARCH_OPTIONS, 'imdb')
+      .then(results => results.map(result => toTorrent(result)))
+      .catch(error => {
+        if (retries > 0) {
+          console.log(`Retrying ${imdbId} search...`);
+          return search(imdbId, retries - 1);
+        }
+        return Promise.reject(error);
+      });
 }
 
 function toTorrent(result) {

@@ -27,7 +27,10 @@ async function _updateSeeders(torrent) {
   }
   const updatedTorrents = await provider.scraper.updateSeeders(torrent, getImdbIdsMethod(torrent))
       .then(updated => Array.isArray(updated) ? updated : [updated])
-      .catch(() => []);
+      .catch(error => {
+        console.warn(`Failed seeders update ${torrent.provider} [${torrent.infoHash}]: `, error)
+        return []
+      });
 
   if (!updatedTorrents.find(updated => updated.infoHash === torrent.infoHash)) {
     await forceSeedersLimiter.schedule(() => updateCurrentSeeders(torrent))
@@ -37,7 +40,7 @@ async function _updateSeeders(torrent) {
   return Promise.all(updatedTorrents.map(updated => updateTorrentSeeders(updated)))
 }
 
-async function getImdbIdsMethod(torrent) {
+function getImdbIdsMethod(torrent) {
   return () => repository.getFiles(torrent)
       .then(files => files.map(file => file.imdbId).filter(id => id))
       .then(ids => Array.from(new Set(ids)));
