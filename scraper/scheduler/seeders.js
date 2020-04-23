@@ -14,12 +14,17 @@ function scheduleUpdateSeeders() {
   return repository.getUpdateSeedersTorrents()
       .then(torrents => Promise.all(torrents.map(torrent => limiter.schedule(() => _updateSeeders(torrent)))))
       .then(() => console.log('Finished seeders update'))
+      .catch(error => console.warn('Failed seeders update: ', error))
       .then(() => delay(DELAY))
       .then(() => scheduleUpdateSeeders());
 }
 
 async function _updateSeeders(torrent) {
   const provider = await scrapers.find(provider => provider.name === torrent.provider);
+  if (!provider) {
+    console.log(`No provider found for ${torrent.provider} [${torrent.infoHash}]`)
+    return Promise.resolve();
+  }
   const updatedTorrents = await provider.scraper.updateSeeders(torrent, getImdbIdsMethod(torrent))
       .then(updated => Array.isArray(updated) ? updated : [updated])
       .catch(() => []);

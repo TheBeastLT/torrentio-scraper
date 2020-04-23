@@ -4,7 +4,6 @@ const leetx = require('./1337x_api');
 const { Type } = require('../../lib/types');
 const repository = require('../../lib/repository');
 const Promises = require('../../lib/promises');
-const { updateCurrentSeeders } = require('../../lib/torrent');
 const { createTorrentEntry, getStoredTorrentEntry, updateTorrentSeeders } = require('../../lib/torrentEntries');
 
 const NAME = '1337x';
