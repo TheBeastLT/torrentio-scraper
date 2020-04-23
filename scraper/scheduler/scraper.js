@@ -1,18 +1,21 @@
+const schedule = require('node-schedule');
 const scrapers = require('./scrapers');
-const { delay, sequence } = require('../lib/promises')
+const { sequence } = require('../lib/promises')
 
 function scheduleScraping() {
-  return scrapers.forEach(provider => _continuousScrape(provider))
+  const allCrons = scrapers.reduce((crons, provider) => {
+    crons[provider.cron] = (crons[provider.cron] || []).concat(provider)
+    return crons;
+  }, {});
+  Object.entries(allCrons).forEach(([cron, providers]) => schedule.scheduleJob(cron, () => _scrapeProviders(providers)))
 }
 
 function scrapeAll() {
-  return sequence(scrapers.map(provider => () => _singleScrape(provider)))
+  return _scrapeProviders(scrapers)
 }
 
-async function _continuousScrape(provider) {
-  return _singleScrape(provider)
-      .then(() => delay(provider.scrapeInterval))
-      .then(() => _continuousScrape(provider))
+async function _scrapeProviders(providers) {
+  return sequence(providers.map(provider => () => _singleScrape(provider)));
 }
 
 async function _singleScrape(provider) {
