@@ -26,15 +26,9 @@ async function scrape() {
       .then(() => console.log(`[${moment()}] finished ${NAME} scrape`));
 }
 
-async function updateSeeders(torrent) {
-  const imdbIds = await repository.getFiles(torrent)
-      .then(files => files.map(file => file.imdbId))
-      .then(ids => Array.from(new Set(ids)));
-
-  return Promise.all(imdbIds.map(imdbId => limiter.schedule(() => rarbg.search(imdbId, SEARCH_OPTIONS, 'imdb'))))
-      .then(results => results.reduce((a, b) => a.concat(b), []))
-      .then(results => results.map(result => toTorrent(result)))
-      .then(torrents => Promise.all(torrents.map(updated => updateTorrentSeeders(updated))));
+async function updateSeeders(torrent, getImdbIdsMethod) {
+  return getImdbIdsMethod().then(imdbIds => Promises.sequence(imdbIds
+      .map(imdbId => limiter.schedule(() => rarbg.search(imdbId, SEARCH_OPTIONS, 'imdb')))));
 }
 
 async function scrapeLatestTorrents() {

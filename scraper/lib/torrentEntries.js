@@ -29,20 +29,20 @@ async function createTorrentEntry(torrent, overwrite = false) {
   }
 
   if (!torrent.imdbId && !torrent.kitsuId && !titleInfo.complete && typeof titleInfo.year !== 'string') {
-    console.log(`imdbId or kitsuId not found: ${torrent.title}`);
+    console.log(`imdbId or kitsuId not found:  ${torrent.provider} ${torrent.title}`);
     return;
   }
 
   const files = await parseTorrentFiles(torrent)
       .then(files => overwrite ? overwriteExistingFiles(torrent, files) : files);
   if (!files || !files.length) {
-    console.log(`no video files found for [${torrent.infoHash}] ${torrent.title}`);
+    console.log(`no video files found for ${torrent.provider} [${torrent.infoHash}] ${torrent.title}`);
     return;
   }
 
   return repository.createTorrent(torrent)
       .then(() => Promise.all(files.map(file => repository.createFile(file))))
-      .then(() => console.log(`Created entry for [${torrent.infoHash}] ${torrent.title}`));
+      .then(() => console.log(`Created ${torrent.provider} entry for [${torrent.infoHash}] ${torrent.title}`));
 }
 
 async function overwriteExistingFiles(torrent, files) {

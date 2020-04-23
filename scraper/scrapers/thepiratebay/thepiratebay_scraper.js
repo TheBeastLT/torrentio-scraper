@@ -39,10 +39,7 @@ async function scrape() {
 }
 
 async function updateSeeders(torrent) {
-  return limiter.schedule(() => thepiratebay.torrent(torrent.torrentId)
-      .then(record => (torrent.seeders = record.seeders, torrent))
-      .catch(() => updateCurrentSeeders(torrent))
-      .then(updated => updateTorrentSeeders(updated)));
+  return limiter.schedule(() => thepiratebay.torrent(torrent.torrentId));
 }
 
 async function scrapeLatestTorrents() {

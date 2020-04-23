@@ -33,7 +33,7 @@ function search(imdbId, config = {}, retries = 2) {
   return Promises.first(defaultProxies
       .map(proxyUrl => singleRequest(`${proxyUrl}/api/get-torrents?limit=${limit}&page=${page}&imdb_id=${id}`, config)))
       .then(results => parseResults(results))
-      .then(torrents => torrents.length === limit && page < maxPage
+      .then(torrents => torrents.length === limit && page < maxPage && !torrents.find(t => t.imdbId === imdbId)
           ? search(imdbId, { ...config, page: page + 1 })
               .catch(() => [])
               .then(nextTorrents => torrents.concat(nextTorrents))

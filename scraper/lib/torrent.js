@@ -18,8 +18,9 @@ module.exports.updateCurrentSeeders = function (torrent) {
     const Tracker = require("peer-search/tracker");
 
     const seeders = {};
-    const decodedMagnetLink = torrent.magnetLink && decode(torrent.magnetLink);
-    const trackers = decodedMagnetLink && decodedMagnetLink.tr || torrent.trackers || await getDefaultTrackers();
+    const magnetTrackers = torrent.magnetLink && decode(torrent.magnetLink).tr;
+    const torrentTrackers = torrent.trackers && torrent.trackers.split(',');
+    const trackers = magnetTrackers || torrentTrackers || await getDefaultTrackers();
     const callback = () => resolve(Math.max(...Object.values(seeders).map(values => values[0]).concat(0)));
     setTimeout(callback, SEEDS_CHECK_TIMEOUT);
 

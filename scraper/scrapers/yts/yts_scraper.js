@@ -24,9 +24,7 @@ async function scrape() {
 }
 
 async function updateSeeders(torrent) {
-  return limiter.schedule(() => yts.torrent(torrent.torrentId)
-      .then(records => records.map(record => ({ ...record, provider: NAME })))
-      .then(records => Promise.all(records.map(record => updateTorrentSeeders(record)))));
+  return limiter.schedule(() => yts.torrent(torrent.torrentId));
 }
 
 async function scrapeLatestTorrents() {

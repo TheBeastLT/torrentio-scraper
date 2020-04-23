@@ -20,7 +20,7 @@ Scrape movie and tv catalog using [www.webscraper.io](https://www.webscraper.io/
 
 Movies sitemap
 ```json
-{"_id":"rarbg-movies","startUrl":["https://rarbgmirror.org/catalog/movies/[1-4110]"],"selectors":[{"id":"rarbg-movie-imdb-id","type":"SelectorHTML","parentSelectors":["_root"],"selector":".lista-rounded table td[width]","multiple":true,"regex":"tt[0-9]+","delay":0}]}
+{"_id":"rarbg-movies","startUrl":["https://rarbgmirror.org/catalog/movies/[1-4235]"],"selectors":[{"id":"rarbg-movie-imdb-id","type":"SelectorHTML","parentSelectors":["_root"],"selector":".lista-rounded table td[width='110']","multiple":true,"regex":"tt[0-9]+","delay":0}]}
 ```
 
 TV sitemap

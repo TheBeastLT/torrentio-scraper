@@ -1,4 +1,3 @@
-require('dotenv').config();
 const Bottleneck = require('bottleneck');
 const { parse } = require('parse-torrent-title');
 const repository = require('../lib/repository');

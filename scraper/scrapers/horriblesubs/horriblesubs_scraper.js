@@ -37,8 +37,7 @@ async function scrape() {
 }
 
 async function updateSeeders(torrent) {
-  return entryLimiter.schedule(() => updateCurrentSeeders(torrent)
-      .then(updated => updateTorrentSeeders(updated)));
+  return Promise.resolve([]);
 }
 
 async function _scrapeLatestEntries() {

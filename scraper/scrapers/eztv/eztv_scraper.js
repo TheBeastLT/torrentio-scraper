@@ -4,14 +4,12 @@ const eztv = require('./eztv_api');
 const { Type } = require('../../lib/types');
 const Promises = require('../../lib/promises');
 const repository = require('../../lib/repository');
-
-const { updateCurrentSeeders } = require('../../lib/torrent');
 const { createTorrentEntry, getStoredTorrentEntry, updateTorrentSeeders } = require('../../lib/torrentEntries');
 
 const NAME = 'EZTV';
 const UNTIL_PAGE = 10;
 
-const limiter = new Bottleneck({ maxConcurrent: 20 });
+const limiter = new Bottleneck({ maxConcurrent: 1 });
 
 async function scrape() {
   const scrapeStart = moment();
@@ -26,11 +24,9 @@ async function scrape() {
       .then(() => console.log(`[${moment()}] finished ${NAME} scrape`));
 }
 
-async function updateSeeders(torrent) {
-  return limiter.schedule(() => eztv.torrent(torrent.torrentId)
-      .then(record => (torrent.seeders = record.seeders, torrent))
-      .catch(() => updateCurrentSeeders(torrent))
-      .then(updated => updateTorrentSeeders(updated)));
+async function updateSeeders(torrent, getImdbIdsMethod) {
+  return getImdbIdsMethod().then(imdbIds => Promises.sequence(imdbIds
+      .map(imdbId => limiter.schedule(() => eztv.search(imdbId)))));
 }
 
 async function scrapeLatestTorrents() {
@@ -45,7 +41,7 @@ async function scrapeLatestTorrentsForCategory(page = 1) {
         // return Promises.delay(30000).then(() => scrapeLatestTorrentsForCategory(page))
         return Promise.resolve([]);
       })
-      .then(torrents => Promise.all(torrents.map(torrent => limiter.schedule(() => processTorrentRecord(torrent)))))
+      .then(torrents => Promise.all(torrents.map(torrent => processTorrentRecord(torrent))))
       .then(resolved => resolved.length > 0 && page < UNTIL_PAGE
           ? scrapeLatestTorrentsForCategory(page + 1)
           : Promise.resolve());
