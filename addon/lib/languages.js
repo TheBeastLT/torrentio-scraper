@@ -1,6 +1,8 @@
 const languageMapping = {
   'dubbed': 'Dubbed',
-  'multi': 'Multi',
+  'multi audio': 'Multi Audio',
+  'multi subs': 'Multi Subs',
+  'dual audio': 'Dual Audio',
   'english': '🇬🇧',
   'japanese': '🇯🇵',
   'korean': '🇰🇷',
