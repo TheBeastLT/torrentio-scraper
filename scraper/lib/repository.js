@@ -77,11 +77,6 @@ const SkipTorrent = database.define('skip_torrent', {
   infoHash: { type: Sequelize.STRING(64), primaryKey: true },
 });
 
-const FailedImdbTorrent = database.define('failed_imdb_torrent', {
-  infoHash: { type: Sequelize.STRING(64), primaryKey: true },
-  title: { type: Sequelize.STRING(256), allowNull: false }
-});
-
 function connect() {
   if (process.env.ENABLE_SYNC) {
     return database.sync({ alter: true })
@@ -97,10 +92,6 @@ function getProvider(provider) {
   return Provider.findOrCreate({ where: { name: { [Op.eq]: provider.name } }, defaults: provider })
       .then((result) => result[0])
       .catch(() => provider);
-}
-
-function updateProvider(provider) {
-  return Provider.update(provider, { where: { name: { [Op.eq]: provider.name } } });
 }
 
 function getTorrent(torrent) {
@@ -135,10 +126,6 @@ function getUpdateSeedersTorrents() {
   });
 }
 
-function getTorrentsUpdatedBetween(provider, startDate, endDate) {
-  return Torrent.findAll({ where: { provider: provider, updatedAt: { [Op.gte]: startDate, [Op.lte]: endDate } } });
-}
-
 function createTorrent(torrent) {
   return Torrent.upsert(torrent);
 }
@@ -163,7 +150,7 @@ function getSkipTorrent(torrent) {
   return SkipTorrent.findByPk(torrent.infoHash)
       .then((result) => {
         if (!result) {
-          return getFailedImdbTorrent(torrent);
+          throw new Error(`torrent not found: ${torrent.infoHash}`);
         }
         return result.dataValues;
       })
@@ -173,24 +160,9 @@ function createSkipTorrent(torrent) {
   return SkipTorrent.upsert({ infoHash: torrent.infoHash });
 }
 
-function getFailedImdbTorrent(torrent) {
-  return FailedImdbTorrent.findByPk(torrent.infoHash)
-      .then((result) => {
-        if (!result) {
-          throw new Error(`torrent not found: ${torrent.infoHash}`);
-        }
-        return result.dataValues;
-      })
-}
-
-function createFailedImdbTorrent(torrent) {
-  return FailedImdbTorrent.upsert(torrent);
-}
-
 module.exports = {
   connect,
   getProvider,
-  updateProvider,
   createTorrent,
   getTorrent,
   getTorrentsBasedOnTitle,
@@ -201,7 +173,5 @@ module.exports = {
   deleteFile,
   getSkipTorrent,
   createSkipTorrent,
-  createFailedImdbTorrent,
-  getTorrentsWithoutSize,
-  getTorrentsUpdatedBetween
+  getTorrentsWithoutSize
 };
