@@ -9,6 +9,7 @@ const defaultProxies = [
   'https://1337x.to'
 ];
 const defaultTimeout = 10000;
+const maxSearchPage = 50;
 
 const Categories = {
   MOVIE: 'Movies',
@@ -42,10 +43,19 @@ function search(keyword, config = {}, retries = 2) {
   }
   const proxyList = config.proxyList || defaultProxies;
   const page = config.page || 1;
+  const category = config.category;
+  const extendToPage = Math.min(maxSearchPage, (config.extendToPage || 1))
+  const requestUrl = proxyUrl => category
+      ? `${proxyUrl}/category-search/${keyword}/${category}/${page}/`
+      : `${proxyUrl}/search/${keyword}/${page}/`;
 
   return Promises.first(proxyList
-      .map((proxyUrl) => singleRequest(`${proxyUrl}/search/${keyword}/${page}/`, config)))
-      .then((body) => parseTableBody(body))
+      .map(proxyUrl => singleRequest(requestUrl(proxyUrl), config)))
+      .then(body => parseTableBody(body))
+      .then(torrents => torrents.length === 40 && page < extendToPage
+          ? search(keyword, { ...config, page: page + 1 }).catch(() => [])
+              .then(nextTorrents => torrents.concat(nextTorrents))
+          : torrents)
       .catch((err) => search(keyword, config, retries - 1));
 }
 

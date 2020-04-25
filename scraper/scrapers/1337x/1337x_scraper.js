@@ -73,7 +73,7 @@ async function processTorrentRecord(record) {
     infoHash: torrentFound.infoHash,
     provider: NAME,
     torrentId: torrentFound.torrentId,
-    title: torrentFound.name.replace(/\t|\s+/g, ' '),
+    title: torrentFound.name.replace(/\t|\s+/g, ' ').trim(),
     type: TYPE_MAPPING[torrentFound.category],
     size: torrentFound.size,
     seeders: torrentFound.seeders,
