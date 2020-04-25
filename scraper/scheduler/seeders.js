@@ -33,10 +33,10 @@ async function _updateSeeders(torrent) {
         return []
       });
 
-  // if (!updatedTorrents.find(updated => updated.infoHash === torrent.infoHash)) {
-  //   await forceSeedersLimiter.schedule(() => updateCurrentSeeders(torrent))
-  //       .then(updated => updatedTorrents.push(updated));
-  // }
+  if (!updatedTorrents.find(updated => updated.infoHash === torrent.infoHash)) {
+    await forceSeedersLimiter.schedule(() => updateCurrentSeeders(torrent))
+        .then(updated => updatedTorrents.push(updated));
+  }
 
   return Promise.all(updatedTorrents.map(updated => updateLimiter.schedule(() => updateTorrentSeeders(updated))));
 }

@@ -1,6 +1,7 @@
 const torrentStream = require('torrent-stream');
 const needle = require('needle');
 const parseTorrent = require('parse-torrent');
+const BTClient = require('bittorrent-tracker')
 const async = require('async');
 const decode = require('magnet-uri');
 const isVideo = require('./video');
@@ -15,7 +16,6 @@ module.exports.updateCurrentSeeders = function (torrent) {
     if (!torrent.magnetLink && !torrent.infoHash) {
       return resolve(0);
     }
-    const Tracker = require("peer-search/tracker");
 
     const seeders = {};
     const magnetTrackers = torrent.magnetLink && decode(torrent.magnetLink).tr;
@@ -25,13 +25,12 @@ module.exports.updateCurrentSeeders = function (torrent) {
     setTimeout(callback, SEEDS_CHECK_TIMEOUT);
 
     async.each(trackers, function (tracker, ready) {
-      const t = new Tracker(tracker, {}, torrent.infoHash);
-      console.error = () => 0; // do nothing
-      t.run();
-      t.on("info", function (inf) {
-        seeders[tracker] = [inf.seeders, inf.leechers];
+      BTClient.scrape({ infoHash: torrent.infoHash, announce: tracker }, (_, results) => {
+        if (results) {
+          seeders[tracker] = [results.complete, results.incomplete];
+        }
         ready();
-      });
+      })
     }, callback);
   }).then(seeders => {
     torrent.seeders = seeders;
@@ -125,7 +124,7 @@ function filterVideos(files) {
 
 function filterSamples(files) {
   const maxSize = Math.max(...files.map(file => file.size));
-  const isSample = file => file.name.match(/sample/i) && maxSize / file.size < 10;
+  const isSample = file => file.name.match(/sample/i) && maxSize / parseInt(file.size) > 10;
   return files.filter(file => !isSample(file));
 }
 
