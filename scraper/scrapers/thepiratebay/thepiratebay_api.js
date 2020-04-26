@@ -102,7 +102,12 @@ function browse(config = {}, retries = 2) {
 async function _request(endpoint) {
   const url = `${baseUrl}/${endpoint}`;
   return needle('get', url, { open_timeout: timeout })
-      .then(response => response.body);
+      .then(response => {
+        if (typeof response.body === 'object') {
+          return response.body;
+        }
+        return Promise.reject(`Unexpected response body`);
+      });
 }
 
 function toTorrent(result) {
