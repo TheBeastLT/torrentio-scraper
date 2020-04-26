@@ -1,3 +1,4 @@
+const Bottleneck = require('bottleneck');
 const { addonBuilder } = require('stremio-addon-sdk');
 const { Type } = require('./lib/types');
 const { manifest, DefaultProviders } = require('./lib/manifest');
@@ -14,16 +15,21 @@ const STALE_ERROR_AGE = 7 * 24 * 60 * 60; // 7 days
 
 const defaultProviders = DefaultProviders.map(provider => provider.toLowerCase());
 const builder = new addonBuilder(manifest());
+const limiter = new Bottleneck({
+  maxConcurrent: process.env.LIMIT_MAX_CONCURRENT || 20,
+  highWater: process.env.LIMIT_QUEUE_SIZE || 100,
+  strategy: Bottleneck.strategy.OVERFLOW
+});
 
 builder.defineStreamHandler((args) => {
   if (!args.id.match(/tt\d+/i) && !args.id.match(/kitsu:\d+/i)) {
     return Promise.resolve({ streams: [] });
   }
 
-  return cacheWrapStream(args.id, () => streamHandler(args)
+  return limiter.schedule(() => cacheWrapStream(args.id, () => streamHandler(args)
       .then(records => records
           .sort((a, b) => b.torrent.seeders - a.torrent.seeders || b.torrent.uploadDate - a.torrent.uploadDate)
-          .map(record => toStreamInfo(record))))
+          .map(record => toStreamInfo(record)))))
       .then(streams => filterByProvider(streams, args.extra.providers || defaultProviders))
       .then(streams => applySorting(streams, args.extra))
       .then(streams => applyMochs(streams, args.extra))
@@ -35,7 +41,7 @@ builder.defineStreamHandler((args) => {
       }))
       .catch(error => {
         console.log(`Failed request ${args.id}: ${error}`);
-        throw error;
+        throw Promise.reject(error);
       });
 });
 
