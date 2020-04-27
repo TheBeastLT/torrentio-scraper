@@ -9,12 +9,14 @@ const DELAY = 15 * 1000; // 15 seconds
 const limiter = new Bottleneck({ maxConcurrent: 20, minTime: 250 });
 const updateLimiter = new Bottleneck({ maxConcurrent: 20 });
 const forceSeedersLimiter = new Bottleneck({ maxConcurrent: 5 });
+const statistics = {};
 
 function scheduleUpdateSeeders() {
   console.log('Starting seeders update...')
   return repository.getUpdateSeedersTorrents()
       .then(torrents => Promise.all(torrents.map(torrent => limiter.schedule(() => _updateSeeders(torrent)))))
-      .then(() => console.log('Finished seeders update'))
+      .then(torrents => updateStatistics(torrents))
+      .then(() => console.log('Finished seeders update: ', statistics))
       .catch(error => console.warn('Failed seeders update: ', error))
       .then(() => delay(DELAY))
       .then(() => scheduleUpdateSeeders());
@@ -24,7 +26,7 @@ async function _updateSeeders(torrent) {
   const provider = await scrapers.find(provider => provider.name === torrent.provider);
   if (!provider) {
     console.log(`No provider found for ${torrent.provider} [${torrent.infoHash}]`)
-    return Promise.resolve();
+    return Promise.resolve([]);
   }
   const updatedTorrents = await provider.scraper.updateSeeders(torrent, getImdbIdsMethod(torrent))
       .then(updated => Array.isArray(updated) ? updated : [updated])
@@ -45,6 +47,12 @@ function getImdbIdsMethod(torrent) {
   return () => repository.getFiles(torrent)
       .then(files => files.map(file => file.imdbId).filter(id => id))
       .then(ids => Array.from(new Set(ids)));
+}
+
+function updateStatistics(updatedTorrents) {
+  const totalTorrents = updatedTorrents.map(nested => nested.length).reduce((a, b) => a + b, 0);
+  const date = new Date().toISOString().replace(/T.*/, '');
+  statistics[date] = (statistics[date] || 0) + totalTorrents;
 }
 
 module.exports = { scheduleUpdateSeeders }
