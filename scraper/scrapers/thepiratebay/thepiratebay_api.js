@@ -93,8 +93,9 @@ function search(keyword, config = {}, retries = 2) {
 
 function browse(config = {}, retries = 2) {
   const category = config.category || 0;
+  const page = config.page - 1 || 0;
 
-  return _request(`q.php?q=category:${category}`)
+  return _request(`q.php?q=category:${category}:${page}`)
       .then(results => results.map((result) => toTorrent(result)))
       .catch(error => retries ? browse(config, retries - 1) : Promise.reject(error));
 }
