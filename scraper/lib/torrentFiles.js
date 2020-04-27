@@ -1,6 +1,7 @@
 const moment = require('moment');
 const distance = require('jaro-winkler');
 const { parse } = require('parse-torrent-title');
+const Promises = require('../lib/promises');
 const { torrentFiles } = require('../lib/torrent');
 const { getMetadata, getImdbId } = require('../lib/metadata');
 const { Type } = require('./types');
@@ -26,8 +27,8 @@ async function parseTorrentFiles(torrent) {
     if (parsedTorrentName.complete || typeof parsedTorrentName.year === 'string') {
       return torrentFiles(torrent)
           .then(files => files.filter(file => file.size > MIN_SIZE))
-          .then(files => Promise.all(files
-              .map((file) => findMovieImdbId(file.name)
+          .then(files => Promises.sequence(files
+              .map((file) => () => findMovieImdbId(file.name)
                   .then((newImdbId) => ({
                     infoHash: torrent.infoHash,
                     fileIndex: file.fileIndex,
