@@ -7,7 +7,7 @@ const defaultUrl = 'https://horriblesubs.info';
 const defaultTimeout = 10000;
 
 function allShows(config = {}) {
-  return _getContent('/shows', config)
+  return _getContent('/shows/', config)
       .then(($) => $('div[class="ind-show"]')
           .map((index, element) => $(element).children('a'))
           .map((index, element) => ({
