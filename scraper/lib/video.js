@@ -7,6 +7,7 @@ const EXTENSIONS = [
   "mov",
   "mp2",
   "mp4",
+  "m4v",
   "mpe",
   "mpeg",
   "mpg",
