@@ -90,7 +90,8 @@ function escapeTitle(title) {
 }
 
 function escapeHTML(title) {
-  return he.decode(title);
+  return he.decode(title)
+      .replace(/&amp;/g, "&");
 }
 
 async function getImdbId(info, type) {
