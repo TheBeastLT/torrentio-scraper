@@ -84,19 +84,11 @@ async function getStoredTorrentEntry(torrent) {
 }
 
 async function updateTorrentSeeders(torrent) {
-  if (torrent.seeders === undefined) {
+  if (!torrent.infoHash || !Number.isInteger(torrent.seeders)) {
     return;
   }
 
-  return repository.getTorrent(torrent)
-      .catch(() => undefined)
-      .then(stored => {
-        if (stored) {
-          stored.seeders = torrent.seeders;
-          stored.changed('updatedAt', true);
-          return stored.save()
-        }
-      })
+  return repository.setTorrentSeeders(torrent.infoHash, torrent.seeders)
       .catch(error => {
         console.warn('Failed updating seeders:', error);
         return undefined;

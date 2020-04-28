@@ -16,8 +16,8 @@ function scheduleUpdateSeeders() {
   return repository.getUpdateSeedersTorrents()
       .then(torrents => Promise.all(torrents.map(torrent => limiter.schedule(() => _updateSeeders(torrent)))))
       .then(torrents => updateStatistics(torrents))
-      .then(() => console.log('Finished seeders update: ', statistics))
-      .catch(error => console.warn('Failed seeders update: ', error))
+      .then(() => console.log('Finished seeders update:', statistics))
+      .catch(error => console.warn('Failed seeders update:', error))
       .then(() => delay(DELAY))
       .then(() => scheduleUpdateSeeders());
 }

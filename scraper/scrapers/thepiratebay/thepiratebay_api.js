@@ -71,7 +71,7 @@ const Categories = {
 
 function torrent(torrentId, retries = 2) {
   if (!torrentId) {
-    return Promise.reject(new Error('No valid torrentId provider'));
+    return Promise.reject(new Error('No valid torrentId provided'));
   }
 
   return _request(`t.php?id=${torrentId}`)

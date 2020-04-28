@@ -130,6 +130,13 @@ function createTorrent(torrent) {
   return Torrent.upsert(torrent);
 }
 
+function setTorrentSeeders(infoHash, seeders) {
+  return Torrent.update(
+      { seeders: seeders },
+      { where: { infoHash: infoHash } }
+  );
+}
+
 function createFile(file) {
   return File.upsert(file);
 }
@@ -164,6 +171,7 @@ module.exports = {
   connect,
   getProvider,
   createTorrent,
+  setTorrentSeeders,
   getTorrent,
   getTorrentsBasedOnTitle,
   getUpdateSeedersTorrents,
