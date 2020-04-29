@@ -45,13 +45,13 @@ function _getContent(endpoint, config = {},) {
       ? endpoint.replace(/https?:\/\/[^/]+/, baseUrl)
       : `${baseUrl}${endpoint}`;
 
-  return needle('get', url, { open_timeout: timeout, follow: 2 })
+  return needle('get', url, { open_timeout: timeout })
       .then((response) => response.body)
       .then((body) => cheerio.load(body));
 }
 
 function _getShowId(showEndpoint) {
-  return _getContent(showEndpoint)
+  return _getContent(showEndpoint.replace(/(?:#\d+)?\/?$/, '/'))
       .then($ => $('div.entry-content').find('script').html().match(/var hs_showid = (\d+)/)[1]);
 }
 
