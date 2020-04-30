@@ -30,7 +30,8 @@ const Torrent = database.define('torrent',
       trackers: { type: Sequelize.STRING(4096) },
       languages: { type: Sequelize.STRING(256) },
       resolution: { type: Sequelize.STRING(16) },
-      reviewed: { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false }
+      reviewed: { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false },
+      subsChecked: { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false }
     }
 );
 
@@ -73,9 +74,44 @@ const File = database.define('file',
     }
 );
 
+const Subtitle = database.define('subtitle',
+    {
+      infoHash: {
+        type: Sequelize.STRING(64),
+        primaryKey: true,
+        allowNull: false,
+        references: { model: Torrent, key: 'infoHash' },
+        onDelete: 'CASCADE'
+      },
+      fileIndex: {
+        type: Sequelize.INTEGER,
+        primaryKey: true,
+        allowNull: false
+      },
+      fileId: {
+        type: Sequelize.BIGINT,
+        allowNull: true,
+        references: { model: File, key: 'id' },
+        onDelete: 'SET NULL'
+      },
+      title: { type: Sequelize.STRING(512), allowNull: false },
+    },
+    {
+      timestamps: false,
+      indexes: [
+        { unique: false, fields: ['fileId'] }
+      ]
+    }
+);
+
 const SkipTorrent = database.define('skip_torrent', {
   infoHash: { type: Sequelize.STRING(64), primaryKey: true },
 });
+
+Torrent.hasMany(File, { foreignKey: 'infoHash', constraints: false });
+File.belongsTo(Torrent, { foreignKey: 'infoHash', constraints: false });
+File.hasMany(Subtitle, { foreignKey: 'fileId', constraints: false });
+Subtitle.belongsTo(File, { foreignKey: 'fileId', constraints: false });
 
 function connect() {
   if (process.env.ENABLE_SYNC) {
@@ -138,7 +174,7 @@ function setTorrentSeeders(infoHash, seeders) {
 }
 
 function createFile(file) {
-  return File.upsert(file);
+  return File.upsert(file, { include: [Subtitle] });
 }
 
 function getFiles(torrent) {
@@ -151,6 +187,10 @@ function getFilesBasedOnTitle(titleQuery) {
 
 function deleteFile(file) {
   return File.destroy({ where: { id: file.id } })
+}
+
+function createSubtitle(subtitle) {
+  return Subtitle.upsert(subtitle);
 }
 
 function getSkipTorrent(torrent) {
@@ -179,6 +219,7 @@ module.exports = {
   getFiles,
   getFilesBasedOnTitle,
   deleteFile,
+  createSubtitle,
   getSkipTorrent,
   createSkipTorrent,
   getTorrentsWithoutSize
