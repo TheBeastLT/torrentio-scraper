@@ -200,6 +200,9 @@ function setTorrentSeeders(infoHash, seeders) {
 }
 
 function createFile(file) {
+  if (file.id) {
+    return File.upsert(file);
+  }
   return File.create(file, { include: [Subtitle] });
 }
 
