@@ -1,4 +1,5 @@
 const moment = require('moment');
+const Promises = require('./promises')
 const { Sequelize, fn, col, literal } = require('sequelize');
 const Op = Sequelize.Op;
 
@@ -201,7 +202,7 @@ function setTorrentSeeders(infoHash, seeders) {
 
 function createFile(file) {
   if (file.id) {
-    return File.upsert(file);
+    return File.upsert(file).then(() => upsertSubtitles(file.id, file.subtitles));
   }
   return File.create(file, { include: [Subtitle] });
 }
@@ -221,6 +222,15 @@ function deleteFile(file) {
 function createSubtitles(infoHash, subtitles) {
   if (subtitles && subtitles.length) {
     return Subtitle.bulkCreate(subtitles.map(subtitle => ({ infoHash, title: subtitle.path, ...subtitle })));
+  }
+  return Promise.resolve();
+}
+
+function upsertSubtitles(file, subtitles) {
+  if (file.id && subtitles && subtitles.length) {
+    return Promises.sequence(subtitles
+        .map(subtitle => ({ fileId: file.id, infoHash: file.infoHash, title: subtitle.path, ...subtitle }))
+        .map(subtitle => () => Subtitle.upsert(subtitle)));
   }
   return Promise.resolve();
 }
