@@ -9,7 +9,7 @@ const { createTorrentEntry, getStoredTorrentEntry, updateTorrentSeeders } = requ
 const NAME = 'ThePirateBay';
 const UNTIL_PAGE = 5;
 
-const limiter = new Bottleneck({ maxConcurrent: 40 });
+const limiter = new Bottleneck({ maxConcurrent: 10 });
 
 const allowedCategories = [
   thepiratebay.Categories.VIDEO.MOVIES,

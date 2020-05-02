@@ -11,7 +11,7 @@ const NAME = 'RARBG';
 const SEARCH_OPTIONS = { limit: 100, sort: 'seeders', format: 'json_extended', ranked: 0 };
 
 const limiter = new Bottleneck({ maxConcurrent: 1, minTime: 2500 });
-const entryLimiter = new Bottleneck({ maxConcurrent: 40 });
+const entryLimiter = new Bottleneck({ maxConcurrent: 10 });
 
 async function scrape() {
   const scrapeStart = moment();
@@ -43,7 +43,6 @@ async function scrapeLatestTorrents() {
     rarbg.CATEGORY.MOVIES_X264_1080P,
     rarbg.CATEGORY.MOVIES_X264_720P,
     rarbg.CATEGORY.MOVIES_X264_3D,
-    rarbg.CATEGORY.MOVIES_FULL_BD,
     rarbg.CATEGORY.MOVIES_BD_REMUX,
     rarbg.CATEGORY.TV_EPISODES,
     rarbg.CATEGORY.TV_UHD_EPISODES,

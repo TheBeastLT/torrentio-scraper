@@ -10,7 +10,7 @@ const NAME = 'KickassTorrents';
 const UNTIL_PAGE = 10;
 const TYPE_MAPPING = typeMapping();
 
-const limiter = new Bottleneck({ maxConcurrent: 40 });
+const limiter = new Bottleneck({ maxConcurrent: 10 });
 
 async function scrape() {
   const scrapeStart = moment();

@@ -9,6 +9,7 @@ const NAME = 'EZTV';
 const UNTIL_PAGE = 10;
 
 const limiter = new Bottleneck({ maxConcurrent: 1 });
+const entryLimiter = new Bottleneck({ maxConcurrent: 10 });
 
 async function scrape() {
   const scrapeStart = moment();
@@ -42,7 +43,7 @@ async function scrapeLatestTorrentsForCategory(page = 1) {
         // return Promises.delay(30000).then(() => scrapeLatestTorrentsForCategory(page))
         return Promise.resolve([]);
       })
-      .then(torrents => Promise.all(torrents.map(torrent => processTorrentRecord(torrent))))
+      .then(torrents => Promise.all(torrents.map(t => entryLimiter.schedule(() => processTorrentRecord(t)))))
       .then(resolved => resolved.length > 0 && page < UNTIL_PAGE
           ? scrapeLatestTorrentsForCategory(page + 1)
           : Promise.resolve());
