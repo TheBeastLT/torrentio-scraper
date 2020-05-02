@@ -33,21 +33,26 @@ async function createTorrentEntry(torrent, overwrite = false) {
     return;
   }
 
-  const files = await parseTorrentFiles(torrent)
-      .then(files => overwrite ? overwriteExistingFiles(torrent, files) : files);
-  if (!files || !files.length) {
+  const { contents, videos, subtitles } = await parseTorrentFiles(torrent)
+      .then(torrentContents => overwrite ? overwriteExistingFiles(torrent, torrentContents) : torrentContents)
+      .catch(error => {
+        console.log(`Failed getting files for ${torrent.title}`, error.message);
+        return {};
+      });
+  if (!videos || !videos.length) {
     console.log(`no video files found for ${torrent.provider} [${torrent.infoHash}] ${torrent.title}`);
     return;
   }
 
-  return repository.createTorrent(torrent)
-      .then(() => Promise.all(files.map(file => repository.createFile(file))))
+  return repository.createTorrent({ ...torrent, contents, subtitles })
+      .then(() => Promise.all(videos.map(video => repository.createFile(video))))
       .then(() => console.log(`Created ${torrent.provider} entry for [${torrent.infoHash}] ${torrent.title}`));
 }
 
-async function overwriteExistingFiles(torrent, files) {
-  if (files && files.length) {
-    const existingFiles = await repository.getFiles({ infoHash: files[0].infoHash })
+async function overwriteExistingFiles(torrent, torrentContents) {
+  const videos = torrentContents && torrentContents.videos;
+  if (videos && videos.length) {
+    const existingFiles = await repository.getFiles({ infoHash: videos[0].infoHash })
         .then((existing) => existing
             .reduce((map, next) => {
               const fileIndex = next.fileIndex !== undefined ? next.fileIndex : null;
@@ -56,9 +61,9 @@ async function overwriteExistingFiles(torrent, files) {
             }, {}))
         .catch(() => undefined);
     if (existingFiles && Object.keys(existingFiles).length) {
-      return files
+      const overwrittenVideos = videos
           .map(file => {
-            const mapping = files.length === 1 && Object.keys(existingFiles).length === 1
+            const mapping = videos.length === 1 && Object.keys(existingFiles).length === 1
                 ? Object.values(existingFiles)[0]
                 : existingFiles[file.fileIndex !== undefined ? file.fileIndex : null];
             if (mapping) {
@@ -66,9 +71,10 @@ async function overwriteExistingFiles(torrent, files) {
               return { ...file, id: originalFile.id, size: originalFile.size || file.size };
             }
             return file;
-          })
+          });
+      return { ...torrentContents, videos: overwrittenVideos };
     }
-    return files;
+    return torrentContents;
   }
   return Promise.reject(`No video files found for: ${torrent.title}`);
 }

@@ -31,7 +31,7 @@ const Torrent = database.define('torrent',
       languages: { type: Sequelize.STRING(256) },
       resolution: { type: Sequelize.STRING(16) },
       reviewed: { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false },
-      subsChecked: { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false }
+      opened: { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false }
     }
 );
 
@@ -104,12 +104,36 @@ const Subtitle = database.define('subtitle',
     }
 );
 
+const Content = database.define('content',
+    {
+      infoHash: {
+        type: Sequelize.STRING(64),
+        primaryKey: true,
+        allowNull: false,
+        references: { model: Torrent, key: 'infoHash' },
+        onDelete: 'CASCADE'
+      },
+      fileIndex: {
+        type: Sequelize.INTEGER,
+        primaryKey: true,
+        allowNull: false
+      },
+      path: { type: Sequelize.STRING(512), allowNull: false },
+      size: { type: Sequelize.BIGINT },
+    },
+    {
+      timestamps: false,
+    }
+);
+
 const SkipTorrent = database.define('skip_torrent', {
   infoHash: { type: Sequelize.STRING(64), primaryKey: true },
 });
 
 Torrent.hasMany(File, { foreignKey: 'infoHash', constraints: false });
 File.belongsTo(Torrent, { foreignKey: 'infoHash', constraints: false });
+Torrent.hasMany(Content, { foreignKey: 'infoHash', constraints: false });
+Content.belongsTo(Torrent, { foreignKey: 'infoHash', constraints: false });
 File.hasMany(Subtitle, { foreignKey: 'fileId', constraints: false });
 Subtitle.belongsTo(File, { foreignKey: 'fileId', constraints: false });
 
@@ -163,7 +187,9 @@ function getUpdateSeedersTorrents() {
 }
 
 function createTorrent(torrent) {
-  return Torrent.upsert(torrent);
+  return Torrent.upsert(torrent)
+      .then(() => createContents(torrent.infoHash, torrent.contents))
+      .then(() => createSubtitles(torrent.infoHash, torrent.subtitles));
 }
 
 function setTorrentSeeders(infoHash, seeders) {
@@ -174,7 +200,7 @@ function setTorrentSeeders(infoHash, seeders) {
 }
 
 function createFile(file) {
-  return File.upsert(file, { include: [Subtitle] });
+  return File.create(file, { include: [Subtitle] });
 }
 
 function getFiles(torrent) {
@@ -189,8 +215,27 @@ function deleteFile(file) {
   return File.destroy({ where: { id: file.id } })
 }
 
-function createSubtitle(subtitle) {
-  return Subtitle.upsert(subtitle);
+function createSubtitles(infoHash, subtitles) {
+  if (subtitles && subtitles.length) {
+    return Subtitle.bulkCreate(subtitles.map(subtitle => ({ infoHash, title: subtitle.path, ...subtitle })));
+  }
+  return Promise.resolve();
+}
+
+function getSubtitles(torrent) {
+  return Subtitle.findAll({ where: { infoHash: torrent.infoHash } });
+}
+
+function createContents(infoHash, contents) {
+  if (contents && contents.length) {
+    return Content.bulkCreate(contents.map(content => ({ infoHash, ...content })))
+        .then(() => Torrent.update({ opened: true }, { where: { infoHash: infoHash } }));
+  }
+  return Promise.resolve();
+}
+
+function getContents(torrent) {
+  return Content.findAll({ where: { infoHash: torrent.infoHash } });
 }
 
 function getSkipTorrent(torrent) {
@@ -219,7 +264,10 @@ module.exports = {
   getFiles,
   getFilesBasedOnTitle,
   deleteFile,
-  createSubtitle,
+  createSubtitles,
+  getSubtitles,
+  createContents,
+  getContents,
   getSkipTorrent,
   createSkipTorrent,
   getTorrentsWithoutSize

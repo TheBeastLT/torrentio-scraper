@@ -137,4 +137,4 @@ async function getKitsuId(info) {
           }));
 }
 
-module.exports = { getMetadata, getImdbId, getKitsuId, escapeHTML };
+module.exports = { getMetadata, getImdbId, getKitsuId, escapeHTML, escapeTitle };

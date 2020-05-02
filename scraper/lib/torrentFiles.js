@@ -3,7 +3,7 @@ const distance = require('jaro-winkler');
 const { parse } = require('parse-torrent-title');
 const Promises = require('../lib/promises');
 const { torrentFiles } = require('../lib/torrent');
-const { getMetadata, getImdbId } = require('../lib/metadata');
+const { getMetadata, getImdbId, getKitsuId } = require('../lib/metadata');
 const { Type } = require('./types');
 
 const MIN_SIZE = 10 * 1024 * 1024; // 10 MB
@@ -23,62 +23,78 @@ async function parseTorrentFiles(torrent) {
     torrent.type = Type.MOVIE;
   }
 
-  if (torrent.type === Type.MOVIE && !parsedTorrentName.seasons || metadata && metadata.type === Type.MOVIE) {
-    if (parsedTorrentName.complete || typeof parsedTorrentName.year === 'string') {
-      return torrentFiles(torrent)
-          .then(files => files.filter(file => file.size > MIN_SIZE))
-          .then(files => Promises.sequence(files
-              .map((file) => () => findMovieImdbId(file.name)
-                  .then((newImdbId) => ({
-                    infoHash: torrent.infoHash,
-                    fileIndex: file.fileIndex,
-                    title: file.path || file.name,
-                    size: file.size,
-                    imdbId: newImdbId,
-                  })))))
-          .catch(error => {
-            console.log(`Failed getting files for ${torrent.title}`, error.message);
-            return [];
-          });
-    }
-
-    return [{
-      infoHash: torrent.infoHash,
-      title: torrent.title,
-      size: torrent.size,
-      imdbId: torrent.imdbId || metadata && metadata.imdbId,
-      kitsuId: torrent.kitsuId || metadata && metadata.kitsuId
-    }];
+  if (torrent.type === Type.MOVIE && (!parsedTorrentName.seasons ||
+      parsedTorrentName.season === 5 && parsedTorrentName.episode === 1)) {
+    return parseMovieFiles(torrent, parsedTorrentName, metadata);
   }
 
-  return getSeriesFiles(torrent, parsedTorrentName)
+  return parseSeriesFiles(torrent, parsedTorrentName, metadata)
+}
+
+async function parseMovieFiles(torrent, parsedName, metadata) {
+  const { contents, videos, subtitles } = await getMoviesTorrentContent(torrent, parsedName);
+  const filteredVideos = videos.filter(file => file.size > MIN_SIZE);
+  if (filteredVideos.length === 1) {
+    const parsedVideo = {
+      infoHash: torrent.infoHash,
+      fileIndex: filteredVideos[0].fileIndex,
+      title: filteredVideos[0].path || torrent.title,
+      size: filteredVideos[0].size || torrent.size,
+      imdbId: torrent.imdbId || metadata && metadata.imdbId,
+      kitsuId: torrent.kitsuId || metadata && metadata.kitsuId
+    };
+    return { contents, videos: [parsedVideo], subtitles };
+  }
+
+  const parsedVideos = await Promises.sequence(filteredVideos
+      .map(file => () => findMovieImdbId(file.name)
+          .then(newImdbId => ({
+            infoHash: torrent.infoHash,
+            fileIndex: file.fileIndex,
+            title: file.path || file.name,
+            size: file.size,
+            imdbId: newImdbId,
+          }))));
+  return { contents, videos: parsedVideos, subtitles };
+}
+
+async function parseSeriesFiles(torrent, parsedName, metadata) {
+  const { contents, videos, subtitles } = await getSeriesTorrentContent(torrent, parsedName);
+  const parsedVideos = await Promise.resolve(videos)
       .then((files) => files
           .filter((file) => file.size > MIN_SIZE)
-          .map((file) => parseSeriesFile(file, parsedTorrentName)))
+          .map((file) => parseSeriesFile(file, parsedName, torrent.type)))
       .then((files) => decomposeEpisodes(torrent, files, metadata))
       .then((files) => assignKitsuOrImdbEpisodes(torrent, files, metadata))
       .then((files) => Promise.all(files.map(file => file.isMovie
           ? mapSeriesMovie(file, torrent)
           : mapSeriesEpisode(file, torrent, files))))
       .then((files) => files.reduce((a, b) => a.concat(b), []))
-      .catch((error) => {
-        console.log(`Failed getting files for ${torrent.title}`, error.message);
-        return [];
+  return { contents, videos: parsedVideos, subtitles };
+}
+
+async function getMoviesTorrentContent(torrent, parsedName) {
+  const hasMultipleMovie = parsedName.complete || typeof parsedName.year === 'string';
+  return torrentFiles(torrent)
+      .catch(error => {
+        if (!hasMultipleMovie) {
+          return { videos: [{ name: torrent.title, path: torrent.title, size: torrent.size }] }
+        }
+        return Promise.reject(error);
       });
 }
 
-async function getSeriesFiles(torrent, parsedName) {
+async function getSeriesTorrentContent(torrent, parsedName) {
   const hasMultipleEpisodes = parsedName.complete || parsedName.hasMovies || torrent.size > MULTIPLE_FILES_SIZE ||
       (parsedName.seasons && parsedName.seasons.length > 1);
-  if (!hasMultipleEpisodes && (Number.isInteger(parsedName.episode) || (!parsedName.episodes && parsedName.date))) {
-    return [{
-      name: torrent.title,
-      path: torrent.title,
-      size: torrent.size
-    }];
-  }
-
-  return torrentFiles(torrent);
+  const hasSingleEpisode = Number.isInteger(parsedName.episode) || (!parsedName.episodes && parsedName.date);
+  return torrentFiles(torrent)
+      .catch(error => {
+        if (!hasMultipleEpisodes && hasSingleEpisode) {
+          return { videos: [{ name: torrent.title, path: torrent.title, size: torrent.size }] }
+        }
+        return Promise.reject(error);
+      });
 }
 
 async function mapSeriesEpisode(file, torrent, files) {
@@ -109,19 +125,20 @@ async function mapSeriesEpisode(file, torrent, files) {
 }
 
 async function mapSeriesMovie(file, torrent) {
-  return findMovieImdbId(file)
-      .then(imdbId => getMetadata(imdbId, Type.MOVIE).catch(() => ({ imdbId })))
-      .then(metadata => [{
-        infoHash: torrent.infoHash,
-        fileIndex: file.fileIndex,
-        title: file.path || file.name,
-        size: file.size,
-        imdbId: metadata.imdbId,
-        kitsuId: metadata.kitsuId
-      }]);
+  const kitsuId = torrent.type === Type.ANIME ? await findMovieKitsuId(file) : undefined;
+  const imdbId = !kitsuId ? await findMovieImdbId(file) : undefined;
+  const metadata = getMetadata(imdbId, Type.MOVIE).catch(() => undefined);
+  return [{
+    infoHash: torrent.infoHash,
+    fileIndex: file.fileIndex,
+    title: file.path || file.name,
+    size: file.size,
+    imdbId: metadata && metadata.imdbId || imdbId,
+    kitsuId: metadata && metadata.kitsuId || kitsuId
+  }];
 }
 
-function parseSeriesFile(file, parsedTorrentName) {
+function parseSeriesFile(file, parsedTorrentName, type) {
   const fileInfo = parse(file.name);
   // the episode may be in a folder containing season number
   if (!fileInfo.season && file.path.includes('/')) {
@@ -143,7 +160,8 @@ function parseSeriesFile(file, parsedTorrentName) {
     fileInfo.episodes = epMatcher && [parseInt(epMatcher[1], 10)];
     fileInfo.episode = fileInfo.episodes && fileInfo.episodes[0];
   }
-  fileInfo.isMovie = (parsedTorrentName.hasMovies && !fileInfo.season && (!fileInfo.episodes || !!fileInfo.year))
+  fileInfo.isMovie = ((parsedTorrentName.hasMovies || type === Type.ANIME)
+      && !fileInfo.season && (!fileInfo.episodes || !!fileInfo.year))
       || (!fileInfo.season && !!file.name.match(/\b(?:\d+[ .]movie|movie[ .]\d+)\b/i));
 
   return { ...file, ...fileInfo };
@@ -351,9 +369,14 @@ function assignKitsuOrImdbEpisodes(torrent, files, metadata) {
   return files;
 }
 
-function findMovieImdbId(title) {
+function findMovieImdbId(title, type) {
   const parsedTitle = typeof title === 'string' ? parse(title) : title;
   return getImdbId(parsedTitle, Type.MOVIE).catch(() => undefined);
+}
+
+function findMovieKitsuId(title) {
+  const parsedTitle = typeof title === 'string' ? parse(title) : title;
+  return getKitsuId(parsedTitle, Type.MOVIE).catch(() => undefined);
 }
 
 function div100(episode) {

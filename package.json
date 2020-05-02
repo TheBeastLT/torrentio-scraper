@@ -31,7 +31,7 @@
     "node-schedule": "^1.3.2",
     "nodejs-bing": "^0.1.0",
     "parse-torrent": "^6.1.2",
-    "parse-torrent-title": "git://github.com/TheBeastLT/parse-torrent-title.git#a151662b960b6c826b34245663db12ee4ccc75e6",
+    "parse-torrent-title": "git://github.com/TheBeastLT/parse-torrent-title.git#213d188496d5645bcbfff5c3b5b3839df486260d",
     "pg": "^7.8.2",
     "pg-hstore": "^2.3.2",
     "rarbg-api": "^1.1.3",

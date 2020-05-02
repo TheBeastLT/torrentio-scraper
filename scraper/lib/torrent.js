@@ -4,7 +4,7 @@ const parseTorrent = require('parse-torrent');
 const BTClient = require('bittorrent-tracker')
 const async = require('async');
 const decode = require('magnet-uri');
-const isVideo = require('./video');
+const { isVideo, isSubtitle } = require('./extension');
 const { cacheTrackers } = require('./cache');
 
 const TRACKERS_URL = 'https://ngosang.github.io/trackerslist/trackers_best.txt';
@@ -49,13 +49,15 @@ module.exports.updateTorrentSize = function (torrent) {
 
 module.exports.sizeAndFiles = torrent => filesAndSizeFromTorrentStream(torrent, 30000);
 
-module.exports.torrentFiles = function (torrent) {
+module.exports.torrentFiles = function (torrent, timeout) {
   return getFilesFromObject(torrent)
       .catch(() => filesFromTorrentFile(torrent))
-      .catch(() => filesFromTorrentStream(torrent))
-      .then((files) => filterVideos(files))
-      .then((files) => filterSamples(files))
-      .then((files) => filterExtras(files));
+      .catch(() => filesFromTorrentStream(torrent, timeout))
+      .then(files => ({
+        contents: files,
+        videos: filterVideos(files),
+        subtitles: filterSubtitles(files)
+      }));
 };
 
 function getFilesFromObject(torrent) {
@@ -86,11 +88,11 @@ async function filesFromTorrentFile(torrent) {
       })));
 }
 
-async function filesFromTorrentStream(torrent) {
-  return filesAndSizeFromTorrentStream(torrent, 60000).then(result => result.files);
+async function filesFromTorrentStream(torrent, timeout) {
+  return filesAndSizeFromTorrentStream(torrent, timeout).then(result => result.files);
 }
 
-function filesAndSizeFromTorrentStream(torrent, timeout = 60000) {
+function filesAndSizeFromTorrentStream(torrent, timeout = 30000) {
   if (!torrent.infoHash && !torrent.magnetLink) {
     return Promise.reject(new Error("no infoHash or magnetLink"));
   }
@@ -119,18 +121,17 @@ function filesAndSizeFromTorrentStream(torrent, timeout = 60000) {
 }
 
 function filterVideos(files) {
-  return files.filter((file) => isVideo(file.path));
-}
-
-function filterSamples(files) {
   const maxSize = Math.max(...files.map(file => file.size));
   const isSample = file => file.name.match(/sample/i) && maxSize / parseInt(file.size) > 10;
-  return files.filter(file => !isSample(file));
+  const isExtra = file => file.path.match(/extras?\//i);
+  return files
+      .filter(file => isVideo(file.path))
+      .filter(file => !isSample(file))
+      .filter(file => !isExtra(file));
 }
 
-function filterExtras(files) {
-  const isExtra = file => file.path.match(/extras?\//i);
-  return files.filter(file => !isExtra(file));
+function filterSubtitles(files) {
+  return files.filter(file => isSubtitle(file.path));
 }
 
 async function getDefaultTrackers() {
