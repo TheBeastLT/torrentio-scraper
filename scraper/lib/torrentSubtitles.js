@@ -23,22 +23,24 @@ function assignSubtitles({ contents, videos, subtitles }) {
 }
 
 function _parseVideo(video) {
+  const fileName = video.title.replace(/\.(\w{2,4})$/, '');
+  const folderName = video.title.replace(/\/?[^/]+$/, '');
   return {
     videoFile: video,
-    fileName: video.title.replace(/\.(\w{2,4})$/, ''),
-    folderName: video.title.replace(/\/?[^/]+$/, ''),
-    ...parse(video.title)
+    fileName: fileName,
+    folderName: folderName,
+    ...parse(fileName)
   };
 }
 
 function _mostProbableSubtitleVideo(subtitle, parsedVideos) {
   const subTitle = subtitle.title || subtitle.path;
-  const parsedSub = parse(subTitle);
+  const parsedSub = parse(subTitle.replace(/\.(\w{2,4})$/, ''));
   const byFileName = parsedVideos.filter(video => subTitle.includes(video.fileName));
   if (byFileName.length === 1) {
     return byFileName[0].videoFile;
   }
-  const byTitleSeasonEpisode = parsedVideos.filter(video => parsedSub.title.includes(video.title)
+  const byTitleSeasonEpisode = parsedVideos.filter(video => video.title === parsedSub.title
       && video.seasons === parsedSub.seasons
       && JSON.stringify(video.episodes) === JSON.stringify(parsedSub.episodes));
   if (byTitleSeasonEpisode.length === 1) {
@@ -49,7 +51,7 @@ function _mostProbableSubtitleVideo(subtitle, parsedVideos) {
   if (bySeasonEpisode.length === 1) {
     return bySeasonEpisode[0].videoFile;
   }
-  const byTitle = parsedVideos.filter(video => parsedSub.title.includes(video.title));
+  const byTitle = parsedVideos.filter(video => video.title && video.title === parsedSub.title);
   if (byTitle.length === 1) {
     return byTitle[0].videoFile;
   }
