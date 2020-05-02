@@ -204,6 +204,9 @@ function createFile(file) {
   if (file.id) {
     return File.upsert(file).then(() => upsertSubtitles(file.id, file.subtitles));
   }
+  if (file.subtitles && file.subtitles.length) {
+    file.subtitles = file.subtitles.map(subtitle => ({ infoHash: file.infoHash, title: subtitle.path, ...subtitle }));
+  }
   return File.create(file, { include: [Subtitle] });
 }
 
@@ -229,14 +232,23 @@ function createSubtitles(infoHash, subtitles) {
 function upsertSubtitles(file, subtitles) {
   if (file.id && subtitles && subtitles.length) {
     return Promises.sequence(subtitles
-        .map(subtitle => ({ fileId: file.id, infoHash: file.infoHash, title: subtitle.path, ...subtitle }))
-        .map(subtitle => () => Subtitle.upsert(subtitle)));
+        .map(subtitle => {
+          subtitle.fileId = file.id;
+          subtitle.infoHash = subtitle.infoHash || file.infoHash;
+          subtitle.title = subtitle.title || subtitle.path;
+          return subtitle;
+        })
+        .map(subtitle => () => subtitle.dataValues ? subtitle.save() : Subtitle.upsert(subtitle)));
   }
   return Promise.resolve();
 }
 
 function getSubtitles(torrent) {
   return Subtitle.findAll({ where: { infoHash: torrent.infoHash } });
+}
+
+function getUnassignedSubtitles() {
+  return Subtitle.findAll({ where: { fileId: null } });
 }
 
 function createContents(infoHash, contents) {
@@ -278,7 +290,9 @@ module.exports = {
   getFilesBasedOnTitle,
   deleteFile,
   createSubtitles,
+  upsertSubtitles,
   getSubtitles,
+  getUnassignedSubtitles,
   createContents,
   getContents,
   getSkipTorrent,

@@ -3,32 +3,10 @@ const { parse } = require('parse-torrent-title');
 const repository = require('../lib/repository');
 const { getImdbId } = require('../lib/metadata');
 const { parseTorrentFiles } = require('../lib/torrentFiles');
+const { assignSubtitles } = require('../lib/torrentSubtitles');
 const { Type } = require('../lib/types');
 
 const limiter = new Bottleneck({ maxConcurrent: 40 });
-
-async function addMissingEpisodes() {
-  const torrent = { infoHash: '0ec780c2c7f8d5b38e61827f0b53c77c3d22f955' };
-  const torrentFiles = await require('../lib/torrent').torrentFiles(torrent);
-  const storedFiles = await repository.getFiles(torrent)
-      .then((files) => files.reduce((map, next) => (map[next.fileIndex] = next, map), {}));
-  const imdbId = Object.values(storedFiles)[0].imdbId;
-
-  torrentFiles
-      .filter((file) => !storedFiles[file.fileIndex !== undefined ? file.fileIndex : null])
-      .map((file) => ({
-        infoHash: torrent.infoHash,
-        fileIndex: file.fileIndex,
-        title: file.name,
-        size: file.size,
-        imdbId: imdbId,
-        imdbSeason: parse(file.name).season,
-        imdbEpisode: parse(file.name).episode,
-        // imdbSeason: parseInt(file.name.match(/(\d+)[ .]?-[ .]?\d+/)[1], 10),
-        // imdbEpisode: parseInt(file.name.match(/\d+[ .]?-[ .]?(\d+)/)[1], 10),
-      }))
-      .forEach((file) => repository.createFile(file));
-}
 
 async function updateMovieCollections() {
   const collectionFiles = await repository.getFilesBasedOnTitle('logy')
@@ -90,6 +68,7 @@ async function reapplyEpisodeDecomposing(infoHash, includeSourceFiles = true) {
   const imdbId = storedFiles.length && storedFiles[0].imdbId || await getImdbId(parse(torrent.title));
 
   return parseTorrentFiles({ ...torrent.get(), imdbId, files })
+      .then(torrentContents => torrentContents.videos)
       .then(newFiles => newFiles.map(file => {
         const fileIndex = file.fileIndex !== undefined ? file.fileIndex : null;
         const mapping = fileIndexMap[fileIndex];
@@ -111,6 +90,24 @@ async function reapplyEpisodeDecomposing(infoHash, includeSourceFiles = true) {
       .then(updatedFiles => Promise.all(updatedFiles
           .map(file => file.id ? file.save() : repository.createFile(file))))
       .then(() => console.log(`Updated files for ${torrent.title}`));
+}
+
+async function assignSubs() {
+  const unassignedSubs = await repository.getUnassignedSubtitles()
+      .then(subs => subs.reduce((map, sub) => {
+        map[sub.infoHash] = (map[sub.infoHash] || []).concat(sub);
+        return map;
+      }, {}));
+  const infoHashes = Object.keys(unassignedSubs);
+
+  return Promise.all(infoHashes.map(async infoHash => {
+    const videos = await repository.getFiles({ infoHash });
+    const subtitles = unassignedSubs[infoHash];
+    const assignedContents = assignSubtitles({ videos, subtitles });
+    return Promise.all(assignedContents.videos
+        .filter(video => video.subtitles)
+        .map(video => repository.upsertSubtitles(video, video.subtitles)));
+  }));
 }
 
 async function findAllFiles() {
@@ -183,13 +180,13 @@ async function findAllFiles() {
   // };
 
   return parseTorrentFiles(torrent)
-      .then((files) => console.log(files));
+      .then((files) => console.log(files.videos));
 }
 
-//addMissingEpisodes().then(() => console.log('Finished'));
 //findAllFiles().then(() => console.log('Finished'));
 //updateMovieCollections().then(() => console.log('Finished'));
 reapplyEpisodeDecomposing('0b6c0f0692bdb151efb87e3de90e46e3b177444e', false).then(() => console.log('Finished'));
 //reapplySeriesSeasonsSavedAsMovies().then(() => console.log('Finished'));
 //reapplyDecomposingToTorrentsOnRegex('.*Boku no Hero Academia.*').then(() => console.log('Finished'));
 //reapplyManualHashes().then(() => console.log('Finished'));
+// assignSubs().then(() => console.log('Finished'));

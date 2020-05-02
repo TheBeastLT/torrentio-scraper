@@ -3,6 +3,7 @@ const { Type } = require('./types');
 const repository = require('./repository');
 const { getImdbId, getKitsuId } = require('./metadata');
 const { parseTorrentFiles } = require('./torrentFiles');
+const { assignSubtitles } = require('./torrentSubtitles');
 
 async function createTorrentEntry(torrent, overwrite = false) {
   const titleInfo = parse(torrent.title);
@@ -35,6 +36,7 @@ async function createTorrentEntry(torrent, overwrite = false) {
 
   const { contents, videos, subtitles } = await parseTorrentFiles(torrent)
       .then(torrentContents => overwrite ? overwriteExistingFiles(torrent, torrentContents) : torrentContents)
+      .then(torrentContents => assignSubtitles(torrentContents))
       .catch(error => {
         console.log(`Failed getting files for ${torrent.title}`, error.message);
         return {};
@@ -68,7 +70,7 @@ async function overwriteExistingFiles(torrent, torrentContents) {
                 : existingFiles[file.fileIndex !== undefined ? file.fileIndex : null];
             if (mapping) {
               const originalFile = mapping.shift();
-              return { ...file, id: originalFile.id, size: originalFile.size || file.size };
+              return { id: originalFile.id, ...file };
             }
             return file;
           });
