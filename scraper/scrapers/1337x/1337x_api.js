@@ -4,6 +4,7 @@ const Sugar = require('sugar-date');
 const decode = require('magnet-uri');
 const Promises = require('../../lib/promises');
 const { escapeHTML } = require('../../lib/metadata');
+const { defaultOptionsWithProxy } = require('../../lib/request_helper');
 
 const defaultProxies = [
   'https://1337x.to'
@@ -79,8 +80,9 @@ function browse(config = {}, retries = 2) {
 
 function singleRequest(requestUrl, config = {}) {
   const timeout = config.timeout || defaultTimeout;
+  const options = { ...defaultOptionsWithProxy(), open_timeout: timeout, follow: 2 };
 
-  return needle('get', requestUrl, { open_timeout: timeout, follow: 2 })
+  return needle('get', requestUrl, options)
       .then((response) => {
         const body = response.body;
         if (!body) {
