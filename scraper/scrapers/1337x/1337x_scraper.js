@@ -49,7 +49,7 @@ async function scrapeLatestTorrentsForCategory(category, page = 1) {
         return Promise.resolve([]);
       })
       .then(torrents => Promise.all(torrents.map(torrent => limiter.schedule(() => processTorrentRecord(torrent)))))
-      .then(resolved => resolved.length > 0 && page < UNTIL_PAGE
+      .then(resolved => resolved.length > 0 && page < untilPage(category)
           ? scrapeLatestTorrentsForCategory(category, page + 1)
           : Promise.resolve());
 
@@ -92,6 +92,16 @@ function typeMapping() {
   mapping[leetx.Categories.TV] = Type.SERIES;
   mapping[leetx.Categories.ANIME] = Type.ANIME;
   return mapping;
+}
+
+function untilPage(category) {
+  if (leetx.Categories.ANIME === category) {
+    return 5;
+  }
+  if (leetx.Categories.DOCUMENTARIES === category) {
+    return 1;
+  }
+  return UNTIL_PAGE;
 }
 
 module.exports = { scrape, updateSeeders, NAME };
