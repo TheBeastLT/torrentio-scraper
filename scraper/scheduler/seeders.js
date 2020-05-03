@@ -7,7 +7,7 @@ const { updateTorrentSeeders } = require('../lib/torrentEntries')
 
 const DELAY = 15 * 1000; // 15 seconds
 const limiter = new Bottleneck({ maxConcurrent: 20, minTime: 250 });
-const updateLimiter = new Bottleneck({ maxConcurrent: 20 });
+const updateLimiter = new Bottleneck({ maxConcurrent: 5 });
 const forceSeedersLimiter = new Bottleneck({ maxConcurrent: 5 });
 const statistics = {};
 

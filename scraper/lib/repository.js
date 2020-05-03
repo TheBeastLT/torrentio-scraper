@@ -182,8 +182,12 @@ function getTorrentsWithoutSize() {
 function getUpdateSeedersTorrents() {
   const until = moment().subtract(7, 'days').format('YYYY-MM-DD');
   return Torrent.findAll({
-    where: literal(`torrent."updatedAt" < \'${until}\' and random() < 0.001`),
-    limit: 100
+    where: literal(`torrent."updatedAt" < \'${until}\'`),
+    limit: 100,
+    order: [
+      ['seeders', 'DESC'],
+      ['uploadDate', 'DESC']
+    ]
   });
 }
 
