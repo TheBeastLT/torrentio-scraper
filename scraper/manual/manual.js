@@ -106,7 +106,7 @@ async function assignSubs() {
     const assignedContents = assignSubtitles({ videos, subtitles });
     return Promise.all(assignedContents.videos
         .filter(video => video.subtitles)
-        .map(video => repository.createFile(video)));
+        .map(video => repository.upsertSubtitles(video, video.subtitles)));
   }));
 }
 

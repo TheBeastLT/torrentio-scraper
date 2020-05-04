@@ -46,7 +46,6 @@ const File = database.define('file',
         onDelete: 'CASCADE'
       },
       fileIndex: { type: DataTypes.INTEGER },
-      subtitleIndexes: { type: DataTypes.JSON },
       title: { type: DataTypes.STRING(512), allowNull: false },
       size: { type: DataTypes.BIGINT },
       imdbId: { type: DataTypes.STRING(32) },
@@ -76,18 +75,16 @@ const File = database.define('file',
     }
 );
 
-const UnassignedSubtitle = database.define('subtitle',
+const Subtitle = database.define('subtitle',
     {
       infoHash: {
         type: DataTypes.STRING(64),
-        primaryKey: true,
         allowNull: false,
         references: { model: Torrent, key: 'infoHash' },
         onDelete: 'CASCADE'
       },
       fileIndex: {
         type: DataTypes.INTEGER,
-        primaryKey: true,
         allowNull: false
       },
       fileId: {
@@ -101,6 +98,15 @@ const UnassignedSubtitle = database.define('subtitle',
     {
       timestamps: false,
       indexes: [
+        {
+          unique: true,
+          name: 'subtitles_unique_subtitle_constraint',
+          fields: [
+            col('infoHash'),
+            col('fileIndex'),
+            fn('COALESCE', (col('fileId')), -1)
+          ]
+        },
         { unique: false, fields: ['fileId'] }
       ]
     }
@@ -136,6 +142,8 @@ Torrent.hasMany(File, { foreignKey: 'infoHash', constraints: false });
 File.belongsTo(Torrent, { foreignKey: 'infoHash', constraints: false });
 Torrent.hasMany(Content, { foreignKey: 'infoHash', constraints: false });
 Content.belongsTo(Torrent, { foreignKey: 'infoHash', constraints: false });
+File.hasMany(Subtitle, { foreignKey: 'fileId', constraints: false });
+Subtitle.belongsTo(File, { foreignKey: 'fileId', constraints: false });
 
 function connect() {
   if (process.env.ENABLE_SYNC) {
@@ -193,7 +201,7 @@ function getUpdateSeedersTorrents() {
 function createTorrent(torrent) {
   return Torrent.upsert(torrent)
       .then(() => createContents(torrent.infoHash, torrent.contents))
-      .then(() => createUnassignedSubtitles(torrent.infoHash, torrent.subtitles));
+      .then(() => createSubtitles(torrent.infoHash, torrent.subtitles));
 }
 
 function setTorrentSeeders(infoHash, seeders) {
@@ -204,12 +212,13 @@ function setTorrentSeeders(infoHash, seeders) {
 }
 
 function createFile(file) {
-  if (file.subtitles) {
-    const newSubtitleIndexes = file.subtitles.map(sub => Number.isInteger(sub) ? sub : sub.fileIndex);
-    const subtitleIndexes = (file.subtitleIndexes || []).concat(newSubtitleIndexes);
-    file.subtitleIndexes = subtitleIndexes.length ? [...new Set(subtitleIndexes)] : undefined;
+  if (file.id) {
+    return File.upsert(file).then(() => upsertSubtitles(file.id, file.subtitles));
   }
-  return File.upsert(file);
+  if (file.subtitles && file.subtitles.length) {
+    file.subtitles = file.subtitles.map(subtitle => ({ infoHash: file.infoHash, title: subtitle.path, ...subtitle }));
+  }
+  return File.create(file, { include: [Subtitle] });
 }
 
 function getFiles(torrent) {
@@ -224,15 +233,33 @@ function deleteFile(file) {
   return File.destroy({ where: { id: file.id } })
 }
 
-function createUnassignedSubtitles(infoHash, subtitles) {
+function createSubtitles(infoHash, subtitles) {
   if (subtitles && subtitles.length) {
-    return UnassignedSubtitle.bulkCreate(subtitles.map(subtitle => ({ infoHash, title: subtitle.path, ...subtitle })));
+    return Subtitle.bulkCreate(subtitles.map(subtitle => ({ infoHash, title: subtitle.path, ...subtitle })));
   }
   return Promise.resolve();
 }
 
+function upsertSubtitles(file, subtitles) {
+  if (file.id && subtitles && subtitles.length) {
+    return Promises.sequence(subtitles
+        .map(subtitle => {
+          subtitle.fileId = file.id;
+          subtitle.infoHash = subtitle.infoHash || file.infoHash;
+          subtitle.title = subtitle.title || subtitle.path;
+          return subtitle;
+        })
+        .map(subtitle => () => subtitle.dataValues ? subtitle.save() : Subtitle.upsert(subtitle)));
+  }
+  return Promise.resolve();
+}
+
+function getSubtitles(torrent) {
+  return Subtitle.findAll({ where: { infoHash: torrent.infoHash } });
+}
+
 function getUnassignedSubtitles() {
-  return UnassignedSubtitle.findAll();
+  return Subtitle.findAll({ where: { fileId: null } });
 }
 
 function createContents(infoHash, contents) {
@@ -273,7 +300,9 @@ module.exports = {
   getFiles,
   getFilesBasedOnTitle,
   deleteFile,
-  createUnassignedSubtitles,
+  createSubtitles,
+  upsertSubtitles,
+  getSubtitles,
   getUnassignedSubtitles,
   createContents,
   getContents,
