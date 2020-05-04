@@ -11,7 +11,9 @@ function assignSubtitles({ contents, videos, subtitles }) {
         .map(video => _parseVideo(video));
     const assignedSubs = subtitles
         .map(subtitle => ({ subtitle, video: _mostProbableSubtitleVideo(subtitle, parsedVideos) }));
-    const unassignedSubs = assignedSubs.filter(assignedSub => !assignedSub.video);
+    const unassignedSubs = assignedSubs
+        .filter(assignedSub => !assignedSub.video)
+        .map(assignedSub => assignedSub.subtitle);
 
     assignedSubs
         .filter(assignedSub => assignedSub.video)
@@ -23,13 +25,13 @@ function assignSubtitles({ contents, videos, subtitles }) {
 }
 
 function _parseVideo(video) {
-  const fileName = video.title.replace(/\.(\w{2,4})$/, '');
+  const fileName = video.title.split('/').pop().replace(/\.(\w{2,4})$/, '');
   const folderName = video.title.replace(/\/?[^/]+$/, '');
   return {
     videoFile: video,
     fileName: fileName,
     folderName: folderName,
-    ...parse(fileName)
+    ...parse(video.title)
   };
 }
 
