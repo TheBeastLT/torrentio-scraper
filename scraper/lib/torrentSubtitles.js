@@ -10,15 +10,15 @@ function assignSubtitles({ contents, videos, subtitles }) {
     const parsedVideos = videos
         .map(video => _parseVideo(video));
     const assignedSubs = subtitles
-        .map(subtitle => ({ subtitle, video: _mostProbableSubtitleVideo(subtitle, parsedVideos) }));
+        .map(subtitle => ({ subtitle, videos: _mostProbableSubtitleVideos(subtitle, parsedVideos) }));
     const unassignedSubs = assignedSubs
-        .filter(assignedSub => !assignedSub.video)
+        .filter(assignedSub => !assignedSub.videos)
         .map(assignedSub => assignedSub.subtitle);
 
     assignedSubs
-        .filter(assignedSub => assignedSub.video)
-        .forEach(assignedSub =>
-            assignedSub.video.subtitles = (assignedSub.video.subtitles || []).concat(assignedSub.subtitle))
+        .filter(assignedSub => assignedSub.videos)
+        .forEach(assignedSub => assignedSub.videos
+            .forEach(video => video.subtitles = (video.subtitles || []).concat(assignedSub.subtitle)));
     return { contents, videos, subtitles: unassignedSubs };
   }
   return { contents, videos, subtitles };
@@ -35,33 +35,37 @@ function _parseVideo(video) {
   };
 }
 
-function _mostProbableSubtitleVideo(subtitle, parsedVideos) {
+function _mostProbableSubtitleVideos(subtitle, parsedVideos) {
   const subTitle = subtitle.title || subtitle.path;
   const parsedSub = parse(subTitle.replace(/\.(\w{2,4})$/, ''));
   const byFileName = parsedVideos.filter(video => subTitle.includes(video.fileName));
   if (byFileName.length === 1) {
-    return byFileName[0].videoFile;
+    return byFileName.map(v => v.videoFile);
   }
   const byTitleSeasonEpisode = parsedVideos.filter(video => video.title === parsedSub.title
       && video.seasons === parsedSub.seasons
       && JSON.stringify(video.episodes) === JSON.stringify(parsedSub.episodes));
-  if (byTitleSeasonEpisode.length === 1) {
-    return byTitleSeasonEpisode[0].videoFile;
+  if (singleVideoFile(byTitleSeasonEpisode)) {
+    return byTitleSeasonEpisode.map(v => v.videoFile);
   }
   const bySeasonEpisode = parsedVideos.filter(video => video.seasons === parsedSub.seasons
       && video.episodes === parsedSub.episodes);
-  if (bySeasonEpisode.length === 1) {
-    return bySeasonEpisode[0].videoFile;
+  if (singleVideoFile(bySeasonEpisode)) {
+    return bySeasonEpisode.map(v => v.videoFile);
   }
   const byTitle = parsedVideos.filter(video => video.title && video.title === parsedSub.title);
-  if (byTitle.length === 1) {
-    return byTitle[0].videoFile;
+  if (singleVideoFile(byTitle)) {
+    return byTitle.map(v => v.videoFile);
   }
   const byEpisode = parsedVideos.filter(video => JSON.stringify(video.episodes) === JSON.stringify(parsedSub.episodes));
-  if (byEpisode.length === 1) {
-    return byEpisode[0].videoFile;
+  if (singleVideoFile(byEpisode)) {
+    return byEpisode.map(v => v.videoFile);
   }
   return undefined;
+}
+
+function singleVideoFile(videos) {
+  return new Set(videos.map(v => v.videoFile.fileIndex)).size === 1;
 }
 
 module.exports = { assignSubtitles }

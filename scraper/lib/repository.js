@@ -1,6 +1,6 @@
 const moment = require('moment');
 const Promises = require('./promises')
-const { Sequelize, fn, col, literal } = require('sequelize');
+const { Sequelize, DataTypes, fn, col, literal } = require('sequelize');
 const Op = Sequelize.Op;
 
 const DATABASE_URI = process.env.DATABASE_URI;
@@ -13,46 +13,47 @@ const database = new Sequelize(
 );
 
 const Provider = database.define('provider', {
-  name: { type: Sequelize.STRING(32), primaryKey: true },
-  lastScraped: { type: Sequelize.DATE },
-  lastScrapedId: { type: Sequelize.STRING(128) }
+  name: { type: DataTypes.STRING(32), primaryKey: true },
+  lastScraped: { type: DataTypes.DATE },
+  lastScrapedId: { type: DataTypes.STRING(128) }
 });
 
 const Torrent = database.define('torrent',
     {
-      infoHash: { type: Sequelize.STRING(64), primaryKey: true },
-      provider: { type: Sequelize.STRING(32), allowNull: false },
-      torrentId: { type: Sequelize.STRING(512) },
-      title: { type: Sequelize.STRING(512), allowNull: false },
-      size: { type: Sequelize.BIGINT },
-      type: { type: Sequelize.STRING(16), allowNull: false },
-      uploadDate: { type: Sequelize.DATE, allowNull: false },
-      seeders: { type: Sequelize.SMALLINT },
-      trackers: { type: Sequelize.STRING(4096) },
-      languages: { type: Sequelize.STRING(256) },
-      resolution: { type: Sequelize.STRING(16) },
-      reviewed: { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false },
-      opened: { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false }
+      infoHash: { type: DataTypes.STRING(64), primaryKey: true },
+      provider: { type: DataTypes.STRING(32), allowNull: false },
+      torrentId: { type: DataTypes.STRING(512) },
+      title: { type: DataTypes.STRING(512), allowNull: false },
+      size: { type: DataTypes.BIGINT },
+      type: { type: DataTypes.STRING(16), allowNull: false },
+      uploadDate: { type: DataTypes.DATE, allowNull: false },
+      seeders: { type: DataTypes.SMALLINT },
+      trackers: { type: DataTypes.STRING(4096) },
+      languages: { type: DataTypes.STRING(256) },
+      resolution: { type: DataTypes.STRING(16) },
+      reviewed: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+      opened: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false }
     }
 );
 
 const File = database.define('file',
     {
-      id: { type: Sequelize.BIGINT, autoIncrement: true, primaryKey: true },
+      id: { type: DataTypes.BIGINT, autoIncrement: true, primaryKey: true },
       infoHash: {
-        type: Sequelize.STRING(64),
+        type: DataTypes.STRING(64),
         allowNull: false,
         references: { model: Torrent, key: 'infoHash' },
         onDelete: 'CASCADE'
       },
-      fileIndex: { type: Sequelize.INTEGER },
-      title: { type: Sequelize.STRING(512), allowNull: false },
-      size: { type: Sequelize.BIGINT },
-      imdbId: { type: Sequelize.STRING(32) },
-      imdbSeason: { type: Sequelize.INTEGER },
-      imdbEpisode: { type: Sequelize.INTEGER },
-      kitsuId: { type: Sequelize.INTEGER },
-      kitsuEpisode: { type: Sequelize.INTEGER }
+      fileIndex: { type: DataTypes.INTEGER },
+      subtitleIndexes: { type: DataTypes.JSON },
+      title: { type: DataTypes.STRING(512), allowNull: false },
+      size: { type: DataTypes.BIGINT },
+      imdbId: { type: DataTypes.STRING(32) },
+      imdbSeason: { type: DataTypes.INTEGER },
+      imdbEpisode: { type: DataTypes.INTEGER },
+      kitsuId: { type: DataTypes.INTEGER },
+      kitsuEpisode: { type: DataTypes.INTEGER }
     },
     {
       indexes: [
@@ -75,27 +76,27 @@ const File = database.define('file',
     }
 );
 
-const Subtitle = database.define('subtitle',
+const UnassignedSubtitle = database.define('subtitle',
     {
       infoHash: {
-        type: Sequelize.STRING(64),
+        type: DataTypes.STRING(64),
         primaryKey: true,
         allowNull: false,
         references: { model: Torrent, key: 'infoHash' },
         onDelete: 'CASCADE'
       },
       fileIndex: {
-        type: Sequelize.INTEGER,
+        type: DataTypes.INTEGER,
         primaryKey: true,
         allowNull: false
       },
       fileId: {
-        type: Sequelize.BIGINT,
+        type: DataTypes.BIGINT,
         allowNull: true,
         references: { model: File, key: 'id' },
         onDelete: 'SET NULL'
       },
-      title: { type: Sequelize.STRING(512), allowNull: false },
+      title: { type: DataTypes.STRING(512), allowNull: false },
     },
     {
       timestamps: false,
@@ -108,19 +109,19 @@ const Subtitle = database.define('subtitle',
 const Content = database.define('content',
     {
       infoHash: {
-        type: Sequelize.STRING(64),
+        type: DataTypes.STRING(64),
         primaryKey: true,
         allowNull: false,
         references: { model: Torrent, key: 'infoHash' },
         onDelete: 'CASCADE'
       },
       fileIndex: {
-        type: Sequelize.INTEGER,
+        type: DataTypes.INTEGER,
         primaryKey: true,
         allowNull: false
       },
-      path: { type: Sequelize.STRING(512), allowNull: false },
-      size: { type: Sequelize.BIGINT },
+      path: { type: DataTypes.STRING(512), allowNull: false },
+      size: { type: DataTypes.BIGINT },
     },
     {
       timestamps: false,
@@ -128,15 +129,13 @@ const Content = database.define('content',
 );
 
 const SkipTorrent = database.define('skip_torrent', {
-  infoHash: { type: Sequelize.STRING(64), primaryKey: true },
+  infoHash: { type: DataTypes.STRING(64), primaryKey: true },
 });
 
 Torrent.hasMany(File, { foreignKey: 'infoHash', constraints: false });
 File.belongsTo(Torrent, { foreignKey: 'infoHash', constraints: false });
 Torrent.hasMany(Content, { foreignKey: 'infoHash', constraints: false });
 Content.belongsTo(Torrent, { foreignKey: 'infoHash', constraints: false });
-File.hasMany(Subtitle, { foreignKey: 'fileId', constraints: false });
-Subtitle.belongsTo(File, { foreignKey: 'fileId', constraints: false });
 
 function connect() {
   if (process.env.ENABLE_SYNC) {
@@ -194,7 +193,7 @@ function getUpdateSeedersTorrents() {
 function createTorrent(torrent) {
   return Torrent.upsert(torrent)
       .then(() => createContents(torrent.infoHash, torrent.contents))
-      .then(() => createSubtitles(torrent.infoHash, torrent.subtitles));
+      .then(() => createUnassignedSubtitles(torrent.infoHash, torrent.subtitles));
 }
 
 function setTorrentSeeders(infoHash, seeders) {
@@ -205,13 +204,12 @@ function setTorrentSeeders(infoHash, seeders) {
 }
 
 function createFile(file) {
-  if (file.id) {
-    return File.upsert(file).then(() => upsertSubtitles(file.id, file.subtitles));
+  if (file.subtitles) {
+    const newSubtitleIndexes = file.subtitles.map(sub => Number.isInteger(sub) ? sub : sub.fileIndex);
+    const subtitleIndexes = (file.subtitleIndexes || []).concat(newSubtitleIndexes);
+    file.subtitleIndexes = subtitleIndexes.length ? [...new Set(subtitleIndexes)] : undefined;
   }
-  if (file.subtitles && file.subtitles.length) {
-    file.subtitles = file.subtitles.map(subtitle => ({ infoHash: file.infoHash, title: subtitle.path, ...subtitle }));
-  }
-  return File.create(file, { include: [Subtitle] });
+  return File.upsert(file);
 }
 
 function getFiles(torrent) {
@@ -226,39 +224,21 @@ function deleteFile(file) {
   return File.destroy({ where: { id: file.id } })
 }
 
-function createSubtitles(infoHash, subtitles) {
+function createUnassignedSubtitles(infoHash, subtitles) {
   if (subtitles && subtitles.length) {
-    return Subtitle.bulkCreate(subtitles.map(subtitle => ({ infoHash, title: subtitle.path, ...subtitle })));
+    return UnassignedSubtitle.bulkCreate(subtitles.map(subtitle => ({ infoHash, title: subtitle.path, ...subtitle })));
   }
   return Promise.resolve();
-}
-
-function upsertSubtitles(file, subtitles) {
-  if (file.id && subtitles && subtitles.length) {
-    return Promises.sequence(subtitles
-        .map(subtitle => {
-          subtitle.fileId = file.id;
-          subtitle.infoHash = subtitle.infoHash || file.infoHash;
-          subtitle.title = subtitle.title || subtitle.path;
-          return subtitle;
-        })
-        .map(subtitle => () => subtitle.dataValues ? subtitle.save() : Subtitle.upsert(subtitle)));
-  }
-  return Promise.resolve();
-}
-
-function getSubtitles(torrent) {
-  return Subtitle.findAll({ where: { infoHash: torrent.infoHash } });
 }
 
 function getUnassignedSubtitles() {
-  return Subtitle.findAll({ where: { fileId: null } });
+  return UnassignedSubtitle.findAll();
 }
 
 function createContents(infoHash, contents) {
   if (contents && contents.length) {
     return Content.bulkCreate(contents.map(content => ({ infoHash, ...content })))
-        .then(() => Torrent.update({ opened: true }, { where: { infoHash: infoHash } }));
+        .then(() => Torrent.update({ opened: true }, { where: { infoHash: infoHash }, silent: true }));
   }
   return Promise.resolve();
 }
@@ -293,9 +273,7 @@ module.exports = {
   getFiles,
   getFilesBasedOnTitle,
   deleteFile,
-  createSubtitles,
-  upsertSubtitles,
-  getSubtitles,
+  createUnassignedSubtitles,
   getUnassignedSubtitles,
   createContents,
   getContents,

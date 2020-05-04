@@ -1,5 +1,6 @@
 const { parse } = require('parse-torrent-title');
 const { Type } = require('./types');
+const Promises = require('./promises');
 const repository = require('./repository');
 const { getImdbId, getKitsuId } = require('./metadata');
 const { parseTorrentFiles } = require('./torrentFiles');
@@ -47,7 +48,7 @@ async function createTorrentEntry(torrent, overwrite = false) {
   }
 
   return repository.createTorrent({ ...torrent, contents, subtitles })
-      .then(() => Promise.all(videos.map(video => repository.createFile(video))))
+      .then(() => Promises.sequence(videos.map(video => () => repository.createFile(video))))
       .then(() => console.log(`Created ${torrent.provider} entry for [${torrent.infoHash}] ${torrent.title}`));
 }
 
