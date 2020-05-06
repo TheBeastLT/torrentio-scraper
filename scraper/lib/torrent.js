@@ -11,7 +11,7 @@ const TRACKERS_URL = 'https://ngosang.github.io/trackerslist/trackers_best.txt';
 const MAX_PEER_CONNECTIONS = process.env.MAX_PEER_CONNECTIONS || 20;
 const SEEDS_CHECK_TIMEOUT = process.env.SEEDS_CHECK_TIMEOUT || 10 * 1000; // 10 secs
 
-module.exports.updateCurrentSeeders = function (torrent) {
+async function updateCurrentSeeders(torrent) {
   return new Promise(async (resolve) => {
     if (!torrent.magnetLink && !torrent.infoHash) {
       return resolve(0);
@@ -36,20 +36,22 @@ module.exports.updateCurrentSeeders = function (torrent) {
     torrent.seeders = seeders;
     return torrent;
   });
-};
+}
 
-module.exports.updateTorrentSize = function (torrent) {
+async function updateTorrentSize(torrent) {
   return filesAndSizeFromTorrentStream(torrent, SEEDS_CHECK_TIMEOUT)
       .then(result => {
         torrent.size = result.size;
         torrent.files = result.files;
         return torrent;
       });
-};
+}
 
-module.exports.sizeAndFiles = torrent => filesAndSizeFromTorrentStream(torrent, 30000);
+async function sizeAndFiles(torrent) {
+  return filesAndSizeFromTorrentStream(torrent, 30000);
+}
 
-module.exports.torrentFiles = function (torrent, timeout) {
+async function torrentFiles(torrent, timeout) {
   return getFilesFromObject(torrent)
       .catch(() => filesFromTorrentFile(torrent))
       .catch(() => filesFromTorrentStream(torrent, timeout))
@@ -58,7 +60,7 @@ module.exports.torrentFiles = function (torrent, timeout) {
         videos: filterVideos(files),
         subtitles: filterSubtitles(files)
       }));
-};
+}
 
 function getFilesFromObject(torrent) {
   if (torrent.files && torrent.files.length) {
@@ -122,12 +124,16 @@ function filesAndSizeFromTorrentStream(torrent, timeout = 30000) {
 
 function filterVideos(files) {
   const maxSize = Math.max(...files.map(file => file.size));
-  const isSample = file => file.name.match(/sample/i) && maxSize / parseInt(file.size) > 10;
+  const minSampleRatio = files.length <= 3 ? 5 : 10;
+  const minRedundantRatio = files.length <= 3 ? 30 : Number.MAX_VALUE;
+  const isSample = file => file.path.match(/sample/i) && maxSize / parseInt(file.size) > minSampleRatio;
+  const isRedundant = file => maxSize / parseInt(file.size) > minRedundantRatio;
   const isExtra = file => file.path.match(/extras?\//i);
   return files
       .filter(file => isVideo(file.path))
       .filter(file => !isSample(file))
-      .filter(file => !isExtra(file));
+      .filter(file => !isExtra(file))
+      .filter(file => !isRedundant(file));
 }
 
 function filterSubtitles(files) {
@@ -140,3 +146,4 @@ async function getDefaultTrackers() {
       .then(body => body && body.split('\n\n') || []));
 }
 
+module.exports = { updateCurrentSeeders, updateTorrentSize, sizeAndFiles, torrentFiles }
