@@ -47,29 +47,32 @@ async function parseMovieFiles(torrent, parsedName, metadata) {
   }
 
   const parsedVideos = await Promises.sequence(filteredVideos
-      .map(file => () => findMovieImdbId(file.name)
+      .map(video => () => findMovieImdbId(video.name)
           .then(newImdbId => ({
             infoHash: torrent.infoHash,
-            fileIndex: file.fileIndex,
-            title: file.path || file.name,
-            size: file.size,
+            fileIndex: video.fileIndex,
+            title: video.path || video.name,
+            size: video.size,
             imdbId: newImdbId,
-          }))));
+          })))
+      .map(video => isFeaturette(video) ? clearInfoFields(video) : video));
   return { contents, videos: parsedVideos, subtitles };
 }
 
 async function parseSeriesFiles(torrent, parsedName, metadata) {
   const { contents, videos, subtitles } = await getSeriesTorrentContent(torrent, parsedName);
   const parsedVideos = await Promise.resolve(videos)
-      .then((files) => files
-          .filter((file) => file.size > MIN_SIZE)
-          .map((file) => parseSeriesFile(file, parsedName, torrent.type)))
-      .then((files) => decomposeEpisodes(torrent, files, metadata))
-      .then((files) => assignKitsuOrImdbEpisodes(torrent, files, metadata))
-      .then((files) => Promise.all(files.map(file => file.isMovie
-          ? mapSeriesMovie(file, torrent)
-          : mapSeriesEpisode(file, torrent, files))))
-      .then((files) => files.reduce((a, b) => a.concat(b), []))
+      .then(videos => videos
+          .filter(video => video.size > MIN_SIZE)
+          .map(video => parseSeriesFile(video, parsedName, torrent.type)))
+      .then(videos => decomposeEpisodes(torrent, videos, metadata))
+      .then(videos => assignKitsuOrImdbEpisodes(torrent, videos, metadata))
+      .then(videos => Promise.all(videos.map(video => video.isMovie
+          ? mapSeriesMovie(video, torrent)
+          : mapSeriesEpisode(video, torrent, videos))))
+      .then(videos => videos
+          .reduce((a, b) => a.concat(b), [])
+          .map(video => isFeaturette(video) ? clearInfoFields(video) : video))
   return { contents, videos: parsedVideos, subtitles };
 }
 
@@ -377,6 +380,19 @@ function findMovieImdbId(title, type) {
 function findMovieKitsuId(title) {
   const parsedTitle = typeof title === 'string' ? parse(title) : title;
   return getKitsuId(parsedTitle, Type.MOVIE).catch(() => undefined);
+}
+
+function isFeaturette(video) {
+  return /featurettes?\//i.test(video.path);
+}
+
+function clearInfoFields(video) {
+  video.imdbId = undefined;
+  video.imdbSeason = undefined;
+  video.imdbEpisode = undefined;
+  video.kitsuId = undefined;
+  video.kitsuEpisode = undefined;
+  return video;
 }
 
 function div100(episode) {
