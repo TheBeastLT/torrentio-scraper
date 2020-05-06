@@ -6,7 +6,7 @@ const horriblesubs = require('./horriblesubs_api.js');
 const repository = require('../../lib/repository');
 const { Type } = require('../../lib/types');
 const { updateCurrentSeeders, updateTorrentSize } = require('../../lib/torrent');
-const { createTorrentEntry, updateTorrentSeeders } = require('../../lib/torrentEntries');
+const { createTorrentEntry, checkAndUpdateTorrent } = require('../../lib/torrentEntries');
 const { getMetadata, getKitsuId } = require('../../lib/metadata');
 const showMappings = require('./horriblesubs_mapping.json');
 
@@ -172,7 +172,7 @@ async function processTorrentRecord(torrent, updateSeeders = true) {
 
   if (existingTorrent && existingTorrent.provider === NAME) {
     if (updateSeeders) {
-      return updateCurrentSeeders(torrent).then(updatedSeeders => updateTorrentSeeders(updatedSeeders))
+      return updateCurrentSeeders(torrent).then(updatedSeeders => checkAndUpdateTorrent(updatedSeeders))
     }
     return Promise.resolve(torrent)
   }

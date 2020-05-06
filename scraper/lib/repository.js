@@ -198,6 +198,17 @@ function getUpdateSeedersTorrents() {
   });
 }
 
+function getNoContentsTorrents() {
+  return Torrent.findAll({
+    where: { opened: false },
+    limit: 500,
+    order: [
+      ['seeders', 'DESC'],
+      ['uploadDate', 'DESC']
+    ]
+  });
+}
+
 function createTorrent(torrent) {
   return Torrent.upsert(torrent)
       .then(() => createContents(torrent.infoHash, torrent.contents))
@@ -213,7 +224,8 @@ function setTorrentSeeders(infoHash, seeders) {
 
 function createFile(file) {
   if (file.id) {
-    return File.upsert(file).then(() => upsertSubtitles(file.id, file.subtitles));
+    return (file.dataValues ? file.save() : File.upsert(file))
+        .then(() => upsertSubtitles(file, file.subtitles));
   }
   if (file.subtitles && file.subtitles.length) {
     file.subtitles = file.subtitles.map(subtitle => ({ infoHash: file.infoHash, title: subtitle.path, ...subtitle }));
@@ -249,7 +261,7 @@ function upsertSubtitles(file, subtitles) {
           subtitle.title = subtitle.title || subtitle.path;
           return subtitle;
         })
-        .map(subtitle => () => subtitle.dataValues ? subtitle.save() : Subtitle.upsert(subtitle)));
+        .map(subtitle => () => subtitle.dataValues ? subtitle.save() : Subtitle.create(subtitle)));
   }
   return Promise.resolve();
 }
@@ -296,6 +308,7 @@ module.exports = {
   getTorrent,
   getTorrentsBasedOnTitle,
   getUpdateSeedersTorrents,
+  getNoContentsTorrents,
   createFile,
   getFiles,
   getFilesBasedOnTitle,

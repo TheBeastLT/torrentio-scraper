@@ -3,12 +3,12 @@ const Bottleneck = require('bottleneck');
 const yts = require('./yts_api');
 const { Type } = require('../../lib/types');
 const repository = require('../../lib/repository');
-const { createTorrentEntry, getStoredTorrentEntry, updateTorrentSeeders } = require('../../lib/torrentEntries');
+const { createTorrentEntry, checkAndUpdateTorrent } = require('../../lib/torrentEntries');
 
 const NAME = 'YTS';
 const UNTIL_PAGE = 2;
 
-const limiter = new Bottleneck({ maxConcurrent: 20 });
+const limiter = new Bottleneck({ maxConcurrent: 10 });
 
 async function scrape() {
   const scrapeStart = moment();
@@ -45,8 +45,8 @@ async function scrapeLatestTorrentsForCategory(page = 1) {
 }
 
 async function processTorrentRecord(record) {
-  if (await getStoredTorrentEntry(record)) {
-    return updateTorrentSeeders(record);
+  if (await checkAndUpdateTorrent(record)) {
+    return record;
   }
 
   if (!record || !record.size) {

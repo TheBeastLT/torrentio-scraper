@@ -3,7 +3,7 @@ const Bottleneck = require('bottleneck');
 const eztv = require('./eztv_api');
 const { Type } = require('../../lib/types');
 const repository = require('../../lib/repository');
-const { createTorrentEntry, getStoredTorrentEntry, updateTorrentSeeders } = require('../../lib/torrentEntries');
+const { createTorrentEntry, checkAndUpdateTorrent } = require('../../lib/torrentEntries');
 
 const NAME = 'EZTV';
 const UNTIL_PAGE = 10;
@@ -50,8 +50,8 @@ async function scrapeLatestTorrentsForCategory(page = 1) {
 }
 
 async function processTorrentRecord(record) {
-  if (await getStoredTorrentEntry(record)) {
-    return updateTorrentSeeders(record);
+  if (await checkAndUpdateTorrent(record)) {
+    return record;
   }
 
   if (!record || !record.size) {

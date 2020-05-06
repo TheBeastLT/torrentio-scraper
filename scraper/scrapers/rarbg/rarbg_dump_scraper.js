@@ -3,12 +3,7 @@ const Bottleneck = require('bottleneck');
 const rarbg = require('rarbg-api');
 const decode = require('magnet-uri');
 const { Type } = require('../../lib/types');
-const {
-  createTorrentEntry,
-  getStoredTorrentEntry,
-  updateTorrentSeeders
-} = require('../../lib/torrentEntries');
-
+const { createTorrentEntry, checkAndUpdateTorrent } = require('../../lib/torrentEntries');
 const NAME = 'RARBG';
 
 const limiter = new Bottleneck({ maxConcurrent: 1, minTime: 2500 });
@@ -54,8 +49,8 @@ async function getTorrentsForImdbId(imdbId, retries = 5) {
 }
 
 async function processTorrentRecord(record) {
-  if (await getStoredTorrentEntry(record)) {
-    return updateTorrentSeeders(record);
+  if (await checkAndUpdateTorrent(record)) {
+    return record;
   }
 
   const torrent = {

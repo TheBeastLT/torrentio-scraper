@@ -5,7 +5,7 @@ const decode = require('magnet-uri');
 const { Type } = require('../../lib/types');
 const repository = require('../../lib/repository');
 const Promises = require('../../lib/promises');
-const { createTorrentEntry, getStoredTorrentEntry, updateTorrentSeeders } = require('../../lib/torrentEntries');
+const { createTorrentEntry, checkAndUpdateTorrent } = require('../../lib/torrentEntries');
 
 const NAME = 'RARBG';
 const SEARCH_OPTIONS = { limit: 100, sort: 'seeders', format: 'json_extended', ranked: 0 };
@@ -70,8 +70,8 @@ async function scrapeLatestTorrentsForCategory(category, retries = 5) {
 }
 
 async function processTorrentRecord(record) {
-  if (await getStoredTorrentEntry(record)) {
-    return updateTorrentSeeders(record);
+  if (await checkAndUpdateTorrent(record)) {
+    return record;
   }
 
   const torrent = {

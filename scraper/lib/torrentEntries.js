@@ -92,6 +92,63 @@ async function getStoredTorrentEntry(torrent) {
       .catch(() => undefined);
 }
 
+async function checkAndUpdateTorrent(torrent) {
+  const storedTorrent = torrent.dataValues
+      ? torrent
+      : await repository.getTorrent(torrent).catch(() => undefined);
+  if (!storedTorrent) {
+    return false;
+  }
+  return createTorrentContents(storedTorrent)
+      .then(() => updateTorrentSeeders(torrent));
+}
+
+async function createTorrentContents(torrent) {
+  if (torrent.opened) {
+    return;
+  }
+  const storedVideos = await repository.getFiles(torrent).catch(() => []);
+  if (!storedVideos || !storedVideos.length) {
+    return;
+  }
+  const notOpenedVideo = storedVideos.length === 1 && !Number.isInteger(storedVideos[0].fileIndex);
+  const imdbId = Promises.mostCommonValue(storedVideos.map(stored => stored.imdbId));
+
+  const { contents, videos, subtitles } = await parseTorrentFiles({ ...torrent.get(), imdbId })
+      .then(torrentContents => notOpenedVideo ? torrentContents : { ...torrentContents, videos: storedVideos })
+      .then(torrentContents => assignSubtitles(torrentContents))
+      .catch(error => {
+        console.log(`Failed getting contents for [${torrent.infoHash}] ${torrent.title}`, error.message);
+        return {};
+      });
+
+  if (!contents || !contents.length) {
+    return;
+  }
+  if (notOpenedVideo && videos.length === 1) {
+    // if both have a single video and stored one was not opened, update stored one to true metadata and use that
+    storedVideos[0].fileIndex = videos[0].fileIndex;
+    storedVideos[0].title = videos[0].title;
+    storedVideos[0].size = videos[0].size;
+    storedVideos[0].subtitles = videos[0].subtitles;
+    videos[0] = storedVideos[0];
+  }
+  // no videos available or more than one new videos were in the torrent
+  const shouldDeleteOld = notOpenedVideo && videos.every(video => !video.id);
+
+  return repository.createTorrent({ ...torrent.get(), contents, subtitles })
+      .then(() => {
+        if (shouldDeleteOld) {
+          console.error(`Deleting old video for [${torrent.infoHash}] ${torrent.title}`)
+          return storedVideos[0].destroy();
+        }
+        return Promise.resolve();
+      })
+      .then(() => Promises.sequence(videos.map(video => () => repository.createFile(video))))
+      .then(() => console.log(`Created contents for ${torrent.provider} [${torrent.infoHash}] ${torrent.title}`))
+      .catch(error => console.error(`Failed saving contents for [${torrent.infoHash}] ${torrent.title}`, error));
+}
+
 async function updateTorrentSeeders(torrent) {
   if (!torrent.infoHash || !Number.isInteger(torrent.seeders)) {
     return;
@@ -104,4 +161,11 @@ async function updateTorrentSeeders(torrent) {
       });
 }
 
-module.exports = { createTorrentEntry, createSkipTorrentEntry, getStoredTorrentEntry, updateTorrentSeeders };
+module.exports = {
+  createTorrentEntry,
+  createTorrentContents,
+  createSkipTorrentEntry,
+  getStoredTorrentEntry,
+  updateTorrentSeeders,
+  checkAndUpdateTorrent
+};

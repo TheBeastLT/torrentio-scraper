@@ -4,7 +4,7 @@ const thepiratebay = require('./thepiratebay_api.js');
 const { Type } = require('../../lib/types');
 const repository = require('../../lib/repository');
 const Promises = require('../../lib/promises');
-const { createTorrentEntry, getStoredTorrentEntry, updateTorrentSeeders } = require('../../lib/torrentEntries');
+const { createTorrentEntry, checkAndUpdateTorrent } = require('../../lib/torrentEntries');
 
 const NAME = 'ThePirateBay';
 const UNTIL_PAGE = 5;
@@ -60,8 +60,8 @@ async function scrapeLatestTorrentsForCategory(category, page = 1) {
 }
 
 async function processTorrentRecord(record) {
-  if (await getStoredTorrentEntry(record)) {
-    return updateTorrentSeeders(record);
+  if (await checkAndUpdateTorrent(record)) {
+    return record;
   }
 
   const torrentFound = await thepiratebay.torrent(record.torrentId).catch(() => undefined);

@@ -1,8 +1,10 @@
 const Bottleneck = require('bottleneck');
 const { parse } = require('parse-torrent-title');
+const Promises = require('../lib/promises');
 const repository = require('../lib/repository');
 const { getImdbId } = require('../lib/metadata');
 const { parseTorrentFiles } = require('../lib/torrentFiles');
+const { createTorrentContents } = require('../lib/torrentEntries');
 const { assignSubtitles } = require('../lib/torrentSubtitles');
 const { Type } = require('../lib/types');
 
@@ -110,6 +112,14 @@ async function assignSubs() {
   }));
 }
 
+async function openTorrentContents() {
+  const limiter = new Bottleneck({ maxConcurrent: 5 });
+  const unopenedTorrents = await repository.getNoContentsTorrents();
+
+  return Promise.all(unopenedTorrents.map(torrent => limiter.schedule(() => createTorrentContents(torrent))))
+      .then(() => unopenedTorrents.length === 500 ? openTorrentContents() : Promise.resolve)
+}
+
 async function findAllFiles() {
   /* Test cases */
   /* Anime Season and absolute episodes */
@@ -185,8 +195,9 @@ async function findAllFiles() {
 
 //findAllFiles().then(() => console.log('Finished'));
 //updateMovieCollections().then(() => console.log('Finished'));
-reapplyEpisodeDecomposing('0b6c0f0692bdb151efb87e3de90e46e3b177444e', false).then(() => console.log('Finished'));
+// reapplyEpisodeDecomposing('0b6c0f0692bdb151efb87e3de90e46e3b177444e', false).then(() => console.log('Finished'));
 //reapplySeriesSeasonsSavedAsMovies().then(() => console.log('Finished'));
 //reapplyDecomposingToTorrentsOnRegex('.*Boku no Hero Academia.*').then(() => console.log('Finished'));
 //reapplyManualHashes().then(() => console.log('Finished'));
 // assignSubs().then(() => console.log('Finished'));
+openTorrentContents().then(() => console.log('Finished'));

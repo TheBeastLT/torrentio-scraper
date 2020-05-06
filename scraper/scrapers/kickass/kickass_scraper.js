@@ -4,7 +4,7 @@ const kickass = require('./kickass_api');
 const { Type } = require('../../lib/types');
 const repository = require('../../lib/repository');
 const Promises = require('../../lib/promises');
-const { createTorrentEntry, getStoredTorrentEntry, updateTorrentSeeders } = require('../../lib/torrentEntries');
+const { createTorrentEntry, checkAndUpdateTorrent } = require('../../lib/torrentEntries');
 
 const NAME = 'KickassTorrents';
 const UNTIL_PAGE = 10;
@@ -54,8 +54,8 @@ async function scrapeLatestTorrentsForCategory(category, page = 1) {
 }
 
 async function processTorrentRecord(record) {
-  if (await getStoredTorrentEntry(record)) {
-    return updateTorrentSeeders(record);
+  if (await checkAndUpdateTorrent(record)) {
+    return record;
   }
 
   const torrentFound = await kickass.torrent(record.torrentId).catch(() => undefined);

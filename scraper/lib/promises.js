@@ -33,4 +33,11 @@ async function delay(duration) {
   return new Promise((resolve) => setTimeout(resolve, duration));
 }
 
-module.exports = { sequence, first, delay };
+/**
+ * Return most common value from given array.
+ */
+function mostCommonValue(array) {
+  return array.sort((a, b) => array.filter(v => v === a).length - array.filter(v => v === b).length).pop();
+}
+
+module.exports = { sequence, first, delay, mostCommonValue };
