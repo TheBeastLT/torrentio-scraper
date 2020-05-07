@@ -4,10 +4,28 @@ const rarbg = require('rarbg-api');
 const decode = require('magnet-uri');
 const { Type } = require('../../lib/types');
 const { createTorrentEntry, checkAndUpdateTorrent } = require('../../lib/torrentEntries');
+
 const NAME = 'RARBG';
 
 const limiter = new Bottleneck({ maxConcurrent: 1, minTime: 2500 });
 const entryLimiter = new Bottleneck({ maxConcurrent: 40 });
+const allowedCategories = [
+  rarbg.CATEGORY['4K_MOVIES_X264_4k'],
+  rarbg.CATEGORY['4K_X265_4k'],
+  rarbg.CATEGORY['4k_X264_4k_HDR'],
+  rarbg.CATEGORY.MOVIES_XVID,
+  rarbg.CATEGORY.MOVIES_XVID_720P,
+  [54], // Movies/x265/1080
+  rarbg.CATEGORY.MOVIES_X264,
+  rarbg.CATEGORY.MOVIES_X264_1080P,
+  rarbg.CATEGORY.MOVIES_X264_720P,
+  rarbg.CATEGORY.MOVIES_X264_3D,
+  rarbg.CATEGORY.MOVIES_BD_REMUX,
+  rarbg.CATEGORY.TV_EPISODES,
+  rarbg.CATEGORY.TV_UHD_EPISODES,
+  rarbg.CATEGORY.TV_HD_EPISODES
+].reduce((a, b) => a.concat(b), [])
+const searchOptions = { limit: 100, category: allowedCategories, sort: 'seeders', format: 'json_extended', ranked: 0 }
 
 async function scrape() {
   console.log(`[${moment()}] starting ${NAME} dump scrape...`);
@@ -22,7 +40,7 @@ async function scrape() {
 }
 
 async function getTorrentsForImdbId(imdbId, retries = 5) {
-  return rarbg.search(imdbId, { limit: 100, sort: 'seeders', format: 'json_extended', ranked: 0 }, 'imdb')
+  return rarbg.search(imdbId, searchOptions, 'imdb')
       .then(torrents => torrents.map(torrent => ({
         name: torrent.title,
         infoHash: decode(torrent.download).infoHash,

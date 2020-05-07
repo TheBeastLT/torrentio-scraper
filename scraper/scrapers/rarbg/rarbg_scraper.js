@@ -39,6 +39,7 @@ async function scrapeLatestTorrents() {
     rarbg.CATEGORY['4k_X264_4k_HDR'],
     rarbg.CATEGORY.MOVIES_XVID,
     rarbg.CATEGORY.MOVIES_XVID_720P,
+    [54], // Movies/x265/1080
     rarbg.CATEGORY.MOVIES_X264,
     rarbg.CATEGORY.MOVIES_X264_1080P,
     rarbg.CATEGORY.MOVIES_X264_720P,
