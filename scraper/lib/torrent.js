@@ -123,17 +123,17 @@ function filesAndSizeFromTorrentStream(torrent, timeout = 30000) {
 }
 
 function filterVideos(files) {
-  const maxSize = Math.max(...files.map(file => file.size));
-  const minSampleRatio = files.length <= 3 ? 5 : 10;
-  const minRedundantRatio = files.length <= 3 ? 30 : Number.MAX_VALUE;
-  const isSample = file => file.path.match(/sample/i) && maxSize / parseInt(file.size) > minSampleRatio;
-  const isRedundant = file => maxSize / parseInt(file.size) > minRedundantRatio;
-  const isExtra = file => file.path.match(/extras?\//i);
-  return files
-      .filter(file => isVideo(file.path))
-      .filter(file => !isSample(file))
-      .filter(file => !isExtra(file))
-      .filter(file => !isRedundant(file));
+  const videos = files.filter(file => isVideo(file.path));
+  const maxSize = Math.max(...videos.map(video => video.size));
+  const minSampleRatio = videos.length <= 3 ? 5 : 10;
+  const minRedundantRatio = videos.length <= 3 ? 30 : Number.MAX_VALUE;
+  const isSample = video => video.path.match(/sample/i) && maxSize / parseInt(video.size) > minSampleRatio;
+  const isRedundant = video => maxSize / parseInt(video.size) > minRedundantRatio;
+  const isExtra = video => video.path.match(/extras?\//i);
+  return videos
+      .filter(video => !isSample(video))
+      .filter(video => !isExtra(video))
+      .filter(video => !isRedundant(video));
 }
 
 function filterSubtitles(files) {

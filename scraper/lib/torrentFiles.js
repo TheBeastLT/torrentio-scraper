@@ -47,15 +47,16 @@ async function parseMovieFiles(torrent, parsedName, metadata) {
   }
 
   const parsedVideos = await Promises.sequence(filteredVideos
-      .map(video => () => findMovieImdbId(video.name)
-          .then(newImdbId => ({
-            infoHash: torrent.infoHash,
-            fileIndex: video.fileIndex,
-            title: video.path || video.name,
-            size: video.size,
-            imdbId: newImdbId,
-          })))
-      .map(video => isFeaturette(video) ? clearInfoFields(video) : video));
+      .map(video => () => isFeaturette(video)
+          ? Promise.resolve(video)
+          : findMovieImdbId(video.name).then(imdbId => ({ ...video, imdbId }))))
+      .then(videos => videos.map(video => ({
+        infoHash: torrent.infoHash,
+        fileIndex: video.fileIndex,
+        title: video.path || video.name,
+        size: video.size,
+        imdbId: video.imdbId,
+      })));
   return { contents, videos: parsedVideos, subtitles };
 }
 
