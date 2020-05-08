@@ -1,7 +1,12 @@
 const realdebrid = require('./realdebrid');
 
+const RESOLVER_HOST = process.env.RESOLVER_HOST || 'http://localhost:7050';
 const MOCHS = {
-  'realdebrid': realdebrid
+  'realdebrid': {
+    key: 'realdebrid',
+    instance: realdebrid,
+    shortName: 'RD'
+  }
 };
 
 async function applyMochs(streams, config) {
@@ -9,15 +14,34 @@ async function applyMochs(streams, config) {
     return streams;
   }
 
-  return Object.keys(config)
+  return Promise.all(Object.keys(config)
       .filter(configKey => MOCHS[configKey])
-      .reduce(async (streams, moch) => {
-        return await MOCHS[moch].applyMoch(streams, config[moch])
-            .catch(error => {
-              console.warn(error);
-              return streams;
-            });
-      }, streams);
+      .map(configKey => MOCHS[configKey])
+      .map(moch => moch.instance.getCachedStreams(streams, config[moch.key])
+          .then(cachedStreams => ({ moch, cachedStreams }))
+          .catch(error => console.warn(error))))
+      .then(mochResults => mochResults
+          .filter(result => result && result.cachedStreams)
+          .reduce((resultStreams, { moch, cachedStreams }) => {
+            resultStreams
+                .filter(stream => stream.infoHash)
+                .filter(stream => cachedStreams[stream.infoHash])
+                .forEach(stream => {
+                  stream.name = `[${moch.shortName}+] ${stream.name}`;
+                  stream.url = `${RESOLVER_HOST}/${moch.key}/${cachedStreams[stream.infoHash]}`;
+                  delete stream.infoHash;
+                  delete stream.fileIndex;
+                });
+            return resultStreams;
+          }, streams));
 }
 
-module.exports = applyMochs;
+async function resolve(parameters) {
+  const moch = MOCHS[parameters.mochKey];
+  if (!moch) {
+    return Promise.reject('Not a valid moch provider');
+  }
+  return moch.instance.resolve(parameters);
+}
+
+module.exports = { applyMochs, resolve }

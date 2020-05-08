@@ -5,13 +5,11 @@ const isVideo = require('../lib/video');
 const { getRandomProxy, getRandomUserAgent } = require('../lib/request_helper');
 const { cacheWrapResolvedUrl, cacheWrapProxy, cacheUserAgent } = require('../lib/cache');
 
-const RESOLVER_HOST = process.env.RESOLVER_HOST || 'http://localhost:7050';
-
 const unrestrictQueue = new namedQueue((task, callback) => task.method()
     .then(result => callback(false, result))
     .catch((error => callback(error))));
 
-async function applyMoch(streams, apiKey) {
+async function getCachedStreams(streams, apiKey) {
   const options = await getDefaultOptions(apiKey);
   const RD = new RealDebridClient(apiKey, options);
   const hashes = streams.map(stream => stream.infoHash);
@@ -20,28 +18,23 @@ async function applyMoch(streams, apiKey) {
         console.warn('Failed cached torrent availability request: ', error);
         return undefined;
       });
-  if (available) {
-    streams.forEach(stream => {
-      const cachedEntry = available[stream.infoHash];
-      const cachedIds = _getCachedFileIds(stream.fileIdx, cachedEntry).join(',');
-      if (cachedIds.length) {
-        stream.name = `[RD+] ${stream.name}`;
-        stream.url = `${RESOLVER_HOST}/realdebrid/${apiKey}/${stream.infoHash}/${cachedIds}/${stream.fileIdx}`;
-        delete stream.infoHash;
-        delete stream.fileIndex;
-      }
-    });
-  }
-
-  return streams;
+  return available && streams
+      .reduce((cachedStreams, stream) => {
+        const cachedEntry = available[stream.infoHash];
+        const cachedIds = _getCachedFileIds(stream.fileIdx, cachedEntry).join(',');
+        if (cachedIds.length) {
+          cachedStreams[stream.infoHash] = `${apiKey}/${stream.infoHash}/${cachedIds}/${stream.fileIdx}`;
+        }
+        return cachedStreams;
+      }, {})
 }
 
-async function resolve(apiKey, infoHash, cachedFileIds, fileIndex) {
-  if (!apiKey || !infoHash || !cachedFileIds || !cachedFileIds.length) {
+async function resolve({ apiKey, infoHash, cachedEntryInfo, fileIndex }) {
+  if (!apiKey || !infoHash || !cachedEntryInfo) {
     return Promise.reject("No valid parameters passed");
   }
   const id = `${apiKey}_${infoHash}_${fileIndex}`;
-  const method = () => cacheWrapResolvedUrl(id, () => _unrestrict(apiKey, infoHash, cachedFileIds, fileIndex));
+  const method = () => cacheWrapResolvedUrl(id, () => _unrestrict(apiKey, infoHash, cachedEntryInfo, fileIndex));
 
   return new Promise(((resolve, reject) => {
     unrestrictQueue.push({ id, method }, (error, result) => result ? resolve(result) : reject(error));
@@ -112,9 +105,9 @@ async function _unrestrictLink(RD, link) {
 
 async function getDefaultOptions(id) {
   const userAgent = await cacheUserAgent(id, () => getRandomUserAgent()).catch(() => getRandomUserAgent());
-  const proxy = await cacheWrapProxy('realdebrid', () => getRandomProxy()).catch(() => getRandomProxy());
+  const proxy = await cacheWrapProxy('moch', () => getRandomProxy()).catch(() => getRandomProxy());
 
   return { proxy: proxy, headers: { 'User-Agent': userAgent } };
 }
 
-module.exports = { applyMoch, resolve };
+module.exports = { getCachedStreams, resolve };

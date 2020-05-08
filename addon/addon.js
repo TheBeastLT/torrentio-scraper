@@ -6,7 +6,7 @@ const { cacheWrapStream } = require('./lib/cache');
 const { toStreamInfo } = require('./lib/streamInfo');
 const repository = require('./lib/repository');
 const applySorting = require('./lib/sort');
-const applyMochs = require('./moch/moch');
+const { applyMochs } = require('./moch/moch');
 
 const CACHE_MAX_AGE = process.env.CACHE_MAX_AGE || 4 * 60 * 60; // 4 hours in seconds
 const CACHE_MAX_AGE_EMPTY = 30 * 60; // 30 minutes

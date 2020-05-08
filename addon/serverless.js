@@ -4,7 +4,7 @@ const addonInterface = require('./addon');
 const { manifest } = require('./lib/manifest');
 const parseConfiguration = require('./lib/configuration');
 const landingTemplate = require('./lib/landingTemplate');
-const realDebrid = require('./moch/realdebrid');
+const moch = require('./moch/moch');
 
 const router = getRouter(addonInterface);
 const limiter = rateLimit({
@@ -69,9 +69,16 @@ router.get('/:configuration/:resource/:type/:id.json', (req, res, next) => {
       });
 });
 
-router.get('/realdebrid/:apiKey/:infoHash/:cachedFileIds/:fileIndex?', (req, res) => {
-  const { apiKey, infoHash, cachedFileIds, fileIndex } = req.params;
-  realDebrid.resolve(apiKey, infoHash, cachedFileIds, isNaN(fileIndex) ? undefined : parseInt(fileIndex))
+router.get('/:moch/:apiKey/:infoHash/:cachedEntryInfo/:fileIndex?', (req, res) => {
+  const parameters = {
+    mochKey: req.params.moch,
+    apiKey: req.params.apiKey,
+    infoHash: req.params.infoHash,
+    fileIndex: isNaN(req.params.fileIndex) ? undefined : parseInt(req.params.fileIndex),
+    cachedEntryInfo: req.params.cachedEntryInfo,
+    ip: req.ip
+  }
+  moch.resolve(parameters)
       .then(url => {
         res.writeHead(302, { Location: url });
         res.end();
