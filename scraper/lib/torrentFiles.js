@@ -34,16 +34,16 @@ async function parseTorrentFiles(torrent) {
 async function parseMovieFiles(torrent, parsedName, metadata) {
   const { contents, videos, subtitles } = await getMoviesTorrentContent(torrent, parsedName);
   const filteredVideos = videos.filter(file => file.size > MIN_SIZE);
-  if (filteredVideos.length === 1) {
-    const parsedVideo = {
+  if (isSingleMovie(filteredVideos)) {
+    const parsedVideos = filteredVideos.map(video => ({
       infoHash: torrent.infoHash,
-      fileIndex: filteredVideos[0].fileIndex,
-      title: filteredVideos[0].path || torrent.title,
-      size: filteredVideos[0].size || torrent.size,
+      fileIndex: video.fileIndex,
+      title: video.path || torrent.title,
+      size: video.size || torrent.size,
       imdbId: torrent.imdbId || metadata && metadata.imdbId,
       kitsuId: torrent.kitsuId || metadata && metadata.kitsuId
-    };
-    return { contents, videos: [parsedVideo], subtitles };
+    }));
+    return { contents, videos: parsedVideos, subtitles };
   }
 
   const parsedVideos = await Promises.sequence(filteredVideos
@@ -381,6 +381,13 @@ function findMovieImdbId(title, type) {
 function findMovieKitsuId(title) {
   const parsedTitle = typeof title === 'string' ? parse(title) : title;
   return getKitsuId(parsedTitle, Type.MOVIE).catch(() => undefined);
+}
+
+function isSingleMovie(videos) {
+  return videos.length === 1 ||
+      (videos.length === 2 &&
+          videos.find(v => /\bcd0?1\b/i.test(v.path)) &&
+          videos.find(v => /\bcd0?2\b/i.test(v.path)));
 }
 
 function isFeaturette(video) {
