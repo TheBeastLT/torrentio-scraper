@@ -1,4 +1,5 @@
 const realdebrid = require('./realdebrid');
+const premiumize = require('./premiumize');
 
 const RESOLVER_HOST = process.env.RESOLVER_HOST || 'http://localhost:7050';
 const MOCHS = {
@@ -6,6 +7,11 @@ const MOCHS = {
     key: 'realdebrid',
     instance: realdebrid,
     shortName: 'RD'
+  },
+  'premiumize': {
+    key: 'premiumize',
+    instance: premiumize,
+    shortName: 'PM'
   }
 };
 

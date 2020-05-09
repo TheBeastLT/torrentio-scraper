@@ -15,7 +15,7 @@ async function getCachedStreams(streams, apiKey) {
   const hashes = streams.map(stream => stream.infoHash);
   const available = await RD.torrents.instantAvailability(hashes)
       .catch(error => {
-        console.warn('Failed cached torrent availability request: ', error);
+        console.warn('Failed RealDebrid cached torrent availability request: ', error);
         return undefined;
       });
   return available && streams
@@ -72,7 +72,7 @@ async function _unrestrict(apiKey, infoHash, cachedFileIds, fileIndex) {
     console.log(`Unrestricted ${infoHash} [${fileIndex}] to ${unrestrictedLink}`);
     return unrestrictedLink;
   }
-  return Promise.reject("Failed adding torrent");
+  return Promise.reject("Failed RealDebrid adding torrent");
 }
 
 async function _createOrFindTorrentId(RD, infoHash, cachedFileIds) {
