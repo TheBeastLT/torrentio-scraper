@@ -386,8 +386,8 @@ function findMovieKitsuId(title) {
 function isSingleMovie(videos) {
   return videos.length === 1 ||
       (videos.length === 2 &&
-          videos.find(v => /\bcd0?1\b/i.test(v.path)) &&
-          videos.find(v => /\bcd0?2\b/i.test(v.path)));
+          videos.find(v => /\bcd[ .-]?0?1\b/i.test(v.path)) &&
+          videos.find(v => /\bcd[ .-]?0?2\b/i.test(v.path)));
 }
 
 function isFeaturette(video) {
