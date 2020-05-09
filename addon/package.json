@@ -8,6 +8,7 @@
   "author": "TheBeastLT <pauliox@beyond.lt>",
   "license": "MIT",
   "dependencies": {
+    "all-debrid-api": "^1.0.0",
     "bottleneck": "^2.19.5",
     "cache-manager": "^2.11.1",
     "cache-manager-mongodb": "^0.2.2",
