@@ -17,18 +17,18 @@ async function getCachedStreams(streams, apiKey) {
         console.warn('Failed AllDebrid cached torrent availability request: ', error);
         return undefined;
       });
-  return available && available.data && available.data.magnets
-      .filter(magnet => magnet.instant)
-      .reduce((cachedStreams, magnet) => {
-        const stream = streams.find(stream => stream.infoHash === magnet.hash.toLowerCase());
-        if (stream) {
-          const streamTitleParts = stream.title.replace(/\n👤.*/s, '').split('\n');
-          const fileName = streamTitleParts[streamTitleParts.length - 1];
-          const fileIndex = streamTitleParts.length === 2 ? stream.fileIdx : null;
-          const encodedFileName = encodeURIComponent(fileName);
-          cachedStreams[stream.infoHash] = `${apiKey}/${stream.infoHash}/${encodedFileName}/${fileIndex}`;
+  return available && available.data && streams
+      .reduce((mochStreams, stream) => {
+        const cachedEntry = available.data.magnets.find(magnet => stream.infoHash === magnet.hash.toLowerCase());
+        const streamTitleParts = stream.title.replace(/\n👤.*/s, '').split('\n');
+        const fileName = streamTitleParts[streamTitleParts.length - 1];
+        const fileIndex = streamTitleParts.length === 2 ? stream.fileIdx : null;
+        const encodedFileName = encodeURIComponent(fileName);
+        mochStreams[stream.infoHash] = {
+          url: `${apiKey}/${stream.infoHash}/${encodedFileName}/${fileIndex}`,
+          cached: cachedEntry && cachedEntry.instant
         }
-        return cachedStreams;
+        return mochStreams;
       }, {})
 }
 

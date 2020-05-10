@@ -19,16 +19,16 @@ async function getCachedStreams(streams, apiKey) {
         return undefined;
       });
   return available && streams
-      .reduce((cachedStreams, stream, index) => {
-        const isCached = available.response[index];
-        if (isCached) {
-          const streamTitleParts = stream.title.replace(/\n👤.*/s, '').split('\n');
-          const fileName = streamTitleParts[streamTitleParts.length - 1];
-          const fileIndex = streamTitleParts.length === 2 ? stream.fileIdx : null;
-          const encodedFileName = encodeURIComponent(fileName);
-          cachedStreams[stream.infoHash] = `${apiKey}/${stream.infoHash}/${encodedFileName}/${fileIndex}`;
-        }
-        return cachedStreams;
+      .reduce((mochStreams, stream, index) => {
+        const streamTitleParts = stream.title.replace(/\n👤.*/s, '').split('\n');
+        const fileName = streamTitleParts[streamTitleParts.length - 1];
+        const fileIndex = streamTitleParts.length === 2 ? stream.fileIdx : null;
+        const encodedFileName = encodeURIComponent(fileName);
+        mochStreams[stream.infoHash] = {
+          url: `${apiKey}/${stream.infoHash}/${encodedFileName}/${fileIndex}`,
+          cached: available.response[index]
+        };
+        return mochStreams;
       }, {})
 }
 

@@ -22,13 +22,15 @@ async function getCachedStreams(streams, apiKey) {
         return undefined;
       });
   return available && streams
-      .reduce((cachedStreams, stream) => {
+      .reduce((mochStreams, stream) => {
         const cachedEntry = available[stream.infoHash];
-        const cachedIds = _getCachedFileIds(stream.fileIdx, cachedEntry).join(',');
-        if (cachedIds.length) {
-          cachedStreams[stream.infoHash] = `${apiKey}/${stream.infoHash}/${cachedIds}/${stream.fileIdx}`;
-        }
-        return cachedStreams;
+        const cachedIds = _getCachedFileIds(stream.fileIdx, cachedEntry);
+        const cachedIdsString = cachedIds.length ? cachedIds.join(',') : null;
+        mochStreams[stream.infoHash] = {
+          url: `${apiKey}/${stream.infoHash}/${cachedIdsString}/${stream.fileIdx}`,
+          cached: !!cachedIdsString
+        };
+        return mochStreams;
       }, {})
 }
 
