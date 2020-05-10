@@ -2,8 +2,11 @@ const RealDebridClient = require('real-debrid-api');
 const namedQueue = require('named-queue');
 const { encode } = require('magnet-uri');
 const isVideo = require('../lib/video');
+const StaticResponse = require('./static');
 const { getRandomProxy, getRandomUserAgent } = require('../lib/request_helper');
 const { cacheWrapResolvedUrl, cacheWrapProxy, cacheUserAgent } = require('../lib/cache');
+
+const MIN_SIZE = 15728640; // 15 MB
 
 const unrestrictQueue = new namedQueue((task, callback) => task.method()
     .then(result => callback(false, result))
@@ -34,7 +37,11 @@ async function resolve({ apiKey, infoHash, cachedEntryInfo, fileIndex }) {
     return Promise.reject("No valid parameters passed");
   }
   const id = `${apiKey}_${infoHash}_${fileIndex}`;
-  const method = () => cacheWrapResolvedUrl(id, () => _unrestrict(apiKey, infoHash, cachedEntryInfo, fileIndex));
+  const method = () => cacheWrapResolvedUrl(id, () => _unrestrict(apiKey, infoHash, cachedEntryInfo, fileIndex))
+      .catch(error => {
+        console.warn(error);
+        return StaticResponse.FAILED_UNEXPECTED;
+      });
 
   return new Promise(((resolve, reject) => {
     unrestrictQueue.push({ id, method }, (error, result) => result ? resolve(result) : reject(error));
@@ -60,47 +67,95 @@ async function _unrestrict(apiKey, infoHash, cachedFileIds, fileIndex) {
   const options = await getDefaultOptions(apiKey);
   const RD = new RealDebridClient(apiKey, options);
   const torrentId = await _createOrFindTorrentId(RD, infoHash, cachedFileIds);
-  if (torrentId) {
-    const info = await RD.torrents.info(torrentId);
-    const targetFile = info.files.find(file => file.id === fileIndex + 1)
-        || info.files.filter(file => file.selected).sort((a, b) => b.bytes - a.bytes)[0];
-    const selectedFiles = info.files.filter(file => file.selected);
-    const fileLink = info.links.length === 1
-        ? info.links[0]
-        : info.links[selectedFiles.indexOf(targetFile)];
-    const unrestrictedLink = await _unrestrictLink(RD, fileLink);
-    console.log(`Unrestricted ${infoHash} [${fileIndex}] to ${unrestrictedLink}`);
-    return unrestrictedLink;
+  const torrent = torrentId && await RD.torrents.info(torrentId);
+  if (torrent && torrent.status === 'downloaded') {
+    return _unrestrictLink(RD, torrent, fileIndex);
+  } else if (torrent && ['downloading', 'queued'].includes(torrent.status)) {
+    return StaticResponse.DOWNLOADING;
+  } else if (torrent && ['error', 'dead', 'magnet_error'].includes(torrent.status)) {
+    const newTorrentId = await _createTorrentId(RD, infoHash, cachedFileIds);
+    const newTorrent = await RD.torrents.info(newTorrentId);
+    return newTorrent && newTorrent.status === 'downloaded'
+        ? _unrestrictLink(RD, newTorrent, fileIndex)
+        : StaticResponse.FAILED_DOWNLOAD;
+  } else if (torrent && torrent.status === 'waiting_files_selection') {
+    await _selectTorrentFiles(RD, torrent);
+    return StaticResponse.DOWNLOADING;
+  } else if (torrent && torrent.code === 9) {
+    return StaticResponse.FAILED_ACCESS;
   }
   return Promise.reject("Failed RealDebrid adding torrent");
 }
 
 async function _createOrFindTorrentId(RD, infoHash, cachedFileIds) {
-  return RD.torrents.get(0, 1)
-      .then(torrents => torrents.find(torrent => torrent.hash.toLowerCase() === infoHash))
-      .then(torrent => torrent && torrent.id || Promise.reject('No recent torrent found'))
-      .catch((error) => RD.torrents.addMagnet(encode({ infoHash }))
-          .then(response => RD.torrents.selectFiles(response.id, cachedFileIds)
-              .then((() => response.id))))
+  return _findTorrent(RD, infoHash)
+      .catch(() => _createTorrentId(RD, infoHash, cachedFileIds))
       .catch(error => {
         console.warn('Failed RealDebrid torrent retrieval', error);
-        return undefined;
+        return error;
       });
 }
 
-async function _unrestrictLink(RD, link) {
-  if (!link || !link.length) {
+async function _findTorrent(RD, infoHash) {
+  const torrents = await RD.torrents.get(0, 1);
+  const foundTorrents = torrents.filter(torrent => torrent.hash.toLowerCase() === infoHash);
+  const nonFailedTorrent = foundTorrents.find(torrent => ['error', 'dead', 'magnet_error'].includes(torrent.status));
+  const foundTorrent = nonFailedTorrent || foundTorrents[0];
+  return foundTorrent && foundTorrent.id || Promise.reject('No recent torrent found');
+}
+
+async function _createTorrentId(RD, infoHash, cachedFileIds) {
+  const addedMagnet = await RD.torrents.addMagnet(encode({ infoHash }));
+  await _selectTorrentFiles(RD, { id: addedMagnet.id }, cachedFileIds);
+  return addedMagnet.id;
+}
+
+async function _selectTorrentFiles(RD, torrent, cachedFileIds) {
+  if (cachedFileIds && !['null', 'undefined'].includes(cachedFileIds)) {
+    return RD.torrents.selectFiles(torrent.id, cachedFileIds);
+  }
+
+  torrent = torrent.status ? torrent : await RD.torrents.info(torrent.id);
+  if (torrent && torrent.status === 'magnet_conversion') {
+    // sleep for 2 seconds, maybe the torrent will be converted
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    torrent = await RD.torrents.info(torrent.id);
+  }
+  if (torrent && torrent.files && torrent.status === 'waiting_files_selection') {
+    const videoFileIds = torrent.files
+        .filter(file => isVideo(file.path))
+        .filter(file => file.bytes > MIN_SIZE)
+        .map(file => file.id)
+        .join(',');
+    return RD.torrents.selectFiles(torrent.id, videoFileIds);
+  }
+  return Promise.reject('Failed RealDebrid torrent file selection')
+}
+
+async function _unrestrictLink(RD, torrent, fileIndex) {
+  const targetFile = torrent.files.find(file => file.id === fileIndex + 1)
+      || torrent.files.filter(file => file.selected).sort((a, b) => b.bytes - a.bytes)[0];
+  if (!targetFile.selected) {
+    await _selectTorrentFiles(RD, torrent, `${fileIndex + 1}`);
+    return StaticResponse.DOWNLOADING;
+  }
+
+  const selectedFiles = torrent.files.filter(file => file.selected);
+  const fileLink = torrent.links.length === 1
+      ? torrent.links[0]
+      : torrent.links[selectedFiles.indexOf(targetFile)];
+
+  if (!fileLink || !fileLink.length) {
     return Promise.reject("No available links found");
   }
-  return RD.unrestrict.link(link)
-      .then(unrestrictedLink => unrestrictedLink.download);
-  // .then(unrestrictedLink => RD.streaming.transcode(unrestrictedLink.id))
-  // .then(transcodedLink => {
-  //   const url = transcodedLink.apple && transcodedLink.apple.full
-  //       || transcodedLink[Object.keys(transcodedLink)[0]].full;
-  //   console.log(`Unrestricted ${link} to ${url}`);
-  //   return url;
-  // });
+
+  const unrestrictedLink = await RD.unrestrict.link(fileLink).then(response => response.download);
+  if (!isVideo(unrestrictedLink)) {
+    return StaticResponse.FAILED_RAR;
+  }
+  // const transcodedLink = await RD.streaming.transcode(unrestrictedLink.id);
+  console.log(`Unrestricted ${torrent.hash} [${fileIndex}] to ${unrestrictedLink}`);
+  return unrestrictedLink;
 }
 
 async function getDefaultOptions(id) {
