@@ -1,16 +1,11 @@
 const RealDebridClient = require('real-debrid-api');
-const namedQueue = require('named-queue');
 const { encode } = require('magnet-uri');
 const isVideo = require('../lib/video');
 const StaticResponse = require('./static');
 const { getRandomProxy, getRandomUserAgent } = require('../lib/request_helper');
-const { cacheWrapResolvedUrl, cacheWrapProxy, cacheUserAgent } = require('../lib/cache');
+const { cacheWrapProxy, cacheUserAgent } = require('../lib/cache');
 
 const MIN_SIZE = 15728640; // 15 MB
-
-const unrestrictQueue = new namedQueue((task, callback) => task.method()
-    .then(result => callback(false, result))
-    .catch((error => callback(error))));
 
 async function getCachedStreams(streams, apiKey) {
   const options = await getDefaultOptions(apiKey);
@@ -34,22 +29,6 @@ async function getCachedStreams(streams, apiKey) {
       }, {})
 }
 
-async function resolve({ apiKey, infoHash, cachedEntryInfo, fileIndex }) {
-  if (!apiKey || !infoHash || !cachedEntryInfo) {
-    return Promise.reject("No valid parameters passed");
-  }
-  const id = `${apiKey}_${infoHash}_${fileIndex}`;
-  const method = () => cacheWrapResolvedUrl(id, () => _unrestrict(apiKey, infoHash, cachedEntryInfo, fileIndex))
-      .catch(error => {
-        console.warn(error);
-        return StaticResponse.FAILED_UNEXPECTED;
-      });
-
-  return new Promise(((resolve, reject) => {
-    unrestrictQueue.push({ id, method }, (error, result) => result ? resolve(result) : reject(error));
-  }));
-}
-
 function _getCachedFileIds(fileIndex, hosterResults) {
   if (!hosterResults || Array.isArray(hosterResults)) {
     return [];
@@ -64,18 +43,18 @@ function _getCachedFileIds(fileIndex, hosterResults) {
   return cachedTorrents.length && cachedTorrents[0] || [];
 }
 
-async function _unrestrict(apiKey, infoHash, cachedFileIds, fileIndex) {
+async function resolve({ apiKey, infoHash, cachedEntryInfo, fileIndex }) {
   console.log(`Unrestricting ${infoHash} [${fileIndex}]`);
   const options = await getDefaultOptions(apiKey);
   const RD = new RealDebridClient(apiKey, options);
-  const torrentId = await _createOrFindTorrentId(RD, infoHash, cachedFileIds);
+  const torrentId = await _createOrFindTorrentId(RD, infoHash, cachedEntryInfo);
   const torrent = torrentId && await RD.torrents.info(torrentId);
   if (torrent && statusReady(torrent.status)) {
     return _unrestrictLink(RD, torrent, fileIndex);
   } else if (torrent && statusDownloading(torrent.status)) {
     return StaticResponse.DOWNLOADING;
   } else if (torrent && statusError(torrent.status)) {
-    return _retryCreateTorrent(RD, infoHash, cachedFileIds, fileIndex);
+    return _retryCreateTorrent(RD, infoHash, cachedEntryInfo, fileIndex);
   } else if (torrent && statusWaitingSelection(torrent.status)) {
     await _selectTorrentFiles(RD, torrent);
     return StaticResponse.DOWNLOADING;

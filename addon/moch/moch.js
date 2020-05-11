@@ -1,7 +1,10 @@
+const namedQueue = require('named-queue');
 const options = require('./options');
 const realdebrid = require('./realdebrid');
 const premiumize = require('./premiumize');
 const alldebrid = require('./alldebrid');
+const StaticResponse = require('./static');
+const { cacheWrapResolvedUrl } = require('../lib/cache');
 
 const RESOLVER_HOST = process.env.RESOLVER_HOST || 'http://localhost:7050';
 const MOCHS = {
@@ -21,6 +24,10 @@ const MOCHS = {
     shortName: 'AD'
   }
 };
+
+const unrestrictQueue = new namedQueue((task, callback) => task.method()
+    .then(result => callback(false, result))
+    .catch((error => callback(error))));
 
 async function applyMochs(streams, config) {
   if (!streams || !streams.length) {
@@ -64,7 +71,20 @@ async function resolve(parameters) {
   if (!moch) {
     return Promise.reject('Not a valid moch provider');
   }
-  return moch.instance.resolve(parameters);
+
+  if (!parameters.apiKey || !parameters.infoHash || !parameters.cachedEntryInfo) {
+    return Promise.reject("No valid parameters passed");
+  }
+  const id = `${parameters.mochKey}_${parameters.apiKey}_${parameters.infoHash}_${parameters.fileIndex}`;
+  const method = () => cacheWrapResolvedUrl(id, () => moch.instance.resolve(parameters))
+      .catch(error => {
+        console.warn(error);
+        return StaticResponse.FAILED_UNEXPECTED;
+      });
+
+  return new Promise(((resolve, reject) => {
+    unrestrictQueue.push({ id, method }, (error, result) => result ? resolve(result) : reject(error));
+  }));
 }
 
 module.exports = { applyMochs, resolve }

@@ -1,13 +1,8 @@
 const AllDebridClient = require('all-debrid-api');
-const namedQueue = require('named-queue');
 const isVideo = require('../lib/video');
 const StaticResponse = require('./static');
 const { getRandomProxy, getRandomUserAgent } = require('../lib/request_helper');
 const { cacheWrapResolvedUrl, cacheWrapProxy, cacheUserAgent } = require('../lib/cache');
-
-const unrestrictQueue = new namedQueue((task, callback) => task.method()
-    .then(result => callback(false, result))
-    .catch((error => callback(error))));
 
 async function getCachedStreams(streams, apiKey) {
   const options = await getDefaultOptions(apiKey);
@@ -34,32 +29,16 @@ async function getCachedStreams(streams, apiKey) {
 }
 
 async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex }) {
-  if (!apiKey || !infoHash || !cachedEntryInfo) {
-    return Promise.reject("No valid parameters passed");
-  }
-  const id = `${apiKey}_${infoHash}_${fileIndex}`;
-  const method = () => cacheWrapResolvedUrl(id, () => _unrestrict(ip, apiKey, infoHash, cachedEntryInfo, fileIndex))
-      .catch(error => {
-        console.warn(error);
-        return StaticResponse.FAILED_UNEXPECTED;
-      });
-
-  return new Promise(((resolve, reject) => {
-    unrestrictQueue.push({ id, method }, (error, result) => result ? resolve(result) : reject(error));
-  }));
-}
-
-async function _unrestrict(ip, apiKey, infoHash, encodedFileName, fileIndex) {
   console.log(`Unrestricting ${infoHash} [${fileIndex}]`);
   const options = await getDefaultOptions(apiKey, ip);
   const AD = new AllDebridClient(apiKey, options);
   const torrent = await _createOrFindTorrent(AD, infoHash);
   if (torrent && statusReady(torrent.statusCode)) {
-    return _unrestrictLink(AD, torrent, encodedFileName, fileIndex);
+    return _unrestrictLink(AD, torrent, cachedEntryInfo, fileIndex);
   } else if (torrent && statusDownloading(torrent.statusCode)) {
     return StaticResponse.DOWNLOADING;
   } else if (torrent && statusHandledError(torrent.statusCode)) {
-    return _retryCreateTorrent(AD, infoHash, encodedFileName, fileIndex);
+    return _retryCreateTorrent(AD, infoHash, cachedEntryInfo, fileIndex);
   } else if (torrent && errorExpiredSubscriptionError(torrent)) {
     return StaticResponse.FAILED_ACCESS;
   }

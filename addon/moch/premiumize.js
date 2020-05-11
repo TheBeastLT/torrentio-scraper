@@ -1,14 +1,9 @@
 const PremiumizeClient = require('premiumize-api');
-const namedQueue = require('named-queue');
 const { encode } = require('magnet-uri');
 const isVideo = require('../lib/video');
 const StaticResponse = require('./static');
 const { getRandomProxy, getRandomUserAgent } = require('../lib/request_helper');
 const { cacheWrapResolvedUrl, cacheWrapProxy, cacheUserAgent } = require('../lib/cache');
-
-const unrestrictQueue = new namedQueue((task, callback) => task.method()
-    .then(result => callback(false, result))
-    .catch((error => callback(error))));
 
 async function getCachedStreams(streams, apiKey) {
   const options = await getDefaultOptions(apiKey);
@@ -34,38 +29,22 @@ async function getCachedStreams(streams, apiKey) {
 }
 
 async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex }) {
-  if (!apiKey || !infoHash || !cachedEntryInfo) {
-    return Promise.reject("No valid parameters passed");
-  }
-  const id = `${apiKey}_${infoHash}_${fileIndex}`;
-  const method = () => cacheWrapResolvedUrl(id, () => _unrestrict(ip, apiKey, infoHash, cachedEntryInfo, fileIndex))
-      .catch(error => {
-        console.warn(error);
-        return StaticResponse.FAILED_UNEXPECTED;
-      });
-
-  return new Promise(((resolve, reject) => {
-    unrestrictQueue.push({ id, method }, (error, result) => result ? resolve(result) : reject(error));
-  }));
-}
-
-async function _unrestrict(ip, apiKey, infoHash, encodedFileName, fileIndex) {
   console.log(`Unrestricting ${infoHash} [${fileIndex}]`);
   const options = await getDefaultOptions(apiKey, ip);
   const PM = new PremiumizeClient(apiKey, options);
 
-  const cachedLink = await _getCachedLink(PM, infoHash, encodedFileName, fileIndex).catch(() => undefined);
+  const cachedLink = await _getCachedLink(PM, infoHash, cachedEntryInfo, fileIndex).catch(() => undefined);
   if (cachedLink) {
     return cachedLink;
   }
 
-  const torrent = await _createOrFindTorrent(PM, infoHash, encodedFileName, fileIndex);
+  const torrent = await _createOrFindTorrent(PM, infoHash, cachedEntryInfo, fileIndex);
   if (torrent && statusReady(torrent.status)) {
-    return _getCachedLink(PM, infoHash, encodedFileName, fileIndex);
+    return _getCachedLink(PM, infoHash, cachedEntryInfo, fileIndex);
   } else if (torrent && statusDownloading(torrent.status)) {
     return StaticResponse.DOWNLOADING;
   } else if (torrent && statusError(torrent.status)) {
-    return _retryCreateTorrent(PM, infoHash, encodedFileName, fileIndex);
+    return _retryCreateTorrent(PM, infoHash, cachedEntryInfo, fileIndex);
   }
   return Promise.reject("Failed Premiumize adding torrent");
 }

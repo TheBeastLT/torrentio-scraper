@@ -9,7 +9,7 @@ const USER_AGENT_KEY_PREFIX = `${GLOBAL_KEY_PREFIX}|agent`;
 
 const STREAM_TTL = process.env.STREAM_TTL || 4 * 60 * 60; // 4 hours
 const STREAM_EMPTY_TTL = process.env.STREAM_EMPTY_TTL || 30 * 60; // 30 minutes
-const RESOLVED_URL_TTL = 2 * 60; // 2 minutes
+const RESOLVED_URL_TTL = 60; // 1 minutes
 const PROXY_TTL = 60 * 60; // 60 minutes
 const USER_AGENT_TTL = 2 * 24 * 60 * 60; // 2 days
 // When the streams are empty we want to cache it for less time in case of timeouts or failures

@@ -1,15 +1,15 @@
 const DebridOptions = {
   key: 'debridoptions',
   options: {
-    cachedlinks: {
+    cachedLinks: {
       key: 'cachedlinks',
       description: 'Show only cached debrid links'
     },
-    cachedlinksifavailable: {
+    cachedLinksIfAvailable: {
       key: 'cachedlinksifavailable',
       description: 'Show only cached debrid links if available'
     },
-    downloadlinks: {
+    downloadLinks: {
       key: 'downloadlinks',
       description: 'Show download to debrid links for uncached'
     }
@@ -18,17 +18,17 @@ const DebridOptions = {
 
 function onlyCachedLinks(config) {
   return config[DebridOptions.key] && config[DebridOptions.key]
-      .includes(DebridOptions.options.cachedlinks.key);
+      .includes(DebridOptions.options.cachedLinks.key);
 }
 
 function onlyCachedLinksIfAvailable(config) {
   return config[DebridOptions.key] && config[DebridOptions.key]
-      .includes(DebridOptions.options.cachedlinksifavailable.key);
+      .includes(DebridOptions.options.cachedLinksIfAvailable.key);
 }
 
 function includeDownloadLinks(config) {
   return config[DebridOptions.key] && config[DebridOptions.key]
-      .includes(DebridOptions.options.downloadlinks.key);
+      .includes(DebridOptions.options.downloadLinks.key);
 }
 
 module.exports = { DebridOptions, onlyCachedLinks, onlyCachedLinksIfAvailable, includeDownloadLinks }
