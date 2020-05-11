@@ -373,7 +373,7 @@ function assignKitsuOrImdbEpisodes(torrent, files, metadata) {
   return files;
 }
 
-function findMovieImdbId(title, type) {
+function findMovieImdbId(title) {
   const parsedTitle = typeof title === 'string' ? parse(title) : title;
   return getImdbId(parsedTitle, Type.MOVIE).catch(() => undefined);
 }
@@ -391,7 +391,7 @@ function isSingleMovie(videos) {
 }
 
 function isFeaturette(video) {
-  return /featurettes?\//i.test(video.path);
+  return /(?:featurettes?|extras-grym)\//i.test(video.path);
 }
 
 function clearInfoFields(video) {
