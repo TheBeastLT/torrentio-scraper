@@ -10,16 +10,16 @@ const NAME = 'RARBG';
 const limiter = new Bottleneck({ maxConcurrent: 1, minTime: 2500 });
 const entryLimiter = new Bottleneck({ maxConcurrent: 40 });
 const allowedCategories = [
-  rarbg.CATEGORY['4K_MOVIES_X264_4k'],
-  rarbg.CATEGORY['4K_X265_4k'],
-  rarbg.CATEGORY['4k_X264_4k_HDR'],
   rarbg.CATEGORY.MOVIES_XVID,
   rarbg.CATEGORY.MOVIES_XVID_720P,
-  [54], // Movies/x265/1080
+  rarbg.CATEGORY.MOVIES_X265_1080P,
+  rarbg.CATEGORY.MOVIES_X265_4K,
+  rarbg.CATEGORY.MOVIES_X265_4K_HDR,
   rarbg.CATEGORY.MOVIES_X264,
-  rarbg.CATEGORY.MOVIES_X264_1080P,
   rarbg.CATEGORY.MOVIES_X264_720P,
+  rarbg.CATEGORY.MOVIES_X264_1080P,
   rarbg.CATEGORY.MOVIES_X264_3D,
+  rarbg.CATEGORY.MOVIES_X264_4K,
   rarbg.CATEGORY.MOVIES_BD_REMUX,
   rarbg.CATEGORY.TV_EPISODES,
   rarbg.CATEGORY.TV_UHD_EPISODES,
