@@ -183,12 +183,12 @@ button:active {
 }
 `;
 const { Providers } = require('./manifest');
-const { SortType } = require('./sort');
+const { SortOptions } = require('./sort');
 
 function landingTemplate(manifest, config = {}) {
   const providers = config.providers || [];
   const realDebridApiKey = config.realdebrid || '';
-  const sort = config.sort === SortType.SEEDERS ? SortType.SEEDERS : SortType.QUALITY;
+  const sort = config.sort || SortOptions.options.qualitySeeders.key;
   const limit = config.limit || '';
   const background = manifest.background || 'https://dl.strem.io/addon-background.jpg';
   const logo = manifest.logo || 'https://dl.strem.io/addon-logo.png';
@@ -199,6 +199,9 @@ function landingTemplate(manifest, config = {}) {
       </div>` : '';
   const providersHTML = Providers
       .map(provider => `<option value="${provider.toLowerCase()}">${provider}</option>`)
+      .join('\n');
+  const sortOptionsHTML = Object.values(SortOptions.options)
+      .map((option, i) => `<option value="${option.key}" ${i === 0 ? 'selected' : ''}>${option.description}</option>`)
       .join('\n');
   const stylizedTypes = manifest.types
       .map(t => t[0].toUpperCase() + t.slice(1) + (t !== 'series' ? 's' : ''));
@@ -245,8 +248,7 @@ function landingTemplate(manifest, config = {}) {
          
          <label class="label" for="iSort">Sorting:</label>
          <select id="iSort" class="input" onchange="sortModeChange()">
-            <option value="${SortType.QUALITY}" selected>Quality</option>
-            <option value="${SortType.SEEDERS}">Seeders</option>
+           ${sortOptionsHTML}
          </select>
          
          <label class="label" id="iLimitLabel" for="iLimit">Max results per quality:</label>
@@ -276,7 +278,7 @@ function landingTemplate(manifest, config = {}) {
           });
           
           function sortModeChange() {
-            if ($('#iSort').val() === '${SortType.SEEDERS}') {
+            if (['${SortOptions.options.qualitySeeders.key}', '${SortOptions.options.qualitySize.key}'].includes($('#iSort').val())) {
               $("#iLimitLabel").text("Max results:");
             } else {
               $("#iLimitLabel").text("Max results per quality:");
@@ -292,7 +294,7 @@ function landingTemplate(manifest, config = {}) {
               
               const providers = providersValue && providersValue.length ? 'providers=' + providersValue : '';
               const realDebrid = realDebridValue && realDebridValue.length ? 'realdebrid=' + realDebridValue : '';
-              const sort = sortValue === '${SortType.SEEDERS}' ? 'sort=' + sortValue : '';
+              const sort = sortValue !== '${SortOptions.options.qualitySeeders.key}' ? 'sort=' + sortValue : '';
               const limit = /^[1-9][0-9]*$/.test(limitValue) ? 'limit=' + limitValue : '';
               
               const configurationValue = [providers, sort, limit, realDebrid].filter(value => value.length).join('|');

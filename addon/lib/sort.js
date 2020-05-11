@@ -3,34 +3,67 @@ const SEEDED_SEEDERS = 1;
 const MIN_HEALTHY_COUNT = 10;
 const MAX_UNHEALTHY_COUNT = 5;
 
-const SortType = {
-  QUALITY: 'quality',
-  SEEDERS: 'seeders',
-};
+const SortOptions = {
+  key: 'sort',
+  options: {
+    qualitySeeders: {
+      key: 'quality',
+      description: 'By quality then seeders'
+    },
+    qualitySize: {
+      key: 'qualitysize',
+      description: 'By quality then size'
+    },
+    seeders: {
+      key: 'seeders',
+      description: 'By seeders'
+    },
+    size: {
+      key: 'size',
+      description: 'By size'
+    },
+  }
+}
 
 function sortStreams(streams, config) {
   const sort = config.sort && config.sort.toLowerCase() || undefined;
   const limit = /^[1-9][0-9]*$/.test(config.limit) && parseInt(config.limit) || undefined;
-  if (sort === SortType.SEEDERS) {
-    return sortBySeeders(streams).slice(0, limit)
+  if (sort === SortOptions.options.seeders.key) {
+    return sortBySeeders(streams, limit);
+  } else if (sort === SortOptions.options.size.key) {
+    return sortBySize(streams, limit);
   }
-  return sortByVideoQuality(streams, limit)
+  const nestedSort = sort === SortOptions.options.qualitySize.key ? sortBySize : noopSort;
+  return sortByVideoQuality(streams, nestedSort, limit)
 }
 
-function sortBySeeders(streams) {
+function noopSort(streams) {
+  return streams;
+}
+
+function sortBySeeders(streams, limit) {
   // streams are already presorted by seeders and upload date
   const healthy = streams.filter(stream => extractSeeders(stream.title) >= HEALTHY_SEEDERS);
   const seeded = streams.filter(stream => extractSeeders(stream.title) >= SEEDED_SEEDERS);
 
   if (healthy.length >= MIN_HEALTHY_COUNT) {
-    return healthy;
+    return healthy.slice(0, limit);
   } else if (seeded.length >= MAX_UNHEALTHY_COUNT) {
-    return seeded.slice(0, MIN_HEALTHY_COUNT);
+    return seeded.slice(0, MIN_HEALTHY_COUNT).slice(0, limit);
   }
-  return streams.slice(0, MAX_UNHEALTHY_COUNT);
+  return streams.slice(0, MAX_UNHEALTHY_COUNT).slice(0, limit);
 }
 
-function sortByVideoQuality(streams, limit) {
+function sortBySize(streams, limit) {
+  return streams
+      .sort((a, b) => {
+        const aSize = extractSize(a.title);
+        const bSize = extractSize(b.title);
+        return bSize - aSize;
+      }).slice(0, limit);
+}
+
+function sortByVideoQuality(streams, nestedSort, limit) {
   const qualityMap = sortBySeeders(streams)
       .reduce((map, stream) => {
         const quality = extractQuality(stream.name);
@@ -51,7 +84,7 @@ function sortByVideoQuality(streams, limit) {
         return a < b ? -1 : b < a ? 1 : 0; // otherwise sort by alphabetic order
       });
   return sortedQualities
-      .map(quality => qualityMap[quality].slice(0, limit))
+      .map(quality => nestedSort(qualityMap[quality]).slice(0, limit))
       .reduce((a, b) => a.concat(b), []);
 }
 
@@ -73,5 +106,27 @@ function extractSeeders(title) {
   return seedersMatch && parseInt(seedersMatch[1]) || 0;
 }
 
+function extractSize(title) {
+  const seedersMatch = title.match(/💾 ([\d.]+ \w+)/);
+  return seedersMatch && parseSize(seedersMatch[1]) || 0;
+}
+
+function parseSize(sizeText) {
+  if (!sizeText) {
+    return 0;
+  }
+  let scale = 1;
+  if (sizeText.includes('TB')) {
+    scale = 1024 * 1024 * 1024 * 1024
+  } else if (sizeText.includes('GB')) {
+    scale = 1024 * 1024 * 1024
+  } else if (sizeText.includes('MB')) {
+    scale = 1024 * 1024;
+  } else if (sizeText.includes('kB')) {
+    scale = 1024;
+  }
+  return Math.floor(parseFloat(sizeText.replace(/,/g, '')) * scale);
+}
+
 module.exports = sortStreams;
-module.exports.SortType = SortType;
+module.exports.SortOptions = SortOptions;
