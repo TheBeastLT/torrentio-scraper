@@ -70,17 +70,13 @@ async function _unrestrict(apiKey, infoHash, cachedFileIds, fileIndex) {
   const RD = new RealDebridClient(apiKey, options);
   const torrentId = await _createOrFindTorrentId(RD, infoHash, cachedFileIds);
   const torrent = torrentId && await RD.torrents.info(torrentId);
-  if (torrent && torrent.status === 'downloaded') {
+  if (torrent && statusReady(torrent.status)) {
     return _unrestrictLink(RD, torrent, fileIndex);
-  } else if (torrent && ['downloading', 'queued'].includes(torrent.status)) {
+  } else if (torrent && statusDownloading(torrent.status)) {
     return StaticResponse.DOWNLOADING;
-  } else if (torrent && ['error', 'dead', 'magnet_error'].includes(torrent.status)) {
-    const newTorrentId = await _createTorrentId(RD, infoHash, cachedFileIds);
-    const newTorrent = await RD.torrents.info(newTorrentId);
-    return newTorrent && newTorrent.status === 'downloaded'
-        ? _unrestrictLink(RD, newTorrent, fileIndex)
-        : StaticResponse.FAILED_DOWNLOAD;
-  } else if (torrent && torrent.status === 'waiting_files_selection') {
+  } else if (torrent && statusError(torrent.status)) {
+    return _retryCreateTorrent(RD, infoHash, cachedFileIds, fileIndex);
+  } else if (torrent && statusWaitingSelection(torrent.status)) {
     await _selectTorrentFiles(RD, torrent);
     return StaticResponse.DOWNLOADING;
   } else if (torrent && torrent.code === 9) {
@@ -98,10 +94,18 @@ async function _createOrFindTorrentId(RD, infoHash, cachedFileIds) {
       });
 }
 
+async function _retryCreateTorrent(RD, infoHash, cachedFileIds, fileIndex) {
+  const newTorrentId = await _createTorrentId(RD, infoHash, cachedFileIds);
+  const newTorrent = await RD.torrents.info(newTorrentId);
+  return newTorrent && statusReady(newTorrent.status)
+      ? _unrestrictLink(RD, newTorrent, fileIndex)
+      : StaticResponse.FAILED_DOWNLOAD;
+}
+
 async function _findTorrent(RD, infoHash) {
   const torrents = await RD.torrents.get(0, 1);
   const foundTorrents = torrents.filter(torrent => torrent.hash.toLowerCase() === infoHash);
-  const nonFailedTorrent = foundTorrents.find(torrent => ['error', 'dead', 'magnet_error'].includes(torrent.status));
+  const nonFailedTorrent = foundTorrents.find(torrent => !statusError(torrent.status));
   const foundTorrent = nonFailedTorrent || foundTorrents[0];
   return foundTorrent && foundTorrent.id || Promise.reject('No recent torrent found');
 }
@@ -118,12 +122,12 @@ async function _selectTorrentFiles(RD, torrent, cachedFileIds) {
   }
 
   torrent = torrent.status ? torrent : await RD.torrents.info(torrent.id);
-  if (torrent && torrent.status === 'magnet_conversion') {
+  if (torrent && statusOpening(torrent.status)) {
     // sleep for 2 seconds, maybe the torrent will be converted
     await new Promise((resolve) => setTimeout(resolve, 2000));
     torrent = await RD.torrents.info(torrent.id);
   }
-  if (torrent && torrent.files && torrent.status === 'waiting_files_selection') {
+  if (torrent && torrent.files && statusWaitingSelection(torrent.status)) {
     const videoFileIds = torrent.files
         .filter(file => isVideo(file.path))
         .filter(file => file.bytes > MIN_SIZE)
@@ -158,6 +162,26 @@ async function _unrestrictLink(RD, torrent, fileIndex) {
   // const transcodedLink = await RD.streaming.transcode(unrestrictedLink.id);
   console.log(`Unrestricted ${torrent.hash} [${fileIndex}] to ${unrestrictedLink}`);
   return unrestrictedLink;
+}
+
+function statusError(status) {
+  return ['error', 'dead', 'magnet_error'].includes(status)
+}
+
+function statusOpening(status) {
+  return status === 'magnet_conversion';
+}
+
+function statusWaitingSelection(status) {
+  return status === 'waiting_files_selection';
+}
+
+function statusDownloading(status) {
+  return ['downloading', 'queued'].includes(status)
+}
+
+function statusReady(status) {
+  return status === 'downloaded';
 }
 
 async function getDefaultOptions(id) {
