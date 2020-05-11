@@ -33,37 +33,27 @@ async function applyMochs(streams, config) {
   if (!streams || !streams.length) {
     return streams;
   }
+
+  const onlyCached = options.onlyCachedLinks(config);
+  const onlyCachedIfAvailable = options.onlyCachedLinksIfAvailable(config);
   const includeDownloadLinks = options.includeDownloadLinks(config);
 
-  return Promise.all(Object.keys(config)
+  const configuredMochs = Object.keys(config)
       .filter(configKey => MOCHS[configKey])
-      .map(configKey => MOCHS[configKey])
+      .map(configKey => MOCHS[configKey]);
+  const mochResults = await Promise.all(configuredMochs
       .map(moch => moch.instance.getCachedStreams(streams, config[moch.key])
           .then(mochStreams => ({ moch, mochStreams }))
           .catch(error => console.warn(error))))
-      .then(mochResults => mochResults
-          .filter(result => result && result.mochStreams)
-          .reduce((resultStreams, { moch, mochStreams }) => {
-            resultStreams
-                .filter(stream => stream.infoHash)
-                .filter(stream => mochStreams[stream.infoHash])
-                .forEach(stream => {
-                  const cachedEntry = mochStreams[stream.infoHash];
-                  if (cachedEntry.cached) {
-                    stream.name = `[${moch.shortName}+] ${stream.name}`;
-                    stream.url = `${RESOLVER_HOST}/${moch.key}/${cachedEntry.url}`;
-                    delete stream.infoHash;
-                    delete stream.fileIndex;
-                  } else if (includeDownloadLinks) {
-                    resultStreams.push({
-                      name: `[${moch.shortName} download] ${stream.name}`,
-                      title: stream.title,
-                      url: `${RESOLVER_HOST}/${moch.key}/${cachedEntry.url}`
-                    })
-                  }
-                });
-            return resultStreams;
-          }, streams));
+      .then(results => results.filter(result => result && result.mochStreams));
+  const cachedStreams = mochResults
+      .reduce((resultStreams, mochResult) => populateCachedLinks(resultStreams, mochResult), streams);
+  const hasCachedStreams = cachedStreams.find(stream => stream.url);
+
+  const resultStreams = includeDownloadLinks ? populateDownloadLinks(cachedStreams, mochResults) : cachedStreams;
+  return onlyCached || onlyCachedIfAvailable && hasCachedStreams
+      ? resultStreams.filter(stream => stream.url)
+      : resultStreams;
 }
 
 async function resolve(parameters) {
@@ -85,6 +75,38 @@ async function resolve(parameters) {
   return new Promise(((resolve, reject) => {
     unrestrictQueue.push({ id, method }, (error, result) => result ? resolve(result) : reject(error));
   }));
+}
+
+function populateCachedLinks(streams, mochResult) {
+  streams
+      .filter(stream => stream.infoHash)
+      .forEach(stream => {
+        const cachedEntry = mochResult.mochStreams[stream.infoHash];
+        if (cachedEntry && cachedEntry.cached) {
+          stream.name = `[${mochResult.moch.shortName}+] ${stream.name}`;
+          stream.url = `${RESOLVER_HOST}/${mochResult.moch.key}/${cachedEntry.url}`;
+          delete stream.infoHash;
+          delete stream.fileIndex;
+        }
+      });
+  return streams;
+}
+
+function populateDownloadLinks(streams, mochResults) {
+  streams
+      .filter(stream => stream.infoHash)
+      .forEach(stream => mochResults
+          .forEach(mochResult => {
+            const cachedEntry = mochResult.mochStreams[stream.infoHash];
+            if (!cachedEntry || !cachedEntry.cached) {
+              streams.push({
+                name: `[${mochResult.moch.shortName} download] ${stream.name}`,
+                title: stream.title,
+                url: `${RESOLVER_HOST}/${mochResult.moch.key}/${cachedEntry.url}`
+              })
+            }
+          }));
+  return streams;
 }
 
 module.exports = { applyMochs, resolve }

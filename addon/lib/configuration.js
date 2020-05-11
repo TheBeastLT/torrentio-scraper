@@ -10,6 +10,9 @@ function parseConfiguration(configuration) {
   if (configValues.providers) {
     configValues.providers = configValues.providers.split(',').map(provider => provider.toLowerCase());
   }
+  if (configValues.debridoptions) {
+    configValues.debridoptions = configValues.debridoptions.split(',').map(option => option.toLowerCase());
+  }
   return configValues;
 }
 

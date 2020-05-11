@@ -1,12 +1,12 @@
 const DebridOptions = {
   key: 'debridoptions',
   options: {
-    cachedLinks: {
-      key: 'cachedlinks',
+    onlyCached: {
+      key: 'onlycached',
       description: 'Show only cached debrid links'
     },
-    cachedLinksIfAvailable: {
-      key: 'cachedlinksifavailable',
+    onlyCachedIfAvailable: {
+      key: 'onlycachedifavailable',
       description: 'Show only cached debrid links if available'
     },
     downloadLinks: {
@@ -18,12 +18,12 @@ const DebridOptions = {
 
 function onlyCachedLinks(config) {
   return config[DebridOptions.key] && config[DebridOptions.key]
-      .includes(DebridOptions.options.cachedLinks.key);
+      .includes(DebridOptions.options.onlyCached.key);
 }
 
 function onlyCachedLinksIfAvailable(config) {
   return config[DebridOptions.key] && config[DebridOptions.key]
-      .includes(DebridOptions.options.cachedLinksIfAvailable.key);
+      .includes(DebridOptions.options.onlyCachedIfAvailable.key);
 }
 
 function includeDownloadLinks(config) {
