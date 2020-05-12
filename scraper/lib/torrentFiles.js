@@ -5,6 +5,7 @@ const Promises = require('../lib/promises');
 const { torrentFiles } = require('../lib/torrent');
 const { getMetadata, getImdbId, getKitsuId } = require('../lib/metadata');
 const { Type } = require('./types');
+const { isDisk } = require('./extension');
 
 const MIN_SIZE = 10 * 1024 * 1024; // 10 MB
 const MULTIPLE_FILES_SIZE = 4 * 1024 * 1024 * 1024; // 4 GB
@@ -79,13 +80,17 @@ async function parseSeriesFiles(torrent, parsedName, metadata) {
 
 async function getMoviesTorrentContent(torrent, parsedName) {
   const hasMultipleMovie = parsedName.complete || typeof parsedName.year === 'string';
-  return torrentFiles(torrent)
+  const files = await torrentFiles(torrent)
       .catch(error => {
         if (!hasMultipleMovie) {
           return { videos: [{ name: torrent.title, path: torrent.title, size: torrent.size }] }
         }
         return Promise.reject(error);
       });
+  if (files.contents && files.contents.length && !files.length && isDiskTorrent(files.contents)) {
+    files.videos = [{ name: torrent.title, path: torrent.title, size: torrent.size }];
+  }
+  return files;
 }
 
 async function getSeriesTorrentContent(torrent, parsedName) {
@@ -381,6 +386,10 @@ function findMovieImdbId(title) {
 function findMovieKitsuId(title) {
   const parsedTitle = typeof title === 'string' ? parse(title) : title;
   return getKitsuId(parsedTitle, Type.MOVIE).catch(() => undefined);
+}
+
+function isDiskTorrent(contents) {
+  return contents.some(content => isDisk(content));
 }
 
 function isSingleMovie(videos) {

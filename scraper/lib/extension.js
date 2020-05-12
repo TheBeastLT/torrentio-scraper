@@ -35,6 +35,12 @@ const SUBTITLE_EXTENSIONS = [
   "idx",
   "vtt"
 ];
+const DISK_EXTENSIONS = [
+  "iso",
+  "m2ts",
+  "ts",
+  "vob"
+]
 
 function isVideo(filename) {
   return isExtension(filename, VIDEO_EXTENSIONS);
@@ -44,9 +50,13 @@ function isSubtitle(filename) {
   return isExtension(filename, SUBTITLE_EXTENSIONS);
 }
 
+function isDisk(filename) {
+  return isExtension(filename, DISK_EXTENSIONS);
+}
+
 function isExtension(filename, extensions) {
   const extensionMatch = filename.match(/\.(\w{2,4})$/);
   return extensionMatch && extensions.includes(extensionMatch[1].toLowerCase());
 }
 
-module.exports = { isVideo, isSubtitle }
+module.exports = { isVideo, isSubtitle, isDisk }
