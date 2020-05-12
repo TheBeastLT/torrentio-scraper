@@ -9,24 +9,28 @@ const { cacheWrapResolvedUrl } = require('../lib/cache');
 
 const RESOLVER_HOST = process.env.RESOLVER_HOST || 'http://localhost:7050';
 const MOCHS = {
-  'realdebrid': {
+  realdebrid: {
     key: 'realdebrid',
     instance: realdebrid,
+    name: "RealDebrid",
     shortName: 'RD'
   },
-  'premiumize': {
+  premiumize: {
     key: 'premiumize',
     instance: premiumize,
+    name: 'Premiumize',
     shortName: 'PM'
   },
-  'alldebrid': {
+  alldebrid: {
     key: 'alldebrid',
     instance: alldebrid,
+    name: 'AllDebrid',
     shortName: 'AD'
   },
-  'putio': {
+  putio: {
     key: 'putio',
     instance: putio,
+    name: 'Put.io',
     shortName: 'Putio'
   }
 };
@@ -115,4 +119,4 @@ function populateDownloadLinks(streams, mochResults) {
   return streams;
 }
 
-module.exports = { applyMochs, resolve }
+module.exports = { applyMochs, resolve, MochOptions: MOCHS }
