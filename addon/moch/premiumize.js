@@ -3,7 +3,7 @@ const { encode } = require('magnet-uri');
 const isVideo = require('../lib/video');
 const StaticResponse = require('./static');
 const { getRandomProxy, getRandomUserAgent } = require('../lib/request_helper');
-const { cacheWrapResolvedUrl, cacheWrapProxy, cacheUserAgent } = require('../lib/cache');
+const { cacheWrapProxy, cacheUserAgent } = require('../lib/cache');
 
 async function getCachedStreams(streams, apiKey) {
   const options = await getDefaultOptions(apiKey);
@@ -93,15 +93,15 @@ async function _retryCreateTorrent(PM, infoHash, encodedFileName, fileIndex) {
 }
 
 function statusError(status) {
-  return ['deleted', 'error', 'timeout'].includes(status)
+  return ['deleted', 'error', 'timeout'].includes(status);
 }
 
 function statusDownloading(status) {
-  return ['waiting', 'queued', 'running'].includes(status)
+  return ['waiting', 'queued', 'running'].includes(status);
 }
 
 function statusReady(status) {
-  return status === 'finished';
+  return ['finished', 'seeding'].includes(status);
 }
 
 async function getDefaultOptions(id, ip) {

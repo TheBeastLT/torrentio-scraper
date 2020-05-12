@@ -156,7 +156,7 @@ function statusWaitingSelection(status) {
 }
 
 function statusDownloading(status) {
-  return ['downloading', 'queued'].includes(status)
+  return ['downloading', 'queued'].includes(status);
 }
 
 function statusReady(status) {

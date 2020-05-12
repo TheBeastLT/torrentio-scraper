@@ -2,7 +2,7 @@ const AllDebridClient = require('all-debrid-api');
 const isVideo = require('../lib/video');
 const StaticResponse = require('./static');
 const { getRandomProxy, getRandomUserAgent } = require('../lib/request_helper');
-const { cacheWrapResolvedUrl, cacheWrapProxy, cacheUserAgent } = require('../lib/cache');
+const { cacheWrapProxy, cacheUserAgent } = require('../lib/cache');
 
 async function getCachedStreams(streams, apiKey) {
   const options = await getDefaultOptions(apiKey);
@@ -99,15 +99,15 @@ async function getDefaultOptions(id, ip) {
 }
 
 function statusError(statusCode) {
-  return [5, 6, 7, 8, 9, 10, 11].includes(statusCode)
+  return [5, 6, 7, 8, 9, 10, 11].includes(statusCode);
 }
 
 function statusHandledError(statusCode) {
-  return [5, 7, 9, 10].includes(statusCode)
+  return [5, 7, 9, 10].includes(statusCode);
 }
 
 function statusDownloading(statusCode) {
-  return [0, 1, 2, 3].includes(statusCode)
+  return [0, 1, 2, 3].includes(statusCode);
 }
 
 function statusReady(statusCode) {
