@@ -9,7 +9,7 @@
   "license": "MIT",
   "dependencies": {
     "@putdotio/api-client": "^7.10.1",
-    "all-debrid-api": "^1.0.0",
+    "all-debrid-api": "^1.0.1",
     "bottleneck": "^2.19.5",
     "cache-manager": "^2.11.1",
     "cache-manager-mongodb": "^0.2.2",
@@ -20,7 +20,7 @@
     "parse-torrent-title": "git://github.com/TheBeastLT/parse-torrent-title.git#49be4a2b4ab14e26fca4e52de82f6ad08948fdc7",
     "pg": "^7.8.2",
     "pg-hstore": "^2.3.2",
-    "premiumize-api": "^1.0.0",
+    "premiumize-api": "^1.0.1",
     "real-debrid-api": "git://github.com/TheBeastLT/node-real-debrid.git#935a5c23ae809edbcd2a111526a7f74d6767c50d",
     "sequelize": "^4.43.0",
     "stremio-addon-sdk": "^1.6.1",

@@ -115,8 +115,7 @@ function statusReady(statusCode) {
 }
 
 function errorExpiredSubscriptionError(error) {
-  return ['You must be premium to use this feature', 'You must be premium to process this link']
-      .includes(error.message);
+  return ['MUST_BE_PREMIUM', 'MAGNET_MUST_BE_PREMIUM'].includes(error.code);
 }
 
 module.exports = { getCachedStreams, resolve };
