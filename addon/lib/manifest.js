@@ -24,7 +24,7 @@ function manifest(config = {}) {
   const mochsDesc = enabledMochs ? ` and ${enabledMochs} enabled ` : '';
   return {
     id: 'com.stremio.torrentio.addon',
-    version: '0.0.4',
+    version: '0.0.5',
     name: 'Torrentio',
     description: 'Provides torrent streams from scraped torrent providers.'
         + ` Currently supports ${enabledProvidersDesc}${mochsDesc}.`

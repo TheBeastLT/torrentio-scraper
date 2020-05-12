@@ -1,6 +1,6 @@
 {
   "name": "stremio-torrentio",
-  "version": "1.0.0",
+  "version": "1.0.5",
   "main": "addon.js",
   "scripts": {
     "start": "node index.js"
