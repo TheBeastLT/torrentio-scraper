@@ -1,6 +1,7 @@
 const RealDebridClient = require('real-debrid-api');
 const { encode } = require('magnet-uri');
 const isVideo = require('../lib/video');
+const delay = require('./delay');
 const StaticResponse = require('./static');
 const { getRandomProxy, getRandomUserAgent } = require('../lib/request_helper');
 const { cacheWrapProxy, cacheUserAgent } = require('../lib/cache');
@@ -103,8 +104,7 @@ async function _selectTorrentFiles(RD, torrent, cachedFileIds) {
   torrent = torrent.status ? torrent : await RD.torrents.info(torrent.id);
   if (torrent && statusOpening(torrent.status)) {
     // sleep for 2 seconds, maybe the torrent will be converted
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    torrent = await RD.torrents.info(torrent.id);
+    torrent = await delay(2000).then(() => RD.torrents.info(torrent.id));
   }
   if (torrent && torrent.files && statusWaitingSelection(torrent.status)) {
     const videoFileIds = torrent.files

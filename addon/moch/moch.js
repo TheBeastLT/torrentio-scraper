@@ -3,6 +3,7 @@ const options = require('./options');
 const realdebrid = require('./realdebrid');
 const premiumize = require('./premiumize');
 const alldebrid = require('./alldebrid');
+const putio = require('./putio');
 const StaticResponse = require('./static');
 const { cacheWrapResolvedUrl } = require('../lib/cache');
 
@@ -22,6 +23,11 @@ const MOCHS = {
     key: 'alldebrid',
     instance: alldebrid,
     shortName: 'AD'
+  },
+  'putio': {
+    key: 'putio',
+    instance: putio,
+    shortName: 'Putio'
   }
 };
 
