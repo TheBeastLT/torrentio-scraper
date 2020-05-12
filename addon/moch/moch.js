@@ -65,7 +65,7 @@ async function resolve(parameters) {
   if (!parameters.apiKey || !parameters.infoHash || !parameters.cachedEntryInfo) {
     return Promise.reject("No valid parameters passed");
   }
-  const id = `${parameters.mochKey}_${parameters.apiKey}_${parameters.infoHash}_${parameters.fileIndex}`;
+  const id = `${parameters.mochKey}_${parameters.ip}_${parameters.infoHash}_${parameters.fileIndex}`;
   const method = () => cacheWrapResolvedUrl(id, () => moch.instance.resolve(parameters))
       .catch(error => {
         console.warn(error);
