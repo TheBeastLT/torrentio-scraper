@@ -15,12 +15,13 @@ const MOCHS = {
     name: "RealDebrid",
     shortName: 'RD'
   },
-  premiumize: {
-    key: 'premiumize',
-    instance: premiumize,
-    name: 'Premiumize',
-    shortName: 'PM'
-  },
+  // @TODO disabled until it is possible to resolve stream url for specific ip
+  // premiumize: {
+  //   key: 'premiumize',
+  //   instance: premiumize,
+  //   name: 'Premiumize',
+  //   shortName: 'PM'
+  // },
   alldebrid: {
     key: 'alldebrid',
     instance: alldebrid,
