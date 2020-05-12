@@ -60,7 +60,7 @@ function cacheWrapMetadata(id, method) {
 }
 
 function cacheTrackers(method) {
-  return cacheWrap(memoryCache, `${TRACKERS_KEY_PREFIX}`, method, { ttl: { TRACKERS_TTL } });
+  return cacheWrap(memoryCache, `${TRACKERS_KEY_PREFIX}`, method, { ttl: TRACKERS_TTL });
 }
 
 module.exports = {

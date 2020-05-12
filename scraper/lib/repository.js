@@ -200,12 +200,9 @@ function getUpdateSeedersTorrents() {
 
 function getNoContentsTorrents() {
   return Torrent.findAll({
-    where: { opened: false },
+    where: { opened: false, seeders: { [Op.gte]: 1 } },
     limit: 500,
-    order: [
-      ['seeders', 'DESC'],
-      ['uploadDate', 'DESC']
-    ]
+    order: [[fn('RANDOM')]]
   });
 }
 
