@@ -1,3 +1,5 @@
+const { MochOptions } = require('../moch/moch');
+
 const Providers = [
   'YTS',
   'EZTV',
@@ -9,19 +11,24 @@ const Providers = [
 ];
 const DefaultProviders = Providers
 
-function manifest({ providers, realdebrid } = {}) {
-  const providersList = providers && providers.map(provider => getProvider(provider)) || DefaultProviders;
+function manifest(config = {}) {
+  const providersList = config.providers && config.providers.map(provider => getProvider(provider)) || DefaultProviders;
   const enabledProvidersDesc = Providers
       .map(provider => `${provider}${providersList.includes(provider) ? '(+)' : '(-)'}`)
       .join(', ')
-  const realDebridDesc = realdebrid ? ' and RealDebrid enabled' : '';
+  const enabledMochs = Object.values(MochOptions)
+      .filter(moch => config[moch.key])
+      .map(moch => moch.name)
+      .join(' & ');
+  const possibleMochs = Object.values(MochOptions).map(moch => moch.name).join('/')
+  const mochsDesc = enabledMochs ? ` and ${enabledMochs} enabled ` : '';
   return {
     id: 'com.stremio.torrentio.addon',
     version: '0.0.4',
     name: 'Torrentio',
     description: 'Provides torrent streams from scraped torrent providers.'
-        + ` Currently supports ${enabledProvidersDesc}${realDebridDesc}.`
-        + ' To configure providers, RealDebrid support and other settings visit https://torrentio.strem.fun',
+        + ` Currently supports ${enabledProvidersDesc}${mochsDesc}.`
+        + ` To configure providers, ${possibleMochs} support and other settings visit https://torrentio.strem.fun`,
     catalogs: [],
     resources: ['stream'],
     types: ['movie', 'series'],

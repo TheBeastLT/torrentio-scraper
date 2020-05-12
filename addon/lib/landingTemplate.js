@@ -15,12 +15,12 @@ html {
    background-size: auto 100%;
    background-size: cover;
    background-position: center center;
-   background-repeat: no-repeat
+   background-repeat: repeat-y;
 }
 
 body {
    display: flex;
-   background: rgba(0, 0, 0, 0.60);
+   background-color: transparent;
    font-family: 'Open Sans', Arial, sans-serif;
    color: white;
 }
@@ -62,7 +62,7 @@ ul {
 }
 
 a {
-   color: white
+   color: green
 }
 
 a.install-link {
@@ -95,8 +95,11 @@ button:active {
 }
 
 #addon {
-   width: 40vh;
+   width: 90vh;
    margin: auto;
+   padding-left: 10%;
+   padding-right: 10%;
+   background: rgba(0, 0, 0, 0.60);
 }
 
 .logo {
@@ -173,6 +176,7 @@ button:active {
   height: 3.5vh;
   width: 100%;
   margin: auto;
+  margin-bottom: 10px;
   padding: 6px 12px;
   border: 0;
   border-radius: 0;
@@ -184,12 +188,21 @@ button:active {
 `;
 const { Providers } = require('./manifest');
 const { SortOptions } = require('./sort');
+const { DebridOptions } = require('../moch/options');
+const { MochOptions } = require('../moch/moch');
 
 function landingTemplate(manifest, config = {}) {
   const providers = config.providers || [];
-  const realDebridApiKey = config.realdebrid || '';
   const sort = config.sort || SortOptions.options.qualitySeeders.key;
   const limit = config.limit || '';
+
+  const debridOptions = config[DebridOptions.key] || [];
+  const realDebridApiKey = config[MochOptions.realdebrid.key] || '';
+  const allDebridApiKey = config[MochOptions.alldebrid.key] || '';
+  const putioKey = config[MochOptions.putio.key] || '';
+  const putioClientId = putioKey.replace(/@.*/, '');
+  const putioToken = putioKey.replace(/.*@/, '');
+
   const background = manifest.background || 'https://dl.strem.io/addon-background.jpg';
   const logo = manifest.logo || 'https://dl.strem.io/addon-logo.png';
   const contactHTML = manifest.contactEmail ?
@@ -202,6 +215,9 @@ function landingTemplate(manifest, config = {}) {
       .join('\n');
   const sortOptionsHTML = Object.values(SortOptions.options)
       .map((option, i) => `<option value="${option.key}" ${i === 0 ? 'selected' : ''}>${option.description}</option>`)
+      .join('\n');
+  const debridOptionsHTML = Object.values(DebridOptions.options)
+      .map((option) => `<option value="${option.key}">${option.description}</option>`)
       .join('\n');
   const stylizedTypes = manifest.types
       .map(t => t[0].toUpperCase() + t.slice(1) + (t !== 'series' ? 's' : ''));
@@ -254,8 +270,20 @@ function landingTemplate(manifest, config = {}) {
          <label class="label" id="iLimitLabel" for="iLimit">Max results per quality:</label>
          <input type="text" id="iLimit" onchange="generateInstallLink()" class="input"  placeholder="All results">
          
-         <label class="label" for="iRealDebrid">(Experimental) RealDebrid API Key:</label>
+         <label class="label" for="iDebridOptions">Debrid options:</label>
+         <select id="iDebridOptions" class="input" name="debridOptions[]" multiple="multiple">
+            ${debridOptionsHTML}
+         </select>
+         
+         <label class="label" for="iRealDebrid">RealDebrid API Key (Find it <a href='https://real-debrid.com/apitoken' target="_blank">here</a>):</label>
          <input type="text" id="iRealDebrid" onchange="generateInstallLink()" class="input">
+         
+         <label class="label" for="iAllDebrid">AllDebrid API Key (Create it <a href='https://alldebrid.com/apikeys' target="_blank">here</a>):</label>
+         <input type="text" id="iAllDebrid" onchange="generateInstallLink()" class="input">
+         
+         <label class="label" for="iPutio">Put.io ClientId and Token (Create new OAuth App <a href='https://app.put.io/settings/account/oauth/apps' target="_blank">here</a>):</label>
+         <input type="text" id="iPutioClientId" placeholder="ClientId" onchange="generateInstallLink()" class="input">
+         <input type="text" id="iPutioToken" placeholder="Token" onchange="generateInstallLink()" class="input">
          
          <div class="separator"></div>
 
@@ -271,14 +299,22 @@ function landingTemplate(manifest, config = {}) {
                   onChange: () => generateInstallLink()
               });
               $('#iProviders').multiselect('select', [${providers.map(provider => '"' + provider + '"')}]);
+              $('#iDebridOptions').multiselect({ 
+                  nonSelectedText: 'None',
+                  onChange: () => generateInstallLink()
+              });
+              $('#iDebridOptions').multiselect('select', [${debridOptions.map(option => '"' + option + '"')}]);
               $('#iRealDebrid').val("${realDebridApiKey}");
+              $('#iAllDebrid').val("${allDebridApiKey}");
+              $('#iPutioClientId').val("${putioClientId}");
+              $('#iPutioToken').val("${putioToken}");
               $('#iSort').val("${sort}");
               $('#iLimit').val("${limit}");
               generateInstallLink();
           });
           
           function sortModeChange() {
-            if (['${SortOptions.options.qualitySeeders.key}', '${SortOptions.options.qualitySize.key}'].includes($('#iSort').val())) {
+            if (['${SortOptions.options.seeders.key}', '${SortOptions.options.size.key}'].includes($('#iSort').val())) {
               $("#iLimitLabel").text("Max results:");
             } else {
               $("#iLimitLabel").text("Max results per quality:");
@@ -287,17 +323,35 @@ function landingTemplate(manifest, config = {}) {
           }
           
           function generateInstallLink() {
-              const providersValue = $('#iProviders').val().join(',');
-              const realDebridValue = $('#iRealDebrid').val();
-              const sortValue = $('#iSort').val();
-              const limitValue = $('#iLimit').val();
+              const providersValue = $('#iProviders').val().join(',') || '';
+              const sortValue = $('#iSort').val() || '';
+              const limitValue = $('#iLimit').val() || '';
               
-              const providers = providersValue && providersValue.length ? 'providers=' + providersValue : '';
-              const realDebrid = realDebridValue && realDebridValue.length ? 'realdebrid=' + realDebridValue : '';
-              const sort = sortValue !== '${SortOptions.options.qualitySeeders.key}' ? 'sort=' + sortValue : '';
-              const limit = /^[1-9][0-9]*$/.test(limitValue) ? 'limit=' + limitValue : '';
+              const debridOptionsValue = $('#iDebridOptions').val().join(',') || '';
+              const realDebridValue = $('#iRealDebrid').val() || '';
+              const allDebridValue = $('#iAllDebrid').val() || '';
+              const putioClientIdValue = $('#iPutioClientId').val() || '';
+              const putioTokenValue = $('#iPutioToken').val() || '';
               
-              const configurationValue = [providers, sort, limit, realDebrid].filter(value => value.length).join('|');
+              
+              const providers = providersValue.length && providersValue;
+              const sort = sortValue !== '${SortOptions.options.qualitySeeders.key}' && sortValue;
+              const limit = /^[1-9][0-9]*$/.test(limitValue) && limitValue;
+              
+              const debridOptions = debridOptionsValue.length && debridOptionsValue.trim();
+              const realDebrid = realDebridValue.length && realDebridValue.trim();
+              const allDebrid = allDebridValue.length && allDebridValue.trim();
+              const putio = putioClientIdValue.length && putioTokenValue.length && putioClientIdValue.trim() + '@' + putioTokenValue.trim();
+              
+              const configurationValue = [
+                    ['providers', providers], 
+                    ['${SortOptions.key}', sort], 
+                    ['limit', limit], 
+                    ['${DebridOptions.key}', debridOptions], 
+                    ['${MochOptions.realdebrid.key}', realDebrid], 
+                    ['${MochOptions.alldebrid.key}', allDebrid], 
+                    ['${MochOptions.putio.key}', putio]
+                  ].filter(([_, value]) => value.length).map(([key, value]) => key + '=' + value).join('|');
               const configuration = configurationValue && configurationValue.length ? '/' + configurationValue : '';
               installLink.href = 'stremio://' + window.location.host + configuration + '/manifest.json';
           }
