@@ -4,6 +4,7 @@ const VIDEO_EXTENSIONS = [
   "avi",
   "flv",
   "mkv",
+  "mk3d",
   "mov",
   "mp2",
   "mp4",
