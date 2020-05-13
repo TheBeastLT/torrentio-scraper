@@ -389,7 +389,7 @@ function findMovieKitsuId(title) {
 }
 
 function isDiskTorrent(contents) {
-  return contents.some(content => isDisk(content));
+  return contents.some(content => isDisk(content.path));
 }
 
 function isSingleMovie(videos) {
