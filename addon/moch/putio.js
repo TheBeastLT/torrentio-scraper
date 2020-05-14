@@ -20,7 +20,7 @@ async function getCachedStreams(streams, apiKey) {
 }
 
 async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex }) {
-  console.log(`Unrestricting ${infoHash} [${fileIndex}]`);
+  console.log(`Unrestricting Putio ${infoHash} [${fileIndex}]`);
   const clientId = apiKey.replace(/@.*/, '');
   const token = apiKey.replace(/.*@/, '');
   const Putio = new PutioAPI({ clientID: clientId });
@@ -77,14 +77,14 @@ async function _getNewTorrent(Putio, torrentId, pollCounter = 0, pollRate = 2000
 }
 
 async function _unrestrictLink(Putio, torrent, encodedFileName, fileIndex) {
-  const targetVideo = await _getTargetFile(Putio, torrent, encodedFileName, fileIndex)
+  const targetVideo = await _getTargetFile(Putio, torrent, encodedFileName, fileIndex);
   const publicToken = await _getPublicToken(Putio, targetVideo.id);
   const publicFile = await Putio.File.Public(publicToken).then(response => response.data.parent);
 
   if (!publicFile.stream_url || !publicFile.stream_url.length) {
-    return Promise.reject("No available links found");
+    return Promise.reject(`No available links found for [${torrent.hash}] ${encodedFileName}`);
   }
-  console.log(`Unrestricted ${torrent.hash} [${fileIndex}] to ${publicFile.stream_url}`);
+  console.log(`Unrestricted Putio ${torrent.hash} [${fileIndex}] to ${publicFile.stream_url}`);
   return publicFile.stream_url;
 }
 
@@ -107,11 +107,15 @@ async function _getTargetFile(Putio, torrent, encodedFileName, fileIndex) {
             .then(results => results.reduce((a, b) => a.concat(b), []))
         : [];
   }
-  return targetFile;
+  return targetFile ? targetFile : Promise.reject(`No target file found for Putio [${torrent.hash}] ${targetFileName}`);
 }
 
 async function _getFiles(Putio, fileId) {
-  return Putio.Files.Query(fileId).then(response => response.data.files);
+  const response = await Putio.Files.Query(fileId)
+      .catch(error => Promise.reject({ ...error.data, path: error.request.path }));
+  return response.data.files.length
+      ? response.data.files
+      : [response.data.parent];
 }
 
 async function _getPublicToken(Putio, targetVideoId) {
