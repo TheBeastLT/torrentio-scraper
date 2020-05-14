@@ -30,8 +30,10 @@ async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex }) {
   if (torrent && statusReady(torrent.status)) {
     return _unrestrictLink(Putio, torrent, cachedEntryInfo, fileIndex);
   } else if (torrent && statusDownloading(torrent.status)) {
+    console.log(`Downloading to Putio ${infoHash} [${fileIndex}]...`);
     return StaticResponse.DOWNLOADING;
   } else if (torrent && statusError(torrent.status)) {
+    console.log(`Retrying downloading to Putio ${infoHash} [${fileIndex}]...`);
     return _retryCreateTorrent(Putio, infoHash, cachedEntryInfo, fileIndex);
   }
   return Promise.reject("Failed Putio adding torrent");
@@ -58,7 +60,7 @@ async function _findTorrent(Putio, infoHash) {
   const foundTorrents = torrents.filter(torrent => torrent.source.toLowerCase().includes(infoHash));
   const nonFailedTorrent = foundTorrents.find(torrent => !statusError(torrent.status));
   const foundTorrent = nonFailedTorrent || foundTorrents[0];
-  return foundTorrent || Promise.reject('No recent torrent found');
+  return foundTorrent || Promise.reject('No recent torrent found in Putio');
 }
 
 async function _createTorrent(Putio, infoHash) {
@@ -82,7 +84,7 @@ async function _unrestrictLink(Putio, torrent, encodedFileName, fileIndex) {
   const publicFile = await Putio.File.Public(publicToken).then(response => response.data.parent);
 
   if (!publicFile.stream_url || !publicFile.stream_url.length) {
-    return Promise.reject(`No available links found for [${torrent.hash}] ${encodedFileName}`);
+    return Promise.reject(`No Putio links found for [${torrent.hash}] ${encodedFileName}`);
   }
   console.log(`Unrestricted Putio ${torrent.hash} [${fileIndex}] to ${publicFile.stream_url}`);
   return publicFile.stream_url;

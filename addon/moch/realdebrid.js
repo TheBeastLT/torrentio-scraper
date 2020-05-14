@@ -45,21 +45,25 @@ function _getCachedFileIds(fileIndex, hosterResults) {
 }
 
 async function resolve({ apiKey, infoHash, cachedEntryInfo, fileIndex }) {
-  console.log(`Unrestricting ${infoHash} [${fileIndex}]`);
+  console.log(`Unrestricting RealDebrid ${infoHash} [${fileIndex}]`);
   const options = await getDefaultOptions(apiKey);
   const RD = new RealDebridClient(apiKey, options);
   const torrentId = await _createOrFindTorrentId(RD, infoHash, cachedEntryInfo);
-  const torrent = torrentId && await RD.torrents.info(torrentId);
+  const torrent = await _getTorrentInfo(RD, torrentId);
   if (torrent && statusReady(torrent.status)) {
     return _unrestrictLink(RD, torrent, fileIndex);
   } else if (torrent && statusDownloading(torrent.status)) {
+    console.log(`Downloading to RealDebrid ${infoHash} [${fileIndex}]...`);
     return StaticResponse.DOWNLOADING;
   } else if (torrent && statusError(torrent.status)) {
+    console.log(`Retrying downloading to RealDebrid ${infoHash} [${fileIndex}]...`);
     return _retryCreateTorrent(RD, infoHash, cachedEntryInfo, fileIndex);
   } else if (torrent && statusWaitingSelection(torrent.status)) {
+    console.log(`Trying to select files on RealDebrid ${infoHash} [${fileIndex}]...`);
     await _selectTorrentFiles(RD, torrent);
     return StaticResponse.DOWNLOADING;
   } else if (torrent && torrent.code === 9) {
+    console.log(`Access denied to RealDebrid ${infoHash} [${fileIndex}]`);
     return StaticResponse.FAILED_ACCESS;
   }
   return Promise.reject("Failed RealDebrid adding torrent");
@@ -76,18 +80,25 @@ async function _createOrFindTorrentId(RD, infoHash, cachedFileIds) {
 
 async function _retryCreateTorrent(RD, infoHash, cachedFileIds, fileIndex) {
   const newTorrentId = await _createTorrentId(RD, infoHash, cachedFileIds);
-  const newTorrent = await RD.torrents.info(newTorrentId);
+  const newTorrent = await _getTorrentInfo(RD, newTorrentId);
   return newTorrent && statusReady(newTorrent.status)
       ? _unrestrictLink(RD, newTorrent, fileIndex)
       : StaticResponse.FAILED_DOWNLOAD;
 }
 
 async function _findTorrent(RD, infoHash) {
-  const torrents = await RD.torrents.get(0, 1);
+  const torrents = await RD.torrents.get(0, 1) || [];
   const foundTorrents = torrents.filter(torrent => torrent.hash.toLowerCase() === infoHash);
   const nonFailedTorrent = foundTorrents.find(torrent => !statusError(torrent.status));
   const foundTorrent = nonFailedTorrent || foundTorrents[0];
   return foundTorrent && foundTorrent.id || Promise.reject('No recent torrent found');
+}
+
+async function _getTorrentInfo(RD, torrentId) {
+  if (!torrentId || typeof torrentId === 'object') {
+    return torrentId || Promise.reject('No RealDebrid torrentId provided')
+  }
+  return RD.torrents.info(torrentId);
 }
 
 async function _createTorrentId(RD, infoHash, cachedFileIds) {
@@ -101,10 +112,10 @@ async function _selectTorrentFiles(RD, torrent, cachedFileIds) {
     return RD.torrents.selectFiles(torrent.id, cachedFileIds);
   }
 
-  torrent = torrent.status ? torrent : await RD.torrents.info(torrent.id);
+  torrent = torrent.status ? torrent : await _getTorrentInfo(RD, torrent.id);
   if (torrent && statusOpening(torrent.status)) {
     // sleep for 2 seconds, maybe the torrent will be converted
-    torrent = await delay(2000).then(() => RD.torrents.info(torrent.id));
+    torrent = await delay(2000).then(() => _getTorrentInfo(RD, torrent.id));
   }
   if (torrent && torrent.files && statusWaitingSelection(torrent.status)) {
     const videoFileIds = torrent.files
@@ -131,7 +142,7 @@ async function _unrestrictLink(RD, torrent, fileIndex) {
       : torrent.links[selectedFiles.indexOf(targetFile)];
 
   if (!fileLink || !fileLink.length) {
-    return Promise.reject("No available links found");
+    return Promise.reject(`No RealDebrid links found for ${torrent.hash} [${fileIndex}]`);
   }
 
   const unrestrictedLink = await RD.unrestrict.link(fileLink).then(response => response.download);
@@ -139,7 +150,7 @@ async function _unrestrictLink(RD, torrent, fileIndex) {
     return StaticResponse.FAILED_RAR;
   }
   // const transcodedLink = await RD.streaming.transcode(unrestrictedLink.id);
-  console.log(`Unrestricted ${torrent.hash} [${fileIndex}] to ${unrestrictedLink}`);
+  console.log(`Unrestricted RealDebrid ${torrent.hash} [${fileIndex}] to ${unrestrictedLink}`);
   return unrestrictedLink;
 }
 
