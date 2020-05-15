@@ -86,7 +86,7 @@ async function _unrestrictLink(AD, torrent, encodedFileName, fileIndex) {
       ? videos.find(video => targetFileName.includes(video.filename))
       : videos.sort((a, b) => b.size - a.size)[0];
 
-  if (!targetVideo || targetVideo.link || !targetVideo.link.length) {
+  if (!targetVideo || !targetVideo.link || !targetVideo.link.length) {
     return Promise.reject(`No AllDebrid links found for [${torrent.hash}] ${encodedFileName}`);
   }
   const unrestrictedLink = await AD.link.unlock(targetVideo.link).then(response => response.data.link);
