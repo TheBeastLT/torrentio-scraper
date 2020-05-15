@@ -400,7 +400,7 @@ function isSingleMovie(videos) {
 }
 
 function isFeaturette(video) {
-  return /(?:featurettes?|extras-grym)\//i.test(video.path);
+  return /featurettes?\/|extras-grym/i.test(video.path);
 }
 
 function clearInfoFields(video) {
