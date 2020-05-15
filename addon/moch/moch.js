@@ -70,7 +70,7 @@ async function applyMochs(streams, config) {
 async function resolve(parameters) {
   const moch = MOCHS[parameters.mochKey];
   if (!moch) {
-    return Promise.reject('Not a valid moch provider');
+    return Promise.reject(`Not a valid moch provider: ${parameters.mochKey}`);
   }
 
   if (!parameters.apiKey || !parameters.infoHash || !parameters.cachedEntryInfo) {

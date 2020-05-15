@@ -13,7 +13,7 @@ async function getCachedStreams(streams, apiKey) {
         console.warn('Failed AllDebrid cached torrent availability request: ', error);
         return undefined;
       });
-  return available && available.data && streams
+  return available && available.data && available.data.magnets && streams
       .reduce((mochStreams, stream) => {
         const cachedEntry = available.data.magnets.find(magnet => stream.infoHash === magnet.hash.toLowerCase());
         const streamTitleParts = stream.title.replace(/\n👤.*/s, '').split('\n');
@@ -29,20 +29,23 @@ async function getCachedStreams(streams, apiKey) {
 }
 
 async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex }) {
-  console.log(`Unrestricting ${infoHash} [${fileIndex}]`);
+  console.log(`Unrestricting AllDebrid ${infoHash} [${fileIndex}]`);
   const options = await getDefaultOptions(apiKey, ip);
   const AD = new AllDebridClient(apiKey, options);
   const torrent = await _createOrFindTorrent(AD, infoHash);
   if (torrent && statusReady(torrent.statusCode)) {
     return _unrestrictLink(AD, torrent, cachedEntryInfo, fileIndex);
   } else if (torrent && statusDownloading(torrent.statusCode)) {
+    console.log(`Downloading to AllDebrid ${infoHash} [${fileIndex}]...`);
     return StaticResponse.DOWNLOADING;
   } else if (torrent && statusHandledError(torrent.statusCode)) {
+    console.log(`Retrying downloading to AllDebrid ${infoHash} [${fileIndex}]...`);
     return _retryCreateTorrent(AD, infoHash, cachedEntryInfo, fileIndex);
   } else if (torrent && errorExpiredSubscriptionError(torrent)) {
+    console.log(`Access denied to AllDebrid ${infoHash} [${fileIndex}]`);
     return StaticResponse.FAILED_ACCESS;
   }
-  return Promise.reject("Failed AllDebrid adding torrent");
+  return Promise.reject(`Failed AllDebrid adding torrent ${torrent}`);
 }
 
 async function _createOrFindTorrent(AD, infoHash) {
@@ -83,11 +86,11 @@ async function _unrestrictLink(AD, torrent, encodedFileName, fileIndex) {
       ? videos.find(video => targetFileName.includes(video.filename))
       : videos.sort((a, b) => b.size - a.size)[0];
 
-  if (!targetVideo.link || !targetVideo.link.length) {
-    return Promise.reject("No available links found");
+  if (!targetVideo || targetVideo.link || !targetVideo.link.length) {
+    return Promise.reject(`No AllDebrid links found for [${torrent.hash}] ${encodedFileName}`);
   }
   const unrestrictedLink = await AD.link.unlock(targetVideo.link).then(response => response.data.link);
-  console.log(`Unrestricted ${torrent.hash} [${fileIndex}] to ${unrestrictedLink}`);
+  console.log(`Unrestricted AllDebrid ${torrent.hash} [${fileIndex}] to ${unrestrictedLink}`);
   return unrestrictedLink;
 }
 
