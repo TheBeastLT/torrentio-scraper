@@ -13,7 +13,7 @@ function toStreamInfo(record) {
   const title = joinDetailParts(
       [
         joinDetailParts([record.torrent.title.replace(/[, ]+/g, ' ')]),
-        joinDetailParts([!sameInfo && record.title.replace(/[, ]+/g, ' ') || undefined]),
+        joinDetailParts([!sameInfo && record.title || undefined]),
         joinDetailParts([
           joinDetailParts([record.torrent.seeders], '👤 '),
           joinDetailParts([formatSize(record.size)], '💾 '),
