@@ -113,8 +113,9 @@ async function createTorrentContents(torrent) {
   }
   const notOpenedVideo = storedVideos.length === 1 && !Number.isInteger(storedVideos[0].fileIndex);
   const imdbId = Promises.mostCommonValue(storedVideos.map(stored => stored.imdbId));
+  const kitsuId = Promises.mostCommonValue(storedVideos.map(stored => stored.kitsuId));
 
-  const { contents, videos, subtitles } = await parseTorrentFiles({ ...torrent.get(), imdbId })
+  const { contents, videos, subtitles } = await parseTorrentFiles({ ...torrent.get(), imdbId, kitsuId })
       .then(torrentContents => notOpenedVideo ? torrentContents : { ...torrentContents, videos: storedVideos })
       .then(torrentContents => assignSubtitles(torrentContents))
       .catch(error => {
