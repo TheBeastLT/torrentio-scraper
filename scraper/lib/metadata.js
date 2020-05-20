@@ -16,7 +16,7 @@ function getMetadata(id, type = Type.SERIES) {
     return Promise.reject("no valid id provided");
   }
 
-  const key = id.match(/^\d+$/) ? `kitsu:${id}` : id;
+  const key = Number.isInteger(id) || id.match(/^\d+$/) ? `kitsu:${id}` : id;
   const metaType = type === Type.MOVIE ? Type.MOVIE : Type.SERIES;
   return cacheWrapMetadata(key,
       () => _requestMetadata(`${KITSU_URL}/meta/${metaType}/${key}.json`)
