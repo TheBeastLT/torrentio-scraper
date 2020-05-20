@@ -34,7 +34,9 @@ async function parseTorrentFiles(torrent) {
 
 async function parseMovieFiles(torrent, parsedName, metadata) {
   const { contents, videos, subtitles } = await getMoviesTorrentContent(torrent, parsedName);
-  const filteredVideos = videos.filter(file => file.size > MIN_SIZE);
+  const filteredVideos = videos
+      .filter(video => video.size > MIN_SIZE)
+      .filter(video => !isFeaturette(video));
   if (isSingleMovie(filteredVideos)) {
     const parsedVideos = filteredVideos.map(video => ({
       infoHash: torrent.infoHash,
