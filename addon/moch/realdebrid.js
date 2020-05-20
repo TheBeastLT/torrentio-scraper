@@ -1,6 +1,6 @@
 const RealDebridClient = require('real-debrid-api');
 const { encode } = require('magnet-uri');
-const isVideo = require('../lib/video');
+const { isVideo, isArchive } = require('../lib/extension');
 const delay = require('./delay');
 const StaticResponse = require('./static');
 const { getRandomProxy, getRandomUserAgent } = require('../lib/request_helper');
@@ -146,7 +146,7 @@ async function _unrestrictLink(RD, torrent, fileIndex) {
   }
 
   const unrestrictedLink = await RD.unrestrict.link(fileLink).then(response => response.download);
-  if (!isVideo(unrestrictedLink)) {
+  if (isArchive(unrestrictedLink)) {
     return StaticResponse.FAILED_RAR;
   }
   // const transcodedLink = await RD.streaming.transcode(unrestrictedLink.id);

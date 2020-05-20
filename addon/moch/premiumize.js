@@ -1,6 +1,6 @@
 const PremiumizeClient = require('premiumize-api');
 const { encode } = require('magnet-uri');
-const isVideo = require('../lib/video');
+const { isVideo } = require('../lib/extension');
 const StaticResponse = require('./static');
 const { getRandomProxy, getRandomUserAgent } = require('../lib/request_helper');
 const { cacheWrapProxy, cacheUserAgent } = require('../lib/cache');

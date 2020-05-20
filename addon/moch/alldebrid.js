@@ -1,5 +1,5 @@
 const AllDebridClient = require('all-debrid-api');
-const isVideo = require('../lib/video');
+const { isVideo, isArchive } = require('../lib/extension');
 const StaticResponse = require('./static');
 const { getRandomProxy, getRandomUserAgent } = require('../lib/request_helper');
 const { cacheWrapProxy, cacheUserAgent } = require('../lib/cache');
@@ -86,6 +86,10 @@ async function _unrestrictLink(AD, torrent, encodedFileName, fileIndex) {
       ? videos.find(video => targetFileName.includes(video.filename))
       : videos.sort((a, b) => b.size - a.size)[0];
 
+  if (!targetVideo && torrent.links.every(link => isArchive(link.filename))) {
+    console.log(`Only AllDebrid archive is available for [${torrent.hash}] ${encodedFileName}`)
+    return StaticResponse.FAILED_RAR;
+  }
   if (!targetVideo || !targetVideo.link || !targetVideo.link.length) {
     return Promise.reject(`No AllDebrid links found for [${torrent.hash}] ${encodedFileName}`);
   }
