@@ -55,7 +55,7 @@ function sortBySeeders(streams, limit) {
 }
 
 function sortBySize(streams, limit) {
-  return streams
+  return sortBySeeders(streams)
       .sort((a, b) => {
         const aSize = extractSize(a.title);
         const bSize = extractSize(b.title);
