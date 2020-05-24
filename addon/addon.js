@@ -26,7 +26,7 @@ builder.defineStreamHandler((args) => {
     return Promise.resolve({ streams: [] });
   }
 
-  return limiter.schedule(() => cacheWrapStream(args.id, () => streamHandler(args)
+  return cacheWrapStream(args.id, () => limiter.schedule(() => streamHandler(args)
       .then(records => records
           .sort((a, b) => b.torrent.seeders - a.torrent.seeders || b.torrent.uploadDate - a.torrent.uploadDate)
           .map(record => toStreamInfo(record)))))
