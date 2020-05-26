@@ -16,13 +16,12 @@ const limiter = rateLimit({
 router.use(limiter);
 
 router.get('/', (_, res) => {
-  const landingHTML = landingTemplate(manifest());
-  res.setHeader('content-type', 'text/html');
-  res.end(landingHTML);
+  res.redirect('/configure')
+  res.end();
 });
 
-router.get('/:configuration', (req, res) => {
-  const configValues = parseConfiguration(req.params.configuration);
+router.get('/:configuration?/configure', (req, res) => {
+  const configValues = parseConfiguration(req.params.configuration || '');
   const landingHTML = landingTemplate(manifest(configValues), configValues);
   res.setHeader('content-type', 'text/html');
   res.end(landingHTML);

@@ -35,6 +35,10 @@ function manifest(config = {}) {
     idPrefixes: ['tt', 'kitsu'],
     background: `https://i.ibb.co/VtSfFP9/t8wVwcg.jpg`,
     logo: `https://i.ibb.co/w4BnkC9/GwxAcDV.png`,
+    behaviorHints: {
+      configurable: true,
+      configurationRequired: false
+    }
   }
 }
 
