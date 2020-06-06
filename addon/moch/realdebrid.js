@@ -3,20 +3,14 @@ const { encode } = require('magnet-uri');
 const { isVideo, isArchive } = require('../lib/extension');
 const delay = require('./delay');
 const StaticResponse = require('./static');
-const { getRandomProxy, getRandomUserAgent } = require('../lib/request_helper');
-const { cacheWrapProxy, cacheUserAgent } = require('../lib/cache');
+const { getRandomProxy, getRandomUserAgent, blacklistProxy } = require('../lib/request_helper');
+const { cacheWrapProxy, cacheUserAgent, uncacheProxy } = require('../lib/cache');
 
 const MIN_SIZE = 15728640; // 15 MB
 
 async function getCachedStreams(streams, apiKey) {
-  const options = await getDefaultOptions(apiKey);
-  const RD = new RealDebridClient(apiKey, options);
   const hashes = streams.map(stream => stream.infoHash);
-  const available = await RD.torrents.instantAvailability(hashes)
-      .catch(error => {
-        console.warn('Failed RealDebrid cached torrent availability request: ', error);
-        return undefined;
-      });
+  const available = await _getInstantAvailable(hashes, apiKey);
   return available && streams
       .reduce((mochStreams, stream) => {
         const cachedEntry = available[stream.infoHash];
@@ -28,6 +22,20 @@ async function getCachedStreams(streams, apiKey) {
         };
         return mochStreams;
       }, {})
+}
+
+async function _getInstantAvailable(hashes, apiKey, retries = 3) {
+  const options = await getDefaultOptions(apiKey);
+  const RD = new RealDebridClient(apiKey, options);
+  return RD.torrents.instantAvailability(hashes)
+      .catch(error => {
+        if (retries > 0 && ['ENOTFOUND', 'ETIMEDOUT'].some(v => error.message && error.message.includes(v))) {
+          blacklistProxy(options.proxy);
+          return uncacheProxy('moch').then(() => _getInstantAvailable(hashes, apiKey, retries - 1));
+        }
+        console.warn('Failed RealDebrid cached torrent availability request: ', error);
+        return undefined;
+      });
 }
 
 function _getCachedFileIds(fileIndex, hosterResults) {

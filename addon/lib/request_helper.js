@@ -17,4 +17,12 @@ function getRandomProxy() {
   return undefined;
 }
 
-module.exports = { getRandomUserAgent, getRandomProxy };
+function blacklistProxy(proxy) {
+  const proxyHost = proxy.replace(/.*@/, '');
+  console.warn(`Blacklisting ${proxyHost}`);
+  if (PROXY_HOSTS && PROXY_HOSTS.indexOf(proxyHost) > -1) {
+    PROXY_HOSTS.splice(PROXY_HOSTS.indexOf(proxyHost), 1);
+  }
+}
+
+module.exports = { getRandomUserAgent, getRandomProxy, blacklistProxy };

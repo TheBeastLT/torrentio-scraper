@@ -68,5 +68,9 @@ function cacheUserAgent(id, method) {
   return cacheWrap(remoteCache, `${USER_AGENT_KEY_PREFIX}:${id}`, method, { ttl: USER_AGENT_TTL });
 }
 
-module.exports = { cacheWrapStream, cacheWrapResolvedUrl, cacheWrapProxy, cacheUserAgent };
+function uncacheProxy(id) {
+  return remoteCache.del(`${PROXY_KEY_PREFIX}:${id}`);
+}
+
+module.exports = { cacheWrapStream, cacheWrapResolvedUrl, cacheWrapProxy, cacheUserAgent, uncacheProxy };
 
