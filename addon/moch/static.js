@@ -1,8 +1,9 @@
-// https://gofile.io/d/ZYlcAI
+const RESOLVER_HOST = process.env.RESOLVER_HOST || 'http://localhost:7050';
+
 module.exports = {
-  DOWNLOADING: 'https://srv-file9.gofile.io/download/ZYlcAI/downloaded.mp4',
-  FAILED_DOWNLOAD: 'https://srv-file9.gofile.io/download/ZYlcAI/download_failed.mp4',
-  FAILED_ACCESS: 'https://srv-file9.gofile.io/download/ZYlcAI/failed_access.mp4',
-  FAILED_RAR: 'https://srv-file9.gofile.io/download/ZYlcAI/failed_rar.mp4',
-  FAILED_UNEXPECTED: 'https://srv-file9.gofile.io/download/ZYlcAI/failed_unexpected.mp4'
+  DOWNLOADING: `${RESOLVER_HOST}/videos/download_failed_v1.mp4`,
+  FAILED_DOWNLOAD: `${RESOLVER_HOST}/videos/downloaded_v1.mp4`,
+  FAILED_ACCESS: `${RESOLVER_HOST}/videos/failed_access_v1.mp4`,
+  FAILED_RAR: `${RESOLVER_HOST}/videos/failed_rar_v1.mp4`,
+  FAILED_UNEXPECTED: `${RESOLVER_HOST}/videos/failed_unexpected_v1.mp4`
 }
