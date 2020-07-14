@@ -56,7 +56,7 @@ async function resolve({ apiKey, infoHash, cachedEntryInfo, fileIndex }) {
   console.log(`Unrestricting RealDebrid ${infoHash} [${fileIndex}]`);
   const options = await getDefaultOptions(apiKey);
   const RD = new RealDebridClient(apiKey, options);
-  const torrentId = await _createOrFindTorrentId(RD, infoHash, cachedEntryInfo);
+  const torrentId = await _createOrFindTorrentId(RD, infoHash, cachedEntryInfo, fileIndex);
   const torrent = await _getTorrentInfo(RD, torrentId);
   if (torrent && statusReady(torrent.status)) {
     return _unrestrictLink(RD, torrent, fileIndex);
@@ -77,8 +77,8 @@ async function resolve({ apiKey, infoHash, cachedEntryInfo, fileIndex }) {
   return Promise.reject("Failed RealDebrid adding torrent");
 }
 
-async function _createOrFindTorrentId(RD, infoHash, cachedFileIds) {
-  return _findTorrent(RD, infoHash)
+async function _createOrFindTorrentId(RD, infoHash, cachedFileIds, fileIndex) {
+  return _findTorrent(RD, infoHash, fileIndex)
       .catch(() => _createTorrentId(RD, infoHash, cachedFileIds))
       .catch(error => {
         console.warn('Failed RealDebrid torrent retrieval', error);
@@ -94,12 +94,24 @@ async function _retryCreateTorrent(RD, infoHash, cachedFileIds, fileIndex) {
       : StaticResponse.FAILED_DOWNLOAD;
 }
 
-async function _findTorrent(RD, infoHash) {
+async function _findTorrent(RD, infoHash, fileIndex) {
   const torrents = await RD.torrents.get(0, 1) || [];
   const foundTorrents = torrents.filter(torrent => torrent.hash.toLowerCase() === infoHash);
-  const nonFailedTorrent = foundTorrents.find(torrent => !statusError(torrent.status));
+  const nonFailedTorrents = foundTorrents.filter(torrent => !statusError(torrent.status));
+  const nonFailedTorrent = await _findBestFitTorrent(RD, nonFailedTorrents, fileIndex);
   const foundTorrent = nonFailedTorrent || foundTorrents[0];
   return foundTorrent && foundTorrent.id || Promise.reject('No recent torrent found');
+}
+
+async function _findBestFitTorrent(RD, torrents, fileIndex) {
+  if (torrents.length === 1) {
+    return torrents[0];
+  }
+  const torrentInfos = await Promise.all(torrents.map(torrent => _getTorrentInfo(RD, torrent.id)));
+  const bestFitTorrents = torrentInfos
+      .filter(torrent => torrent.files.find(f => f.id === fileIndex + 1 && f.selected))
+      .sort((a, b) => b.links.length - a.links.length);
+  return bestFitTorrents[0] || torrents[0];
 }
 
 async function _getTorrentInfo(RD, torrentId) {
