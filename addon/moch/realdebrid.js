@@ -140,7 +140,7 @@ async function _unrestrictLink(RD, torrent, fileIndex) {
   const targetFile = torrent.files.find(file => file.id === fileIndex + 1)
       || torrent.files.filter(file => file.selected).sort((a, b) => b.bytes - a.bytes)[0];
   if (!targetFile.selected) {
-    await _selectTorrentFiles(RD, torrent, `${fileIndex + 1}`);
+    await _retryCreateTorrent(RD, torrent.hash.toLowerCase(), undefined, fileIndex);
     return StaticResponse.DOWNLOADING;
   }
 
