@@ -1787,7 +1787,10 @@
   },
   "Shingeki no Kyojin S3": {
     "showId": "443",
-    "kitsu_id": "13569"
+    "kitsu_id": [
+      "13569",
+      "41982"
+    ]
   },
   "Shingeki! Kyojin Chuugakkou": {
     "showId": "444",
@@ -2599,7 +2602,10 @@
   },
   "Re Zero kara Hajimeru Isekai Seikatsu": {
     "showId": "660",
-    "kitsu_id": "13882"
+    "kitsu_id": [
+      "11209",
+      "42198"
+    ]
   },
   "Pan de Peace!": {
     "showId": "661",
@@ -5369,7 +5375,8 @@
     "kitsu_id": "40600"
   },
   "Re Zero kara Hajimeru Isekai Seikatsu - Director's Cut": {
-    "showId": "660"
+    "showId": "660",
+    "kitsu_id": "42903"
   },
   "Rikei ga Koi ni Ochita no de Shoumei shitemita": {
     "showId": "1368",
@@ -5545,5 +5552,77 @@
   "Kitsutsuki Tanteidokoro": {
     "showId": "1415",
     "kitsu_id": "42602"
+  },
+  "Enen no Shouboutai S2": {
+    "showId": "1416",
+    "kitsu_id": "42909"
+  },
+  "Dokyuu Hentai HxEros": {
+    "showId": "1417",
+    "kitsu_id": "42657"
+  },
+  "Healin Good Precure": {
+    "showId": "1418",
+    "kitsu_id": "42650"
+  },
+  "Maou Gakuin no Futekigousha": {
+    "showId": "1419",
+    "kitsu_id": "43005"
+  },
+  "Lapis ReLiGHTs": {
+    "showId": "1420",
+    "kitsu_id": "41115"
+  },
+  "The God of High School": {
+    "showId": "1421",
+    "kitsu_id": "43018"
+  },
+  "Umayon": {
+    "showId": "1422",
+    "kitsu_id": "42034"
+  },
+  "Deca-Dence": {
+    "showId": "1423",
+    "kitsu_id": "42433"
+  },
+  "Uzaki-chan wa Asobitai!": {
+    "showId": "1424",
+    "kitsu_id": "43094"
+  },
+  "Yahari Ore no Seishun Love Come wa Machigatteiru Kan": {
+    "showId": "1425",
+    "kitsu_id": "42194"
+  },
+  "Peter Grill to Kenja no Jikan": {
+    "showId": "1426",
+    "kitsu_id": "42563"
+  },
+  "Kanojo, Okarishimasu": {
+    "showId": "1427",
+    "kitsu_id": "43028"
+  },
+  "Monster Musume no Oisha-san": {
+    "showId": "1428",
+    "kitsu_id": "42724"
+  },
+  "Ninja Collection": {
+    "showId": "1429",
+    "kitsu_id": "43236"
+  },
+  "Gibiate": {
+    "showId": "1430",
+    "kitsu_id": "43124"
+  },
+  "Koi to Producer - Evol x Love": {
+    "showId": "1431",
+    "kitsu_id": "43240"
+  },
+  "Re Zero kara Hajimeru Isekai Seikatsu - Memory Snow": {
+    "showId": "1432",
+    "kitsu_id": "13882"
+  },
+  "Re Zero kara Hajimeru Isekai Seikatsu - Hyouketsu no Kizuna": {
+    "showId": "1433",
+    "kitsu_id": "42006"
   }
 }
