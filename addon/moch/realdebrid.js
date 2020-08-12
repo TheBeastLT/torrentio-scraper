@@ -57,8 +57,10 @@ async function resolve({ apiKey, infoHash, cachedEntryInfo, fileIndex }) {
   const options = await getDefaultOptions(apiKey);
   const RD = new RealDebridClient(apiKey, options);
   const torrentId = await _createOrFindTorrentId(RD, infoHash, cachedEntryInfo, fileIndex);
+  console.log(`Getting torrent info ${infoHash}`)
   const torrent = await _getTorrentInfo(RD, torrentId);
   if (torrent && statusReady(torrent.status)) {
+    console.log(`Trying unrestrict torrent ${infoHash}`)
     return _unrestrictLink(RD, torrent, fileIndex);
   } else if (torrent && statusDownloading(torrent.status)) {
     console.log(`Downloading to RealDebrid ${infoHash} [${fileIndex}]...`);
@@ -95,11 +97,13 @@ async function _retryCreateTorrent(RD, infoHash, cachedFileIds, fileIndex) {
 }
 
 async function _findTorrent(RD, infoHash, fileIndex) {
+  console.log(`Finding torrent ${infoHash}`)
   const torrents = await RD.torrents.get(0, 1) || [];
   const foundTorrents = torrents.filter(torrent => torrent.hash.toLowerCase() === infoHash);
   const nonFailedTorrents = foundTorrents.filter(torrent => !statusError(torrent.status));
   const nonFailedTorrent = await _findBestFitTorrent(RD, nonFailedTorrents, fileIndex);
   const foundTorrent = nonFailedTorrent || foundTorrents[0];
+  console.log(`Found torrent ${foundTorrent && foundTorrent.hash}`)
   return foundTorrent && foundTorrent.id || Promise.reject('No recent torrent found');
 }
 
@@ -122,13 +126,16 @@ async function _getTorrentInfo(RD, torrentId) {
 }
 
 async function _createTorrentId(RD, infoHash, cachedFileIds) {
+  console.log(`Creating torrent ${infoHash}`)
   const addedMagnet = await RD.torrents.addMagnet(encode({ infoHash }));
   await _selectTorrentFiles(RD, { id: addedMagnet.id }, cachedFileIds);
+  console.log(`Selected files ${infoHash}`)
   return addedMagnet.id;
 }
 
 async function _selectTorrentFiles(RD, torrent, cachedFileIds) {
   if (cachedFileIds && !['null', 'undefined'].includes(cachedFileIds)) {
+    console.log(`Selecting files ${torrent.hash}`)
     return RD.torrents.selectFiles(torrent.id, cachedFileIds);
   }
 
@@ -198,7 +205,7 @@ async function getDefaultOptions(id) {
   const userAgent = await cacheUserAgent(id, () => getRandomUserAgent()).catch(() => getRandomUserAgent());
   const proxy = await cacheWrapProxy('moch', () => getRandomProxy()).catch(() => getRandomProxy());
 
-  return { proxy: proxy, headers: { 'User-Agent': userAgent } };
+  return { timeout: 30000, proxy: proxy, headers: { 'User-Agent': userAgent } };
 }
 
 module.exports = { getCachedStreams, resolve };
