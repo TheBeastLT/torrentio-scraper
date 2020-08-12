@@ -11,7 +11,9 @@ function getRandomUserAgent() {
 
 function getRandomProxy() {
   if (PROXY_HOSTS && PROXY_HOSTS.length && PROXY_USERNAME && PROXY_PASSWORD) {
-    return `http://${PROXY_USERNAME}:${PROXY_PASSWORD}@${PROXY_HOSTS[Math.floor(Math.random() * PROXY_HOSTS.length)]}`;
+    const proxyHost = PROXY_HOSTS[Math.floor(Math.random() * PROXY_HOSTS.length)];
+    console.log(`Using ${proxyHost} proxy`);
+    return `http://${PROXY_USERNAME}:${PROXY_PASSWORD}@${proxyHost}`;
   }
   console.warn('No proxy configured!');
   return undefined;
