@@ -1,7 +1,7 @@
 const AllDebridClient = require('all-debrid-api');
 const { isVideo, isArchive } = require('../lib/extension');
 const StaticResponse = require('./static');
-const { getRandomProxy, getRandomUserAgent } = require('../lib/request_helper');
+const { getRandomProxy, getProxyAgent, getRandomUserAgent } = require('../lib/requestHelper');
 const { cacheWrapProxy, cacheUserAgent } = require('../lib/cache');
 
 async function getCachedStreams(streams, apiKey) {
@@ -101,8 +101,9 @@ async function _unrestrictLink(AD, torrent, encodedFileName, fileIndex) {
 async function getDefaultOptions(id, ip) {
   const userAgent = await cacheUserAgent(id, () => getRandomUserAgent()).catch(() => getRandomUserAgent());
   const proxy = await cacheWrapProxy('moch', () => getRandomProxy()).catch(() => getRandomProxy());
+  const agent = getProxyAgent(proxy);
 
-  return { proxy: proxy, headers: { 'User-Agent': userAgent } };
+  return { timeout: 30000, agent: agent, headers: { 'User-Agent': userAgent } };
 }
 
 function statusError(statusCode) {

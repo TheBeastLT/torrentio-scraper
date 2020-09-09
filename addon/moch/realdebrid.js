@@ -3,7 +3,7 @@ const { encode } = require('magnet-uri');
 const { isVideo, isArchive } = require('../lib/extension');
 const delay = require('./delay');
 const StaticResponse = require('./static');
-const { getRandomProxy, getRandomUserAgent, blacklistProxy } = require('../lib/request_helper');
+const { getRandomProxy, getProxyAgent, getRandomUserAgent, blacklistProxy } = require('../lib/requestHelper');
 const { cacheWrapProxy, cacheUserAgent, uncacheProxy } = require('../lib/cache');
 
 const MIN_SIZE = 15728640; // 15 MB
@@ -204,8 +204,9 @@ function statusReady(status) {
 async function getDefaultOptions(id) {
   const userAgent = await cacheUserAgent(id, () => getRandomUserAgent()).catch(() => getRandomUserAgent());
   const proxy = await cacheWrapProxy('moch', () => getRandomProxy()).catch(() => getRandomProxy());
+  const agent = getProxyAgent(proxy);
 
-  return { timeout: 30000, proxy: proxy, headers: { 'User-Agent': userAgent } };
+  return { timeout: 30000, agent: agent, headers: { 'User-Agent': userAgent } };
 }
 
 module.exports = { getCachedStreams, resolve };

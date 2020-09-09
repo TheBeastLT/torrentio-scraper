@@ -14,6 +14,7 @@
     "cache-manager": "^2.11.1",
     "cache-manager-mongodb": "^0.2.2",
     "express-rate-limit": "^5.1.1",
+    "https-proxy-agent": "^5.0.0",
     "magnet-uri": "^5.1.7",
     "named-queue": "^2.2.1",
     "needle": "^2.2.4",

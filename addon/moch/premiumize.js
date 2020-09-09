@@ -2,7 +2,7 @@ const PremiumizeClient = require('premiumize-api');
 const { encode } = require('magnet-uri');
 const { isVideo } = require('../lib/extension');
 const StaticResponse = require('./static');
-const { getRandomProxy, getRandomUserAgent } = require('../lib/request_helper');
+const { getRandomProxy, getProxyAgent, getRandomUserAgent } = require('../lib/requestHelper');
 const { cacheWrapProxy, cacheUserAgent } = require('../lib/cache');
 
 async function getCachedStreams(streams, apiKey) {
@@ -107,8 +107,9 @@ function statusReady(status) {
 async function getDefaultOptions(id, ip) {
   const userAgent = await cacheUserAgent(id, () => getRandomUserAgent()).catch(() => getRandomUserAgent());
   const proxy = await cacheWrapProxy('moch', () => getRandomProxy()).catch(() => getRandomProxy());
+  const agent = getProxyAgent(proxy);
 
-  return { proxy: proxy, headers: { 'User-Agent': userAgent } };
+  return { timeout: 30000, agent: agent, headers: { 'User-Agent': userAgent } };
 }
 
 module.exports = { getCachedStreams, resolve };
