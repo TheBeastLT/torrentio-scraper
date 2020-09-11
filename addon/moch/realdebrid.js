@@ -59,7 +59,6 @@ async function resolve({ apiKey, infoHash, cachedEntryInfo, fileIndex }) {
   const torrentId = await _createOrFindTorrentId(RD, infoHash, cachedEntryInfo, fileIndex);
   const torrent = await _getTorrentInfo(RD, torrentId);
   if (torrent && statusReady(torrent.status)) {
-    console.log(`Trying to unrestrict torrent ${infoHash} [${fileIndex}]`)
     return _unrestrictLink(RD, torrent, fileIndex);
   } else if (torrent && statusDownloading(torrent.status)) {
     console.log(`Downloading to RealDebrid ${infoHash} [${fileIndex}]...`);

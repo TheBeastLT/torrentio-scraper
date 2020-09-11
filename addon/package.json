@@ -9,7 +9,7 @@
   "license": "MIT",
   "dependencies": {
     "@putdotio/api-client": "^7.10.1",
-    "all-debrid-api": "^1.0.1",
+    "all-debrid-api": "^1.1.0",
     "bottleneck": "^2.19.5",
     "cache-manager": "^2.11.1",
     "cache-manager-mongodb": "^0.2.2",
