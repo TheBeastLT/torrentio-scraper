@@ -1,0 +1,44 @@
+name: Deploy Addon
+
+on:
+  push:
+    branches: master
+    paths:
+      - 'addon/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v1
+
+      - name: Create Docker image
+        run: |
+          docker build -t torrentio-addon:latest ./addon/
+          docker save torrentio-addon:latest > torrentio_addon_latest.tar
+
+      - name: Upload Docker image
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          port: ${{ secrets.SSH_PORT }}
+          key: ${{ secrets.SSH_KEY }}
+          source: torrentio_addon_latest.tar
+          target: /tmp/docker
+          overwrite: true
+
+      - name: Deploy Docker image
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          port: ${{ secrets.SSH_PORT }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            docker load -i /tmp/docker/torrentio_addon_latest.tar
+            docker stop torrentio-addon
+            docker rm torrentio-addon
+            docker run -p 80:7000 -d --name torrentio-addon --restart always -e MONGODB_URI=${{ secrets.MONGODB_URI }} -e DATABASE_URI=${{ secrets.DATABASE_URI }} -e RESOLVER_HOST=${{ secrets.RESOLVER_HOST }} -e PROXY_HOSTS=${{ secrets.PROXY_HOSTS }} -e PROXY_USERNAME=${{ secrets.PROXY_USERNAME }} -e PROXY_PASSWORD=${{ secrets.PROXY_PASSWORD }} torrentio-addon:latest
+            docker image prune -f
