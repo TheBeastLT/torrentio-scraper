@@ -44,18 +44,18 @@ function _requestMetadata(url) {
             year: body.meta.year,
             country: body.meta.country,
             genres: body.meta.genres,
-            status: body.status,
+            status: body.meta.status,
             videos: (body.meta.videos || [])
                 .map((video) => video.imdbSeason
                     ? {
-                      name: video.name,
+                      name: video.name || video.title,
                       season: video.season,
                       episode: video.episode,
                       imdbSeason: video.imdbSeason,
                       imdbEpisode: video.imdbEpisode
                     }
                     : {
-                      name: video.name,
+                      name: video.name || video.title,
                       season: video.season,
                       episode: video.episode,
                       kitsuId: video.kitsu_id,
@@ -86,6 +86,7 @@ function escapeTitle(title) {
       .replace(/&/g, 'and')
       .replace(/[;, ~.]+/g, ' ') // replace dots, commas or underscores with spaces
       .replace(/[^\w \-()+#@!']+/g, '') // remove all non-alphanumeric chars
+      .replace(/\s{2,}/, ' ') // replace multiple spaces
       .trim();
 }
 
