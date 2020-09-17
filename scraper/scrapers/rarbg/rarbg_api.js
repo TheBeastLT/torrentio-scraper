@@ -1,10 +1,9 @@
 const needle = require('needle');
 const decode = require('magnet-uri');
 const Promises = require('../../lib/promises');
-const { defaultOptionsWithProxy } = require('./../../lib/request_helper');
 
 const baseUrl = 'https://torrentapi.org/pubapi_v2.php';
-const appId = 'node-rarbg-api';
+const appId = 'torrentio-addon';
 const defaultTimeout = 30000;
 
 let token;
@@ -85,9 +84,9 @@ function browse(params = {}) {
   return singleRequest(parameters).then(results => parseResults(results));
 }
 
-async function singleRequest(params = {}, config = {}, retries = 5) {
+async function singleRequest(params = {}, config = {}, retries = 10) {
   const timeout = config.timeout || defaultTimeout;
-  const options = { ...defaultOptionsWithProxy(), open_timeout: timeout, follow: 2 };
+  const options = { open_timeout: timeout, follow: 2 };
   params.token = await getToken();
   params.app_id = appId;
 
@@ -138,7 +137,7 @@ function parseResult(result) {
 
 async function getToken() {
   if (!token) {
-    const options = { ...defaultOptionsWithProxy(), open_timeout: defaultTimeout };
+    const options = { open_timeout: defaultTimeout };
     token = await needle('get', baseUrl, { get_token: 'get_token', app_id: appId }, options)
         .then(response => response.body.token);
   }
