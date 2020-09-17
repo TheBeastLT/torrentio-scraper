@@ -3,7 +3,6 @@ const needle = require('needle');
 const moment = require('moment');
 const decode = require('magnet-uri');
 const Promises = require('../../lib/promises');
-const { defaultOptionsWithProxy } = require('./../../lib/request_helper');
 
 const defaultProxies = [
   'https://katcr.co'
@@ -65,7 +64,7 @@ function browse(config = {}, retries = 2) {
 
 function singleRequest(requestUrl, config = {}) {
   const timeout = config.timeout || defaultTimeout;
-  const options = { ...defaultOptionsWithProxy(), open_timeout: timeout, follow: 2 };
+  const options = { open_timeout: timeout, follow: 2 };
 
   return needle('get', requestUrl, options)
       .then((response) => {
