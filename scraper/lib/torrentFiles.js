@@ -127,10 +127,10 @@ async function mapSeriesEpisode(file, torrent, files) {
     fileIndex: file.fileIndex,
     title: file.path || file.name,
     size: file.size,
-    imdbId: torrent.imdbId || file.imdbId,
+    imdbId: file.imdbId || torrent.imdbId,
     imdbSeason: file.season,
     imdbEpisode: file.episodes && file.episodes[index],
-    kitsuId: torrent.kitsuId || file.kitsuId,
+    kitsuId: file.kitsuId || torrent.kitsuId,
     kitsuEpisode: file.kitsuEpisodes && file.kitsuEpisodes[index]
   })))
 }
@@ -164,6 +164,10 @@ function parseSeriesFile(file, parsedTorrentName, type) {
     // in case single file was interpreted as having multiple seasons
     fileInfo.season = fileInfo.seasons[0];
   }
+  // sometimes video file does not have correct date format as in torrent title
+  if (!fileInfo.episodes && !fileInfo.date && parsedTorrentName.date) {
+    fileInfo.date = parsedTorrentName.date;
+  }
   // force episode to any found number if it was not parsed
   if (!fileInfo.episodes && !fileInfo.date) {
     const epMatcher = fileInfo.title.match(
@@ -182,12 +186,20 @@ async function decomposeEpisodes(torrent, files, metadata = { episodeCount: [] }
   if (files.every(file => !file.episodes && !file.date)) {
     return files;
   }
-  // for anime type episodes are always absolute and for a single season
+
   if (torrent.type === Type.ANIME && torrent.kitsuId) {
-    files
-        .filter(file => file.episodes)
-        .forEach(file => file.season = 1);
-    return files;
+    if (needsCinemetaMetadataForAnime(files, metadata)) {
+      // In some cases anime could be resolved to wrong kitsuId
+      // because of imdb season naming/absolute per series naming/multiple seasons
+      // So in these cases we need to fetch cinemeta based metadata and decompose episodes using that
+      await updateToCinemetaMetadata(metadata);
+    } else {
+      // otherwise for anime type episodes are always absolute and for a single season
+      files
+          .filter(file => file.episodes)
+          .forEach(file => file.season = 1);
+      return files;
+    }
   }
 
   const sortedEpisodes = files
@@ -372,12 +384,36 @@ function assignKitsuOrImdbEpisodes(torrent, files, metadata) {
         .forEach(file => {
           const seasonMapping = seriesMapping[file.season];
           if (seasonMapping && seasonMapping[file.episodes[0]] && seasonMapping[file.episodes[0]].kitsuId) {
+            file.imdbId = metadata.imdbId;
             file.kitsuId = seasonMapping[file.episodes[0]].kitsuId;
             file.kitsuEpisodes = file.episodes.map(ep => seasonMapping[ep] && seasonMapping[ep].kitsuEpisode);
           }
         })
   }
   return files;
+}
+
+function needsCinemetaMetadataForAnime(files, metadata) {
+  if (!metadata || !metadata.imdbId || !metadata.videos || !metadata.videos.length) {
+    return false;
+  }
+
+  const maxSeason = Math.max(...metadata.videos.map(video => video.imdbSeason)) || Number.MAX_VALUE;
+  const totalEpisodes = metadata.totalCount || Number.MAX_VALUE;
+  return files
+      .filter(file => !file.isMovie && file.episodes)
+      .some(file => file.season > maxSeason || file.episodes.every(ep => ep > totalEpisodes));
+}
+
+async function updateToCinemetaMetadata(metadata) {
+  return getMetadata(metadata.imdbId, metadata.type)
+      .then(newMetadata => !newMetadata.videos || !newMetadata.videos.length ? metadata : newMetadata)
+      .then(newMetadata => {
+        metadata.videos = newMetadata.videos;
+        metadata.episodeCount = newMetadata.episodeCount;
+        metadata.totalCount = newMetadata.totalCount;
+        return metadata;
+      });
 }
 
 function findMovieImdbId(title) {
