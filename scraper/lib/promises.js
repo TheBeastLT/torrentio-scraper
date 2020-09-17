@@ -34,10 +34,24 @@ async function delay(duration) {
 }
 
 /**
+ * Timeout promise after a set time in ms
+ */
+async function timeout(timeoutMs, promise, message = 'Timed out') {
+  return Promise.race([
+    promise,
+    new Promise(function (resolve, reject) {
+      setTimeout(function () {
+        reject(message);
+      }, timeoutMs);
+    })
+  ]);
+}
+
+/**
  * Return most common value from given array.
  */
 function mostCommonValue(array) {
   return array.sort((a, b) => array.filter(v => v === a).length - array.filter(v => v === b).length).pop();
 }
 
-module.exports = { sequence, first, delay, mostCommonValue };
+module.exports = { sequence, first, delay, timeout, mostCommonValue };

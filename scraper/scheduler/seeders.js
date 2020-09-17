@@ -1,11 +1,12 @@
 const Bottleneck = require('bottleneck');
 const scrapers = require('./scrapers');
 const repository = require('../lib/repository')
-const { delay } = require('../lib/promises')
+const { delay, timeout } = require('../lib/promises')
 const { updateCurrentSeeders } = require('../lib/torrent')
 const { updateTorrentSeeders } = require('../lib/torrentEntries')
 
-const DELAY = 15 * 1000; // 15 seconds
+const DELAY_MS = 15 * 1000; // 15 seconds
+const TIMEOUT_MS = 30 * 1000 // 30 seconds
 const limiter = new Bottleneck({ maxConcurrent: 20, minTime: 250 });
 const updateLimiter = new Bottleneck({ maxConcurrent: 5 });
 const forceSeedersLimiter = new Bottleneck({ maxConcurrent: 5 });
@@ -14,11 +15,12 @@ const statistics = {};
 function scheduleUpdateSeeders() {
   console.log('Starting seeders update...')
   return repository.getUpdateSeedersTorrents()
-      .then(torrents => Promise.all(torrents.map(torrent => limiter.schedule(() => _updateSeeders(torrent)))))
+      .then(torrents => Promise.all(torrents.map(torrent => limiter.schedule(() =>
+          timeout(TIMEOUT_MS, _updateSeeders(torrent), `Failed [${torrent.infoHash}] torrent seeders update`)))))
       .then(torrents => updateStatistics(torrents))
       .then(() => console.log('Finished seeders update:', statistics))
       .catch(error => console.warn('Failed seeders update:', error))
-      .then(() => delay(DELAY))
+      .then(() => delay(DELAY_MS))
       .then(() => scheduleUpdateSeeders());
 }
 
