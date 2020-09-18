@@ -15,12 +15,7 @@ const statistics = {};
 function scheduleUpdateSeeders() {
   console.log('Starting seeders update...')
   return repository.getUpdateSeedersTorrents()
-      .then(torrents => Promise.all(torrents.map(torrent => limiter
-          .schedule(() => timeout(TIMEOUT_MS, _updateSeeders(torrent)))
-          .catch(error => {
-            console.log(`Failed [${torrent.infoHash}] ${torrent.title} seeders update: `, error);
-            return []
-          }))))
+      .then(torrents => Promise.all(torrents.map(torrent => limiter.schedule(() => _updateSeeders(torrent)))))
       .then(torrents => updateStatistics(torrents))
       .then(() => console.log('Finished seeders update:', statistics))
       .catch(error => console.warn('Failed seeders update:', error))
@@ -34,7 +29,7 @@ async function _updateSeeders(torrent) {
     console.log(`No provider found for ${torrent.provider} [${torrent.infoHash}]`)
     return Promise.resolve([]);
   }
-  const updatedTorrents = await provider.scraper.updateSeeders(torrent, getImdbIdsMethod(torrent))
+  const updatedTorrents = await timeout(TIMEOUT_MS, provider.scraper.updateSeeders(torrent, getImdbIdsMethod(torrent)))
       .then(updated => Array.isArray(updated) ? updated : [updated])
       .catch(error => {
         console.warn(`Failed seeders update ${torrent.provider} [${torrent.infoHash}]: `, error)
