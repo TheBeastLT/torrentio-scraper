@@ -28,6 +28,13 @@ async function _getInstantAvailable(hashes, apiKey, retries = 3) {
   const options = await getDefaultOptions(apiKey);
   const RD = new RealDebridClient(apiKey, options);
   return RD.torrents.instantAvailability(hashes)
+      .then(response => {
+        if (typeof response !== 'object') {
+          console.warn('RD returned non JSON response: ', response);
+          return uncacheProxy('moch').then(() => _getInstantAvailable(hashes, apiKey, retries - 1));
+        }
+        return response;
+      })
       .catch(error => {
         if (retries > 0 && ['ENOTFOUND', 'ETIMEDOUT'].some(v => error.message && error.message.includes(v))) {
           blacklistProxy(options.proxy);
