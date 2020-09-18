@@ -15,8 +15,12 @@ const statistics = {};
 function scheduleUpdateSeeders() {
   console.log('Starting seeders update...')
   return repository.getUpdateSeedersTorrents()
-      .then(torrents => Promise.all(torrents.map(torrent => limiter.schedule(() =>
-          timeout(TIMEOUT_MS, _updateSeeders(torrent), `Failed [${torrent.infoHash}] torrent seeders update`)))))
+      .then(torrents => Promise.all(torrents.map(torrent => limiter
+          .schedule(() => timeout(TIMEOUT_MS, _updateSeeders(torrent)))
+          .catch(error => {
+            console.log(`Failed [${torrent.infoHash}] ${torrent.title} seeders update: `, error);
+            return []
+          }))))
       .then(torrents => updateStatistics(torrents))
       .then(() => console.log('Finished seeders update:', statistics))
       .catch(error => console.warn('Failed seeders update:', error))
