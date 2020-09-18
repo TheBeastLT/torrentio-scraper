@@ -65,7 +65,7 @@ function isArchive(filename) {
 }
 
 function isExtension(filename, extensions) {
-  const extensionMatch = filename.match(/\.(\w{2,4})$/);
+  const extensionMatch = filename && filename.match(/\.(\w{2,4})$/);
   return extensionMatch && extensions.includes(extensionMatch[1].toLowerCase());
 }
 
