@@ -40,6 +40,9 @@ async function _getInstantAvailable(hashes, apiKey, retries = 3) {
           blacklistProxy(options.proxy);
           return uncacheProxy('moch').then(() => _getInstantAvailable(hashes, apiKey, retries - 1));
         }
+        if (retries > 0 && ['ESOCKETTIMEDOUT'].some(v => error.message && error.message.includes(v))) {
+          return _getInstantAvailable(hashes, apiKey, retries - 1);
+        }
         console.warn('Failed RealDebrid cached torrent availability request: ', error);
         return undefined;
       });
