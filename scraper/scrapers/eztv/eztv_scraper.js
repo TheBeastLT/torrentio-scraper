@@ -1,5 +1,6 @@
 const moment = require('moment');
 const Bottleneck = require('bottleneck');
+const { parse } = require('parse-torrent-title');
 const eztv = require('./eztv_api');
 const { Type } = require('../../lib/types');
 const repository = require('../../lib/repository');
@@ -59,6 +60,10 @@ async function processTorrentRecord(record) {
     return Promise.resolve('Invalid torrent record');
   }
 
+  // imdb id for talk shows is usually incorrect on eztv
+  const parsedTitle = parse(record.name);
+  const dateEpisode = !parsedTitle.season && parsedTitle.date;
+
   const torrent = {
     infoHash: record.infoHash,
     provider: NAME,
@@ -68,7 +73,7 @@ async function processTorrentRecord(record) {
     size: record.size,
     seeders: record.seeders,
     uploadDate: record.uploadDate,
-    imdbId: record.imdbId,
+    imdbId: !dateEpisode && record.imdbId,
   };
 
   return createTorrentEntry(torrent).then(() => torrent);
