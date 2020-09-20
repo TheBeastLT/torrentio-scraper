@@ -30,7 +30,7 @@ async function updateSeeders(torrent, getImdbIdsMethod) {
   //     .then(imdbIds => Promise.all(imdbIds.map(imdbId => limiter.schedule(() => eztv.search(imdbId)))))
   //     .then(results => results.reduce((a, b) => a.concat(b), []))
   //     .catch(() => limiter.schedule(() => eztv.torrent(torrent.torrentId)));
-  return limiter.schedule(() => eztv.torrent(torrent.torrentId));
+  return Promise.resolve([]);
 }
 
 async function scrapeLatestTorrents() {
