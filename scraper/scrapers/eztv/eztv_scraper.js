@@ -5,6 +5,7 @@ const eztv = require('./eztv_api');
 const { Type } = require('../../lib/types');
 const repository = require('../../lib/repository');
 const { createTorrentEntry, checkAndUpdateTorrent } = require('../../lib/torrentEntries');
+const { isEpisodeImdbId } = require('../../lib/metadata');
 
 const NAME = 'EZTV';
 const UNTIL_PAGE = 10;
@@ -63,6 +64,9 @@ async function processTorrentRecord(record) {
   // imdb id for talk shows is usually incorrect on eztv
   const parsedTitle = parse(record.name);
   const dateEpisode = !parsedTitle.season && parsedTitle.date;
+  if (dateEpisode && await isEpisodeImdbId(record.imdbId)) {
+    delete record.imdbId;
+  }
 
   const torrent = {
     infoHash: record.infoHash,
@@ -73,7 +77,7 @@ async function processTorrentRecord(record) {
     size: record.size,
     seeders: record.seeders,
     uploadDate: record.uploadDate,
-    imdbId: !dateEpisode && record.imdbId,
+    imdbId: record.imdbId,
   };
 
   return createTorrentEntry(torrent).then(() => torrent);

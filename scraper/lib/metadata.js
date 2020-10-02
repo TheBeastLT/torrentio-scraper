@@ -104,7 +104,7 @@ async function getImdbId(info, type) {
   return cacheWrapImdbId(key,
       () => new Promise((resolve, reject) => {
         nameToImdb({ name, year, type }, function (err, res) {
-          if (res) {
+          if (res && !info.date) {
             resolve(res);
           } else {
             reject(err || new Error('failed imdbId search'));
@@ -112,7 +112,7 @@ async function getImdbId(info, type) {
         });
       }).catch(() => googleIt({ query, userAgent: getRandomUserAgent(), disableConsole: true })
           .then(results => results.length ? results : Promise.reject('No results'))
-          .catch(() => bing.web(query))
+          // .catch(() => bing.web(query))
           .then(results => results
               .map(result => result.link)
               .find(result => result.includes('imdb.com/title/')))
@@ -139,4 +139,13 @@ async function getKitsuId(info) {
           }));
 }
 
-module.exports = { getMetadata, getImdbId, getKitsuId, escapeHTML, escapeTitle };
+async function isEpisodeImdbId(imdbId) {
+  if (!imdbId) {
+    return false;
+  }
+  return needle('get', `https://www.imdb.com/title/${imdbId}/`, { open_timeout: 10000, follow: 2 })
+      .then(response => !!(response.body && response.body.includes('video.episode')))
+      .catch((err) => false);
+}
+
+module.exports = { getMetadata, getImdbId, getKitsuId, isEpisodeImdbId, escapeHTML, escapeTitle };
