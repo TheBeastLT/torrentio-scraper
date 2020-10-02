@@ -37,7 +37,7 @@ async function _getInstantAvailable(hashes, apiKey, retries = 3) {
       })
       .catch(error => {
         if (retries > 0 && ['ENOTFOUND', 'ETIMEDOUT'].some(v => error.message && error.message.includes(v))) {
-          blacklistProxy(options.proxy);
+          blacklistProxy(options.agent.proxy.host);
           return uncacheProxy('moch').then(() => _getInstantAvailable(hashes, apiKey, retries - 1));
         }
         if (retries > 0 && ['ESOCKETTIMEDOUT'].some(v => error.message && error.message.includes(v))) {

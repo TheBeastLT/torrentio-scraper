@@ -123,7 +123,7 @@ function statusReady(statusCode) {
 }
 
 function errorExpiredSubscriptionError(error) {
-  return ['MUST_BE_PREMIUM', 'MAGNET_MUST_BE_PREMIUM'].includes(error.code);
+  return ['MUST_BE_PREMIUM', 'MAGNET_MUST_BE_PREMIUM', 'FREE_TRIAL_LIMIT_REACHED'].includes(error.code);
 }
 
 module.exports = { getCachedStreams, resolve };
