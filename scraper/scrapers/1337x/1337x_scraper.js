@@ -70,6 +70,10 @@ async function processTorrentRecord(record) {
     return;
   }
 
+  if (await checkAndUpdateTorrent(torrentFound)) {
+    return torrentFound;
+  }
+
   const torrent = {
     infoHash: torrentFound.infoHash,
     provider: NAME,
