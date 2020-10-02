@@ -56,6 +56,10 @@ async function scrapeLatestTorrentsForCategory(category, page = 1) {
 }
 
 async function processTorrentRecord(record) {
+  if (await checkAndUpdateTorrent({ provider: NAME, ...record })) {
+    return record;
+  }
+
   const torrentFound = await leetx.torrent(record.torrentId).catch(() => undefined);
 
   if (!torrentFound || !TYPE_MAPPING[torrentFound.category]) {
@@ -64,9 +68,6 @@ async function processTorrentRecord(record) {
   if (isNaN(torrentFound.uploadDate)) {
     console.warn(`Incorrect upload date for [${torrentFound.infoHash}] ${torrentFound.name}`);
     return;
-  }
-  if (await checkAndUpdateTorrent(torrentFound)) {
-    return torrentFound;
   }
 
   const torrent = {

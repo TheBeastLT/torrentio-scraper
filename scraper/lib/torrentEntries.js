@@ -151,11 +151,11 @@ async function createTorrentContents(torrent) {
 }
 
 async function updateTorrentSeeders(torrent) {
-  if (!torrent.infoHash || !Number.isInteger(torrent.seeders)) {
+  if (!(torrent.infoHash || (torrent.provider && torrent.torrentId)) || !Number.isInteger(torrent.seeders)) {
     return;
   }
 
-  return repository.setTorrentSeeders(torrent.infoHash, torrent.seeders)
+  return repository.setTorrentSeeders(torrent, torrent.seeders)
       .catch(error => {
         console.warn('Failed updating seeders:', error);
         return undefined;

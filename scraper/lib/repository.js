@@ -163,13 +163,10 @@ function getProvider(provider) {
 }
 
 function getTorrent(torrent) {
-  return Torrent.findByPk(torrent.infoHash)
-      .then((result) => {
-        if (!result) {
-          throw new Error(`torrent not found: ${torrent.infoHash}`);
-        }
-        return result;
-      })
+  const where = torrent.infoHash
+      ? { infoHash: torrent.infoHash }
+      : { provider: torrent.provider, torrentId: torrent.torrentId }
+  return Torrent.findOne({ where: where });
 }
 
 function getTorrentsBasedOnTitle(titleQuery, type) {
@@ -212,10 +209,13 @@ function createTorrent(torrent) {
       .then(() => createSubtitles(torrent.infoHash, torrent.subtitles));
 }
 
-function setTorrentSeeders(infoHash, seeders) {
+function setTorrentSeeders(torrent, seeders) {
+  const where = torrent.infoHash
+      ? { infoHash: torrent.infoHash }
+      : { provider: torrent.provider, torrentId: torrent.torrentId }
   return Torrent.update(
       { seeders: seeders },
-      { where: { infoHash: infoHash } }
+      { where: where }
   );
 }
 
