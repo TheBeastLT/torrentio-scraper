@@ -111,6 +111,7 @@ async function getImdbId(info, type) {
           }
         });
       }).catch(() => googleIt({ query, userAgent: getRandomUserAgent(), disableConsole: true })
+          .then(results => results.length ? results : Promise.reject('No results'))
           .catch(() => bing.web(query))
           .then(results => results
               .map(result => result.link)
