@@ -103,8 +103,8 @@ async function getImdbId(info, type) {
 
   return cacheWrapImdbId(key,
       () => new Promise((resolve, reject) => {
-        nameToImdb({ name, year, type }, function (err, res) {
-          if (res && !info.date) {
+        nameToImdb({ name, year: info.year, type }, function (err, res) {
+          if (res) {
             resolve(res);
           } else {
             reject(err || new Error('failed imdbId search'));
