@@ -25,7 +25,7 @@ async function parseTorrentFiles(torrent) {
   }
 
   if (torrent.type === Type.MOVIE && (!parsedTorrentName.seasons ||
-      parsedTorrentName.season === 5 && parsedTorrentName.episode === 1)) {
+      parsedTorrentName.season === 5 && [1, 5].includes(parsedTorrentName.episode))) {
     return parseMovieFiles(torrent, parsedTorrentName, metadata);
   }
 
