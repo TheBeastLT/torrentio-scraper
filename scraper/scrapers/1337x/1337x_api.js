@@ -4,7 +4,7 @@ const Sugar = require('sugar-date');
 const decode = require('magnet-uri');
 const Promises = require('../../lib/promises');
 const { escapeHTML } = require('../../lib/metadata');
-const { getRandomUserAgent, defaultOptionsWithProxy } = require('../../lib/request_helper');
+const { getRandomUserAgent, defaultOptionsWithProxy } = require('../../lib/requestHelper');
 
 const defaultProxies = [
   'https://1337x.to'

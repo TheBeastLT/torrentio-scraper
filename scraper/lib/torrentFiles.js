@@ -4,6 +4,7 @@ const { parse } = require('parse-torrent-title');
 const Promises = require('../lib/promises');
 const { torrentFiles } = require('../lib/torrent');
 const { getMetadata, getImdbId, getKitsuId } = require('../lib/metadata');
+const { parseSeriesVideos } = require('../lib/parseHelper');
 const { Type } = require('./types');
 const { isDisk } = require('./extension');
 
@@ -12,8 +13,8 @@ const MULTIPLE_FILES_SIZE = 4 * 1024 * 1024 * 1024; // 4 GB
 
 async function parseTorrentFiles(torrent) {
   const parsedTorrentName = parse(torrent.title);
-  parsedTorrentName.hasMovies = parsedTorrentName.complete || !!torrent.title.match(/movies?(?:\W|$)/i);
   const metadata = await getMetadata(torrent.kitsuId || torrent.imdbId, torrent.type || Type.MOVIE)
+      .then(meta => Object.assign({}, meta))
       .catch(() => undefined);
 
   // if (metadata && metadata.type !== torrent.type && torrent.type !== Type.ANIME) {
@@ -66,9 +67,8 @@ async function parseMovieFiles(torrent, parsedName, metadata) {
 async function parseSeriesFiles(torrent, parsedName, metadata) {
   const { contents, videos, subtitles } = await getSeriesTorrentContent(torrent, parsedName);
   const parsedVideos = await Promise.resolve(videos)
-      .then(videos => videos
-          .filter(video => video.size > MIN_SIZE)
-          .map(video => parseSeriesFile(video, parsedName, torrent.type)))
+      .then(videos => videos.filter(video => videos.length === 1 || video.size > MIN_SIZE))
+      .then(videos => parseSeriesVideos(torrent, videos))
       .then(videos => decomposeEpisodes(torrent, videos, metadata))
       .then(videos => assignKitsuOrImdbEpisodes(torrent, videos, metadata))
       .then(videos => Promise.all(videos.map(video => video.isMovie
@@ -96,7 +96,7 @@ async function getMoviesTorrentContent(torrent, parsedName) {
 }
 
 async function getSeriesTorrentContent(torrent, parsedName) {
-  const hasMultipleEpisodes = parsedName.complete || parsedName.hasMovies || torrent.size > MULTIPLE_FILES_SIZE ||
+  const hasMultipleEpisodes = parsedName.complete || torrent.size > MULTIPLE_FILES_SIZE ||
       (parsedName.seasons && parsedName.seasons.length > 1);
   const hasSingleEpisode = Number.isInteger(parsedName.episode) || (!parsedName.episodes && parsedName.date);
   return torrentFiles(torrent)
@@ -138,7 +138,7 @@ async function mapSeriesEpisode(file, torrent, files) {
 async function mapSeriesMovie(file, torrent) {
   const kitsuId = torrent.type === Type.ANIME ? await findMovieKitsuId(file) : undefined;
   const imdbId = !kitsuId ? await findMovieImdbId(file) : undefined;
-  const metadata = getMetadata(imdbId, Type.MOVIE).catch(() => undefined);
+  const metadata = await getMetadata(kitsuId || imdbId, Type.MOVIE).catch(() => undefined);
   return [{
     infoHash: torrent.infoHash,
     fileIndex: file.fileIndex,
@@ -147,39 +147,6 @@ async function mapSeriesMovie(file, torrent) {
     imdbId: metadata && metadata.imdbId || imdbId,
     kitsuId: metadata && metadata.kitsuId || kitsuId
   }];
-}
-
-function parseSeriesFile(file, parsedTorrentName, type) {
-  const fileInfo = parse(file.name);
-  // the episode may be in a folder containing season number
-  if (!fileInfo.season && file.path.includes('/')) {
-    const folders = file.path.split('/');
-    const pathInfo = parse(folders[folders.length - 2]);
-    fileInfo.season = pathInfo.season;
-  }
-  if (!fileInfo.season && parsedTorrentName.season) {
-    fileInfo.season = parsedTorrentName.season;
-  }
-  if (!fileInfo.season && fileInfo.seasons && fileInfo.seasons.length > 1) {
-    // in case single file was interpreted as having multiple seasons
-    fileInfo.season = fileInfo.seasons[0];
-  }
-  // sometimes video file does not have correct date format as in torrent title
-  if (!fileInfo.episodes && !fileInfo.date && parsedTorrentName.date) {
-    fileInfo.date = parsedTorrentName.date;
-  }
-  // force episode to any found number if it was not parsed
-  if (!fileInfo.episodes && !fileInfo.date) {
-    const epMatcher = fileInfo.title.match(
-        /(?<!season\W*|disk\W*|movie\W*|film\W*)(?:^|\W)(\d{1,4})(?:a|b|c|v\d)?(?:\W|$)(?!disk|movie|film)/i);
-    fileInfo.episodes = epMatcher && [parseInt(epMatcher[1], 10)];
-    fileInfo.episode = fileInfo.episodes && fileInfo.episodes[0];
-  }
-  fileInfo.isMovie = ((parsedTorrentName.hasMovies || type === Type.ANIME)
-      && !fileInfo.season && (!fileInfo.episodes || !!fileInfo.year))
-      || (!fileInfo.season && !!file.name.match(/\b(?:\d+[ .]movie|movie[ .]\d+)\b/i));
-
-  return { ...file, ...fileInfo };
 }
 
 async function decomposeEpisodes(torrent, files, metadata = { episodeCount: [] }) {
@@ -413,7 +380,8 @@ async function updateToCinemetaMetadata(metadata) {
         metadata.episodeCount = newMetadata.episodeCount;
         metadata.totalCount = newMetadata.totalCount;
         return metadata;
-      });
+      })
+      .catch(error => console.warn(`Failed ${metadata.imdbId} metadata cinemeta update due: ${error.message}`));
 }
 
 function findMovieImdbId(title) {

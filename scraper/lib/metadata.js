@@ -5,7 +5,7 @@ const bing = require('nodejs-bing');
 const he = require('he');
 const { cacheWrapImdbId, cacheWrapKitsuId, cacheWrapMetadata } = require('./cache');
 const { Type } = require('./types');
-const { getRandomUserAgent } = require('./request_helper');
+const { getRandomUserAgent } = require('./requestHelper');
 
 const CINEMETA_URL = 'https://v3-cinemeta.strem.io';
 const KITSU_URL = 'https://anime-kitsu.strem.fun';
@@ -18,24 +18,23 @@ function getMetadata(id, type = Type.SERIES) {
 
   const key = Number.isInteger(id) || id.match(/^\d+$/) ? `kitsu:${id}` : id;
   const metaType = type === Type.MOVIE ? Type.MOVIE : Type.SERIES;
-  return cacheWrapMetadata(key,
-      () => _requestMetadata(`${KITSU_URL}/meta/${metaType}/${key}.json`)
-          .catch(() => _requestMetadata(`${CINEMETA_URL}/meta/${metaType}/${key}.json`))
-          .catch(() => {
-            // try different type in case there was a mismatch
-            const otherType = metaType === Type.MOVIE ? Type.SERIES : Type.MOVIE;
-            return _requestMetadata(`${CINEMETA_URL}/meta/${otherType}/${key}.json`)
-          })
-          .catch((error) => {
-            throw new Error(`failed metadata query ${key} due: ${error.message}`);
-          }));
+  return cacheWrapMetadata(key, () => _requestMetadata(`${KITSU_URL}/meta/${metaType}/${key}.json`)
+      .catch(() => _requestMetadata(`${CINEMETA_URL}/meta/${metaType}/${key}.json`))
+      .catch(() => {
+        // try different type in case there was a mismatch
+        const otherType = metaType === Type.MOVIE ? Type.SERIES : Type.MOVIE;
+        return _requestMetadata(`${CINEMETA_URL}/meta/${otherType}/${key}.json`)
+      })
+      .catch((error) => {
+        throw new Error(`failed metadata query ${key} due: ${error.message}`);
+      }));
 }
 
 function _requestMetadata(url) {
   return needle('get', url, { open_timeout: TIMEOUT })
       .then((response) => {
         const body = response.body;
-        if (body && body.meta && body.meta.id) {
+        if (body && body.meta && (body.meta.imdb_id || body.meta.kitsu_id)) {
           return {
             kitsuId: body.meta.kitsu_id,
             imdbId: body.meta.imdb_id,

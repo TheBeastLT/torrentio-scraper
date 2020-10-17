@@ -2,7 +2,7 @@ const cheerio = require('cheerio');
 const needle = require('needle');
 const moment = require('moment');
 const Promises = require('../../lib/promises');
-const { getRandomUserAgent } = require('./../../lib/request_helper');
+const { getRandomUserAgent } = require('./../../lib/requestHelper');
 
 const defaultProxies = [
   'https://eztv.io'

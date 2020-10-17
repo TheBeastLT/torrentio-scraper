@@ -1,6 +1,6 @@
 const needle = require('needle');
 const Promises = require('../../lib/promises');
-const { getRandomUserAgent } = require('./../../lib/request_helper');
+const { getRandomUserAgent } = require('./../../lib/requestHelper');
 
 const defaultProxies = [
   'https://yts.mx'

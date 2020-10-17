@@ -1,6 +1,6 @@
 const Bottleneck = require('bottleneck');
 const { parse } = require('parse-torrent-title');
-const Promises = require('../lib/promises');
+const { mostCommonValue } = require('../lib/promises');
 const repository = require('../lib/repository');
 const { getImdbId } = require('../lib/metadata');
 const { parseTorrentFiles } = require('../lib/torrentFiles');
@@ -67,7 +67,7 @@ async function reapplyEpisodeDecomposing(infoHash, includeSourceFiles = true) {
         path: file.title,
         size: file.size
       }));
-  const imdbId = storedFiles.length && storedFiles[0].imdbId || await getImdbId(parse(torrent.title));
+  const imdbId = mostCommonValue(storedFiles.map(file => file.imdbId)) || await getImdbId(parse(torrent.title));
 
   return parseTorrentFiles({ ...torrent.get(), imdbId, files })
       .then(torrentContents => torrentContents.videos)
@@ -113,7 +113,7 @@ async function assignSubs() {
 }
 
 async function openTorrentContents() {
-  const limiter = new Bottleneck({ maxConcurrent: 5 });
+  const limiter = new Bottleneck({ maxConcurrent: 15 });
   const unopenedTorrents = await repository.getNoContentsTorrents();
 
   return Promise.all(unopenedTorrents.map(torrent => limiter.schedule(() => createTorrentContents(torrent))))
@@ -195,9 +195,9 @@ async function findAllFiles() {
 
 //findAllFiles().then(() => console.log('Finished'));
 //updateMovieCollections().then(() => console.log('Finished'));
-// reapplyEpisodeDecomposing('0b6c0f0692bdb151efb87e3de90e46e3b177444e', false).then(() => console.log('Finished'));
+reapplyEpisodeDecomposing('3598d561d632c7a6be23fd9245f7323f89ca0ee8', false).then(() => console.log('Finished'));
 //reapplySeriesSeasonsSavedAsMovies().then(() => console.log('Finished'));
 //reapplyDecomposingToTorrentsOnRegex('.*Boku no Hero Academia.*').then(() => console.log('Finished'));
 //reapplyManualHashes().then(() => console.log('Finished'));
 // assignSubs().then(() => console.log('Finished'));
-openTorrentContents().then(() => console.log('Finished'));
+// openTorrentContents().then(() => console.log('Finished'));
