@@ -13,7 +13,7 @@ module.exports = [
   { scraper: horribleSubsScraper, name: horribleSubsScraper.NAME, cron: '0 0 */4 ? * *' },
   { scraper: nyaaPantsuScraper, name: nyaaPantsuScraper.NAME, cron: '0 0 */4 ? * *' },
   { scraper: rarbgScraper, name: rarbgScraper.NAME, cron: '0 0 */2 ? * *' },
-  { scraper: thepiratebayScraper, name: thepiratebayScraper.NAME, cron: '0 0 */4 ? * *' },
+  { scraper: thepiratebayScraper, name: thepiratebayScraper.NAME, cron: '0 0 */2 ? * *' },
   { scraper: leetxScraper, name: leetxScraper.NAME, cron: '0 0 */4 ? * *' },
   { scraper: kickassScraper, name: kickassScraper.NAME, cron: '0 0 */4 ? * *' },
   // { scraper: require('../scrapers/rarbg/rarbg_dump_scraper') }
