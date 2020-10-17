@@ -10,7 +10,6 @@ const { isEpisodeImdbId } = require('../../lib/metadata');
 const NAME = 'EZTV';
 const UNTIL_PAGE = 10;
 
-const limiter = new Bottleneck({ maxConcurrent: 1 });
 const entryLimiter = new Bottleneck({ maxConcurrent: 10 });
 
 async function scrape() {
