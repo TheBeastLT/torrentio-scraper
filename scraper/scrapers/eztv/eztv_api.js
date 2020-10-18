@@ -7,7 +7,7 @@ const { getRandomUserAgent } = require('./../../lib/requestHelper');
 const defaultProxies = [
   'https://eztv.io'
 ];
-const defaultTimeout = 60000;
+const defaultTimeout = 120000;
 const minDelay = 3000;
 const jitterDelay = minDelay;
 const limit = 100;
