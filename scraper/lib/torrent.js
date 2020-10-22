@@ -126,13 +126,17 @@ function filterVideos(files) {
   const videos = files.filter(file => isVideo(file.path));
   const maxSize = Math.max(...videos.map(video => video.size));
   const minSampleRatio = videos.length <= 3 ? 5 : 10;
+  const minAnimeExtraRatio = 7;
   const minRedundantRatio = videos.length <= 3 ? 30 : Number.MAX_VALUE;
   const isSample = video => video.path.match(/sample/i) && maxSize / parseInt(video.size) > minSampleRatio;
   const isRedundant = video => maxSize / parseInt(video.size) > minRedundantRatio;
   const isExtra = video => video.path.match(/extras?\//i);
+  const isAnimeExtra = video => video.path.match(/\b(?:NC)?(?:ED|OP|PV)(?:v?\d\d?)?\b/i)
+      && maxSize / parseInt(video.size) > minAnimeExtraRatio;
   return videos
       .filter(video => !isSample(video))
       .filter(video => !isExtra(video))
+      .filter(video => !isAnimeExtra(video))
       .filter(video => !isRedundant(video));
 }
 

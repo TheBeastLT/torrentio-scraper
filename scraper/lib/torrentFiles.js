@@ -366,8 +366,11 @@ function needsCinemetaMetadataForAnime(files, metadata) {
   }
 
   const maxSeason = Math.max(...metadata.videos.map(video => video.imdbSeason)) || Number.MAX_VALUE;
+  const differentSeasons = new Set(metadata.videos
+      .map(video => video.imdbSeason)
+      .filter(season => Number.isInteger(season))).size;
   const totalEpisodes = metadata.totalCount || Number.MAX_VALUE;
-  return files
+  return differentSeasons > 1 || files
       .filter(file => !file.isMovie && file.episodes)
       .some(file => file.season > maxSeason || file.episodes.every(ep => ep > totalEpisodes));
 }
