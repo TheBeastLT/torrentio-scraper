@@ -63,7 +63,7 @@ function _requestMetadata(url) {
                     }
                 ),
             episodeCount: Object.values((body.meta.videos || [])
-                .filter((entry) => entry.season !== 0)
+                .filter((entry) => entry.season !== 0 && entry.episode !== 0)
                 .sort((a, b) => a.season - b.season)
                 .reduce((map, next) => {
                   map[next.season] = map[next.season] + 1 || 1;
