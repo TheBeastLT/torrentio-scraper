@@ -39,7 +39,7 @@ function parseSeriesVideo(video, parsedTorrentName) {
 }
 
 function isMovieVideo(video, otherVideos, type, hasMovies) {
-  if (Number.isInteger(video.season)) {
+  if (Number.isInteger(video.season) && Array.isArray(video.episodes)) {
     // not movie if video has season
     return false;
   }

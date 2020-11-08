@@ -203,9 +203,13 @@ function isDateEpisodeFiles(files, metadata) {
 }
 
 function isAbsoluteEpisodeFiles(files, metadata) {
-  return (files.filter(file => !file.isMovie && file.episodes).every(file => !file.season && file.episodes)
-      || files.filter(file => file.season && file.episodes && file.episodes
-          .every(ep => metadata.episodeCount[file.season - 1] < ep)).length > Math.ceil(files.length / 5))
+  const threshold = Math.ceil(files.length / 5);
+  const nonMovieEpisodes = files
+      .filter(file => !file.isMovie && file.episodes);
+  const absoluteEpisodes = files
+      .filter(file => file.season && file.episodes)
+      .filter(file => file.episodes.every(ep => metadata.episodeCount[file.season - 1] < ep))
+  return nonMovieEpisodes.every(file => !file.season) || absoluteEpisodes.length > threshold
   // && !isNewEpisodesNotInMetadata(files, metadata);
 }
 
@@ -349,9 +353,35 @@ function assignKitsuOrImdbEpisodes(torrent, files, metadata) {
     files
         .filter(file => file.season && file.episodes)
         .forEach(file => {
-          const seasonMapping = seriesMapping[file.season];
-          if (seasonMapping && seasonMapping[file.episodes[0]] && seasonMapping[file.episodes[0]].kitsuId) {
+          if (seriesMapping[file.season]) {
+            const seasonMapping = seriesMapping[file.season];
             file.imdbId = metadata.imdbId;
+            file.kitsuId = seasonMapping[file.episodes[0]] && seasonMapping[file.episodes[0]].kitsuId;
+            file.kitsuEpisodes = file.episodes.map(ep => seasonMapping[ep] && seasonMapping[ep].kitsuEpisode);
+          } else if (seriesMapping[file.season - 1]) {
+            // sometimes a second season might be a continuation of the previous season
+            const seasonMapping = seriesMapping[file.season - 1];
+            const episodes = Object.values(seasonMapping);
+            const firstKitsuId = episodes.length && episodes[0].kitsuId;
+            const differentTitlesCount = new Set(episodes.map(ep => ep.kitsuId)).size
+            const skippedCount = episodes.filter(ep => ep.kitsuId === firstKitsuId).length;
+            const seasonEpisodes = files
+                .filter(otherFile => otherFile.season === file.season)
+                .reduce((a, b) => a.concat(b.episodes), []);
+            const isAbsoluteOrder = seasonEpisodes.every(ep => ep > skippedCount && ep <= episodes.length)
+            const isNormalOrder = seasonEpisodes.every(ep => ep + skippedCount <= episodes.length)
+            if (differentTitlesCount >= 1 && (isAbsoluteOrder || isNormalOrder)) {
+              file.imdbId = metadata.imdbId;
+              file.season = file.season - 1;
+              file.episodes = file.episodes.map(ep => isAbsoluteOrder ? ep : ep + skippedCount);
+              file.kitsuId = seasonMapping[file.episodes[0]].kitsuId;
+              file.kitsuEpisodes = file.episodes.map(ep => seasonMapping[ep] && seasonMapping[ep].kitsuEpisode);
+            }
+          } else if (Object.values(seriesMapping).length === 1 && seriesMapping[1]) {
+            // sometimes series might be named with sequal seson but it's not a season on imdb and a new title
+            const seasonMapping = seriesMapping[1];
+            file.imdbId = metadata.imdbId;
+            file.season = 1;
             file.kitsuId = seasonMapping[file.episodes[0]].kitsuId;
             file.kitsuEpisodes = file.episodes.map(ep => seasonMapping[ep] && seasonMapping[ep].kitsuEpisode);
           }
