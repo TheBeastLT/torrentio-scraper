@@ -5,7 +5,7 @@ const Promises = require('../../lib/promises');
 const { getRandomUserAgent } = require('./../../lib/requestHelper');
 
 const defaultProxies = [
-  'https://eztv.io'
+  'https://eztv.re'
 ];
 const defaultTimeout = 120000;
 const minDelay = 3000;
