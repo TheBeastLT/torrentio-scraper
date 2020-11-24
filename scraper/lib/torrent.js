@@ -131,7 +131,7 @@ function filterVideos(files) {
   const isSample = video => video.path.match(/sample/i) && maxSize / parseInt(video.size) > minSampleRatio;
   const isRedundant = video => maxSize / parseInt(video.size) > minRedundantRatio;
   const isExtra = video => video.path.match(/extras?\//i);
-  const isAnimeExtra = video => video.path.match(/\b(?:NC)?(?:ED|OP|PV)(?:v?\d\d?)?\b/i)
+  const isAnimeExtra = video => video.path.match(/(?:\b|_)(?:NC)?(?:ED|OP|PV)(?:v?\d\d?)?(?:\b|_)/i)
       && maxSize / parseInt(video.size) > minAnimeExtraRatio;
   return videos
       .filter(video => !isSample(video))
