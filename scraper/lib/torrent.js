@@ -126,7 +126,7 @@ function filterVideos(files) {
   const videos = files.filter(file => isVideo(file.path));
   const maxSize = Math.max(...videos.map(video => video.size));
   const minSampleRatio = videos.length <= 3 ? 5 : 10;
-  const minAnimeExtraRatio = 7;
+  const minAnimeExtraRatio = 5;
   const minRedundantRatio = videos.length <= 3 ? 30 : Number.MAX_VALUE;
   const isSample = video => video.path.match(/sample/i) && maxSize / parseInt(video.size) > minSampleRatio;
   const isRedundant = video => maxSize / parseInt(video.size) > minRedundantRatio;

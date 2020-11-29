@@ -67,9 +67,12 @@ async function reapplyEpisodeDecomposing(infoHash, includeSourceFiles = true) {
         path: file.title,
         size: file.size
       }));
-  const imdbId = mostCommonValue(storedFiles.map(file => file.imdbId)) || await getImdbId(parse(torrent.title));
+  const kitsuId = undefined;
+  const imdbId = kitsuId
+      ? undefined
+      : mostCommonValue(storedFiles.map(file => file.imdbId)) || await getImdbId(parse(torrent.title));
 
-  return parseTorrentFiles({ ...torrent.get(), imdbId, files })
+  return parseTorrentFiles({ ...torrent.get(), imdbId, kitsuId, files })
       .then(torrentContents => torrentContents.videos)
       .then(newFiles => newFiles.map(file => {
         const fileIndex = file.fileIndex !== undefined ? file.fileIndex : null;
@@ -91,7 +94,7 @@ async function reapplyEpisodeDecomposing(infoHash, includeSourceFiles = true) {
       }))
       .then(updatedFiles => Promise.all(updatedFiles
           .map(file => file.id ? file.save() : repository.createFile(file))))
-      .then(() => console.log(`Updated files for ${torrent.title}`));
+      .then(() => console.log(`Updated files for [${torrent.infoHash}] ${torrent.title}`));
 }
 
 async function assignSubs() {
@@ -188,6 +191,18 @@ async function findAllFiles() {
   //   type: Type.SERIES,
   //   imdbId: 'tt0912343'
   // };
+  /* With two anime seasons counted as one season  */
+  // const torrent = {
+  //   infoHash: 'ea02b20a87df600c11d2b405e52813de5d431102',
+  //   title: '[zza] No Guns Life - (S01-S02) [1080p.x265][multisubs:eng,fre][Vostfr]',
+  //   type: Type.ANIME,
+  //   kitsuId: 42197
+  // };
+  /* With two anime seasons in absolute order counted as one season  */
+  // const torrent = {
+  //   infoHash: '8b894d747451d50a3bd8d8fd962e4d49da6850ec',
+  //   title: '[JacobSwaggedUp] Gate | Gate: Jieitai Kanochi nite, Kaku Tatakaeri | Gate: Thus the JSDF Fought There! -
+  // Complete (BD 1280x720) [MP4 Batch]',  type: Type.ANIME,  kitsuId: 10085  };
 
   return parseTorrentFiles(torrent)
       .then((files) => console.log(files.videos));
@@ -195,7 +210,7 @@ async function findAllFiles() {
 
 //findAllFiles().then(() => console.log('Finished'));
 //updateMovieCollections().then(() => console.log('Finished'));
-reapplyEpisodeDecomposing('3598d561d632c7a6be23fd9245f7323f89ca0ee8', false).then(() => console.log('Finished'));
+reapplyEpisodeDecomposing('9bfabed62825874d2f2150ffb45c533f48636222', false).then(() => console.log('Finished'));
 //reapplySeriesSeasonsSavedAsMovies().then(() => console.log('Finished'));
 //reapplyDecomposingToTorrentsOnRegex('.*Boku no Hero Academia.*').then(() => console.log('Finished'));
 //reapplyManualHashes().then(() => console.log('Finished'));

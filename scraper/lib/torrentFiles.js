@@ -160,6 +160,9 @@ async function decomposeEpisodes(torrent, files, metadata = { episodeCount: [] }
       // because of imdb season naming/absolute per series naming/multiple seasons
       // So in these cases we need to fetch cinemeta based metadata and decompose episodes using that
       await updateToCinemetaMetadata(metadata);
+      files
+          .filter(file => file.season === undefined && file.episodes)
+          .forEach(file => file.season = 1);
     } else {
       // otherwise for anime type episodes are always absolute and for a single season
       files
@@ -395,14 +398,15 @@ function needsCinemetaMetadataForAnime(files, metadata) {
     return false;
   }
 
+  const minSeason = Math.min(...metadata.videos.map(video => video.imdbSeason)) || Number.MAX_VALUE;
   const maxSeason = Math.max(...metadata.videos.map(video => video.imdbSeason)) || Number.MAX_VALUE;
   const differentSeasons = new Set(metadata.videos
       .map(video => video.imdbSeason)
       .filter(season => Number.isInteger(season))).size;
-  const totalEpisodes = metadata.totalCount || Number.MAX_VALUE;
+  const total = metadata.totalCount || Number.MAX_VALUE;
   return differentSeasons > 1 || files
       .filter(file => !file.isMovie && file.episodes)
-      .some(file => file.season > maxSeason || file.episodes.every(ep => ep > totalEpisodes));
+      .some(file => file.season < minSeason || file.season > maxSeason || file.episodes.every(ep => ep > total));
 }
 
 async function updateToCinemetaMetadata(metadata) {

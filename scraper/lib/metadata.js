@@ -83,7 +83,7 @@ function escapeTitle(title) {
       .normalize('NFKD') // normalize non-ASCII characters
       .replace(/[\u0300-\u036F]/g, '')
       .replace(/&/g, 'and')
-      .replace(/[;, ~.]+/g, ' ') // replace dots, commas or underscores with spaces
+      .replace(/[;, ~./]+/g, ' ') // replace dots, commas or underscores with spaces
       .replace(/[^\w \-()+#@!']+/g, '') // remove all non-alphanumeric chars
       .replace(/\s{2,}/, ' ') // replace multiple spaces
       .trim();
@@ -121,7 +121,7 @@ async function getImdbId(info, type) {
 }
 
 async function getKitsuId(info) {
-  const title = escapeTitle(info.title);
+  const title = escapeTitle(info.title.replace(/\s\|\s.*/, ''));
   const year = info.year ? ` ${info.year}` : '';
   const season = info.season > 1 ? ` S${info.season}` : '';
   const query = `${title}${year}${season}`;
