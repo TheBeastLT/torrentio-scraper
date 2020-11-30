@@ -160,9 +160,12 @@ async function decomposeEpisodes(torrent, files, metadata = { episodeCount: [] }
       // because of imdb season naming/absolute per series naming/multiple seasons
       // So in these cases we need to fetch cinemeta based metadata and decompose episodes using that
       await updateToCinemetaMetadata(metadata);
-      files
-          .filter(file => file.season === undefined && file.episodes)
-          .forEach(file => file.season = 1);
+      if (files.some(file => Number.isInteger(file.season))) {
+        // sometimes multi season anime torrents don't include season 1 naming
+        files
+            .filter(file => file.season === undefined && file.episodes)
+            .forEach(file => file.season = 1);
+      }
     } else {
       // otherwise for anime type episodes are always absolute and for a single season
       files
