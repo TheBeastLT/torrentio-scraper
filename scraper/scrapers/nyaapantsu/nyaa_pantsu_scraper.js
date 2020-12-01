@@ -79,6 +79,7 @@ async function processTorrentRecord(record) {
 
   const torrent = {
     infoHash: record.infoHash,
+    torrentLink: record.torrentLink,
     provider: NAME,
     torrentId: record.torrentId,
     title: record.title,
