@@ -353,7 +353,7 @@ function assignKitsuOrImdbEpisodes(torrent, files, metadata) {
             file.season = undefined;
             file.episodes = undefined;
           }
-        })
+        });
   } else if (metadata.videos.some(video => video.kitsuEpisode)) {
     // imdb episode info is base
     files
@@ -384,14 +384,17 @@ function assignKitsuOrImdbEpisodes(torrent, files, metadata) {
               file.kitsuEpisodes = file.episodes.map(ep => seasonMapping[ep] && seasonMapping[ep].kitsuEpisode);
             }
           } else if (Object.values(seriesMapping).length === 1 && seriesMapping[1]) {
-            // sometimes series might be named with sequal seson but it's not a season on imdb and a new title
+            // sometimes series might be named with sequel season but it's not a season on imdb and a new title
             const seasonMapping = seriesMapping[1];
             file.imdbId = metadata.imdbId;
             file.season = 1;
             file.kitsuId = seasonMapping[file.episodes[0]].kitsuId;
             file.kitsuEpisodes = file.episodes.map(ep => seasonMapping[ep] && seasonMapping[ep].kitsuEpisode);
           }
-        })
+        });
+  } else if (metadata.type === Type.MOVIE && files.every(file => !file.imdbId)) {
+    // sometimes a movie has episode naming, thus not recognized as a movie and imdbId not assigned
+    files.forEach(file => file.imdbId = metadata.imdbId);
   }
   return files;
 }
