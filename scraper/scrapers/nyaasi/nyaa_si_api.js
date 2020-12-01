@@ -24,7 +24,13 @@ function torrent(torrentId) {
 
   return si.infoRequest(torrentId)
       .then(result => parseTorrent(result))
-      .then(result => ({ ...result, torrentId }));
+      .then(result => ({ ...result, torrentId }))
+      .catch(error => {
+        if (error.statusCode && error.statusCode === 404) {
+          return Promise.reject(new Error(`404: [${torrentId}] not found on NyaaSi`));
+        }
+        return Promise.reject(error);
+      });
 }
 
 function search(query) {
