@@ -64,8 +64,10 @@ async function seriesRecordsHandler(args) {
   } else if (args.id.match(/kitsu:\d+/i)) {
     const parts = args.id.split(':');
     const kitsuId = parts[1];
-    const episode = parts[2] !== undefined ? parseInt(parts[2], 10) : 1;
-    return repository.getKitsuIdSeriesEntries(kitsuId, episode);
+    const episode = parts[2] !== undefined ? parseInt(parts[2], 10) : undefined;
+    return episode !== undefined
+        ? repository.getKitsuIdSeriesEntries(kitsuId, episode)
+        : repository.getKitsuIdMovieEntries(kitsuId);
   }
   return Promise.reject(`Unsupported id type: ${args.id}`);
 }
