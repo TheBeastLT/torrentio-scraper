@@ -29,13 +29,9 @@ async function scrape() {
 }
 
 async function updateSeeders(torrent) {
-  return limiter.schedule(() => nyaasi.torrent(torrent.torrentId))
-      .then(foundTorrent => {
-        if (Number.isInteger(foundTorrent.seeders)) {
-          return [foundTorrent];
-        }
-        return []
-      });
+  // return limiter.schedule(() => nyaasi.torrent(torrent.torrentId))
+  //     .then(foundTorrent => Number.isInteger(foundTorrent.seeders) ? [foundTorrent] : []);
+  return Promise.resolve([]);
 }
 
 async function scrapeLatestTorrents() {
