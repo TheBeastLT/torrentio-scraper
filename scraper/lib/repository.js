@@ -186,7 +186,7 @@ function getTorrentsWithoutSize() {
 function getUpdateSeedersTorrents() {
   const until = moment().subtract(7, 'days').format('YYYY-MM-DD');
   return Torrent.findAll({
-    where: literal(`torrent."updatedAt" < \'${until}\' and torrent."provider" not in (\'NyaaSi\')`),
+    where: literal(`torrent."updatedAt" < \'${until}\'`),
     limit: 100,
     order: [
       ['seeders', 'DESC'],

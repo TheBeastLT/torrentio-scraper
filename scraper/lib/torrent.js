@@ -4,12 +4,19 @@ const parseTorrent = require('parse-torrent');
 const BTClient = require('bittorrent-tracker')
 const async = require('async');
 const decode = require('magnet-uri');
+const { Type } = require('./types');
 const { isVideo, isSubtitle } = require('./extension');
 const { cacheTrackers } = require('./cache');
 
 const TRACKERS_URL = 'https://ngosang.github.io/trackerslist/trackers_best.txt';
 const MAX_PEER_CONNECTIONS = process.env.MAX_PEER_CONNECTIONS || 20;
 const SEEDS_CHECK_TIMEOUT = process.env.SEEDS_CHECK_TIMEOUT || 10 * 1000; // 10 secs
+const ANIME_TRACKERS = [
+  "http://nyaa.tracker.wf:7777/announce",
+  "http://anidex.moe:6969/announce",
+  "http://tracker.anirena.com:80/announce",
+  "udp://tracker.uw0.xyz:6969/announce"
+];
 
 async function updateCurrentSeeders(torrent) {
   return new Promise(async (resolve) => {
@@ -20,7 +27,7 @@ async function updateCurrentSeeders(torrent) {
     const seeders = {};
     const magnetTrackers = torrent.magnetLink && decode(torrent.magnetLink).tr;
     const torrentTrackers = torrent.trackers && torrent.trackers.split(',');
-    const trackers = magnetTrackers || torrentTrackers || await getDefaultTrackers();
+    const trackers = magnetTrackers || torrentTrackers || await getDefaultTrackers(torrent);
     const callback = () => resolve(Math.max(...Object.values(seeders).map(values => values[0]).concat(0)));
     setTimeout(callback, SEEDS_CHECK_TIMEOUT);
 
@@ -144,10 +151,11 @@ function filterSubtitles(files) {
   return files.filter(file => isSubtitle(file.path));
 }
 
-async function getDefaultTrackers() {
+async function getDefaultTrackers(torrent) {
   return cacheTrackers(() => needle('get', TRACKERS_URL, { open_timeout: SEEDS_CHECK_TIMEOUT })
       .then(response => response.body && response.body.trim())
-      .then(body => body && body.split('\n\n') || []));
+      .then(body => body && body.split('\n\n') || []))
+      .then(trackers => torrent.type === Type.ANIME ? trackers.concat(ANIME_TRACKERS) : trackers);
 }
 
 module.exports = { updateCurrentSeeders, updateTorrentSize, sizeAndFiles, torrentFiles }
