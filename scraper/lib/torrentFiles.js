@@ -154,6 +154,8 @@ async function decomposeEpisodes(torrent, files, metadata = { episodeCount: [] }
     return files;
   }
 
+  preprocessEpisodes(files);
+
   if (torrent.type === Type.ANIME && torrent.kitsuId) {
     if (needsCinemetaMetadataForAnime(files, metadata)) {
       // In some cases anime could be resolved to wrong kitsuId
@@ -163,7 +165,7 @@ async function decomposeEpisodes(torrent, files, metadata = { episodeCount: [] }
       if (files.some(file => Number.isInteger(file.season))) {
         // sometimes multi season anime torrents don't include season 1 naming
         files
-            .filter(file => file.season === undefined && file.episodes)
+            .filter(file => !Number.isInteger(file.season) && file.episodes)
             .forEach(file => file.season = 1);
       }
     } else {
@@ -192,6 +194,17 @@ async function decomposeEpisodes(torrent, files, metadata = { episodeCount: [] }
   return files;
 }
 
+function preprocessEpisodes(files) {
+  // reverse special episode naming when they named with 0 episode, ie. S02E00
+  files
+      .filter(file => Number.isInteger(file.season) && file.episode === 0)
+      .forEach(file => {
+        file.episode = file.season
+        file.episodes = [file.season]
+        file.season = 0;
+      })
+}
+
 function isConcatSeasonAndEpisodeFiles(files, sortedEpisodes, metadata) {
   // decompose concat season and episode files (ex. 101=S01E01) in case:
   // 1. file has a season, but individual files are concatenated with that season (ex. path Season 5/511 - Prize
@@ -215,7 +228,7 @@ function isAbsoluteEpisodeFiles(files, metadata) {
   const absoluteEpisodes = files
       .filter(file => file.season && file.episodes)
       .filter(file => file.episodes.every(ep => metadata.episodeCount[file.season - 1] < ep))
-  return nonMovieEpisodes.every(file => !file.season) || absoluteEpisodes.length > threshold
+  return nonMovieEpisodes.every(file => !Number.isInteger(file.season)) || absoluteEpisodes.length > threshold
   // && !isNewEpisodesNotInMetadata(files, metadata);
 }
 
