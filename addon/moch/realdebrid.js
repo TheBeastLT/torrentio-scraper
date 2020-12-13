@@ -49,7 +49,7 @@ async function _getInstantAvailable(hashes, apiKey, retries = 3) {
         if (retries > 0 && ['ESOCKETTIMEDOUT', 'EAI_AGAIN'].some(v => error.message && error.message.includes(v))) {
           return _getInstantAvailable(hashes, apiKey, retries - 1);
         }
-        console.warn('Failed RealDebrid cached torrent availability request: ', error.message);
+        console.warn(`Failed RealDebrid cached [${hashes[0]}] torrent availability request: `, error.message);
         return undefined;
       });
 }
