@@ -13,8 +13,9 @@ function getRandomUserAgent() {
 
 function getRandomProxy() {
   if (PROXY_HOSTS && PROXY_HOSTS.length && PROXY_USERNAME && PROXY_PASSWORD) {
-    const proxyHost = PROXY_HOSTS[Math.floor(Math.random() * PROXY_HOSTS.length)];
-    console.log(`Using ${proxyHost} proxy`);
+    const index = new Date().getHours() % PROXY_HOSTS.length;
+    const proxyHost = PROXY_HOSTS[index];
+    console.log(`${new Date()} Using ${proxyHost} proxy`);
     return `https://${PROXY_USERNAME}:${PROXY_PASSWORD}@${proxyHost}:${PROXY_PORT}`;
   }
   console.warn('No proxy configured!');
@@ -27,7 +28,7 @@ function getProxyAgent(proxy) {
 
 function blacklistProxy(proxy) {
   const proxyHost = proxy.replace(/.*@/, '');
-  console.warn(`Blacklisting ${proxyHost}`);
+  console.warn(`${new Date()} Blacklisting ${proxyHost}`);
   if (PROXY_HOSTS && PROXY_HOSTS.indexOf(proxyHost) > -1) {
     PROXY_HOSTS.splice(PROXY_HOSTS.indexOf(proxyHost), 1);
   }
