@@ -41,7 +41,7 @@ builder.defineStreamHandler((args) => {
       }))
       .catch(error => {
         console.log(`Failed request ${args.id}: ${error}`);
-        throw Promise.reject(error);
+        return Promise.reject(error);
       });
 });
 
@@ -55,7 +55,7 @@ builder.defineCatalogHandler((args) => {
       }))
       .catch(error => {
         console.log(`Failed retrieving catalog ${args.id}: `, error);
-        throw Promise.reject(error);
+        return Promise.reject(error);
       });
 })
 
@@ -69,7 +69,7 @@ builder.defineMetaHandler((args) => {
       }))
       .catch(error => {
         console.log(`Failed retrieving catalog meta ${args.id}: `, error);
-        throw Promise.reject(error);
+        return Promise.reject(error);
       });
 })
 

@@ -99,10 +99,10 @@ async function getItemMeta(itemId, apiKey) {
         videos: torrent.files
             .filter(file => file.selected)
             .filter(file => isVideo(file.path))
-            .map(file => ({
+            .map((file, index) => ({
               id: `${KEY}:${torrent.id}:${file.id}`,
               title: file.path,
-              released: torrent.added,
+              released: new Date(new Date(torrent.added).getTime() + index).toISOString(),
               streams: [
                 { url: `${apiKey}/${torrent.hash.toLowerCase()}/null/${file.id - 1}` }
               ]
