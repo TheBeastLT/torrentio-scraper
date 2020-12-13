@@ -223,17 +223,31 @@ async function _unrestrictLink(RD, torrent, fileIndex) {
     return Promise.reject(`No RealDebrid links found for ${torrent.hash} [${fileIndex}]`);
   }
 
-  const unrestrictedLink = await RD.unrestrict.link(fileLink).then(response => response.download);
-  if (isArchive(unrestrictedLink)) {
-    return StaticResponse.FAILED_RAR;
-  }
-  // const transcodedLink = await RD.streaming.transcode(unrestrictedLink.id);
-  console.log(`Unrestricted RealDebrid ${torrent.hash} [${fileIndex}] to ${unrestrictedLink}`);
-  return unrestrictedLink;
+  return _unrestrictFileLink(RD, fileLink, torrent, fileIndex);
+}
+
+async function _unrestrictFileLink(RD, fileLink, torrent, fileIndex) {
+  return RD.unrestrict.link(fileLink)
+      .then(response => response.download)
+      .then(unrestrictedLink => {
+        if (isArchive(unrestrictedLink)) {
+          return StaticResponse.FAILED_RAR;
+        }
+        // const transcodedLink = await RD.streaming.transcode(unrestrictedLink.id);
+        console.log(`Unrestricted RealDebrid ${torrent.hash} [${fileIndex}] to ${unrestrictedLink}`);
+        return unrestrictedLink;
+      })
+      .catch(error => {
+        if (error.code === 19) {
+          return _retryCreateTorrent(RD, torrent.hash.toLowerCase(), undefined, fileIndex)
+              .then(() => StaticResponse.FAILED_DOWNLOAD);
+        }
+        return Promise.reject(error);
+      });
 }
 
 function statusError(status) {
-  return ['error', 'dead', 'magnet_error'].includes(status)
+  return ['error', 'magnet_error'].includes(status);
 }
 
 function statusOpening(status) {
@@ -249,7 +263,7 @@ function statusDownloading(status) {
 }
 
 function statusReady(status) {
-  return status === 'downloaded';
+  return ['downloaded', 'dead'].includes(status);
 }
 
 async function getDefaultOptions(id) {
