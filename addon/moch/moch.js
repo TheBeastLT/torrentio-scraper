@@ -88,6 +88,31 @@ async function resolve(parameters) {
   }));
 }
 
+async function getMochCatalog(mochKey, config) {
+  const moch = MOCHS[mochKey];
+  if (!moch) {
+    return Promise.reject(`Not a valid moch provider: ${mochKey}`);
+  }
+
+  return moch.instance.getCatalog(config[moch.key], config.skip);
+}
+
+async function getMochItemMeta(mochKey, itemId, config) {
+  const moch = MOCHS[mochKey];
+  if (!moch) {
+    return Promise.reject(`Not a valid moch provider: ${mochKey}`);
+  }
+
+  return moch.instance.getItemMeta(itemId, config[moch.key])
+      .then(meta => {
+        meta.videos
+            .map(video => video.streams)
+            .reduce((a, b) => a.concat(b), [])
+            .forEach(stream => stream.url = `${RESOLVER_HOST}/${moch.key}/${stream.url}`)
+        return meta;
+      });
+}
+
 function populateCachedLinks(streams, mochResult) {
   streams
       .filter(stream => stream.infoHash)
@@ -120,4 +145,4 @@ function populateDownloadLinks(streams, mochResults) {
   return streams;
 }
 
-module.exports = { applyMochs, resolve, MochOptions: MOCHS }
+module.exports = { applyMochs, getMochCatalog, getMochItemMeta, resolve, MochOptions: MOCHS }

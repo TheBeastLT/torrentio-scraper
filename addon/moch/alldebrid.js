@@ -1,8 +1,11 @@
 const AllDebridClient = require('all-debrid-api');
+const { Type } = require('../lib/types');
 const { isVideo, isArchive } = require('../lib/extension');
 const StaticResponse = require('./static');
 const { getRandomProxy, getProxyAgent, getRandomUserAgent } = require('../lib/requestHelper');
 const { cacheWrapProxy, cacheUserAgent } = require('../lib/cache');
+
+const KEY = 'alldebrid';
 
 async function getCachedStreams(streams, apiKey) {
   const options = await getDefaultOptions(apiKey);
@@ -28,10 +31,61 @@ async function getCachedStreams(streams, apiKey) {
       }, {})
 }
 
+async function getCatalog(apiKey, offset = 0) {
+  if (offset > 0) {
+    return [];
+  }
+  const options = await getDefaultOptions(apiKey);
+  const AD = new AllDebridClient(apiKey, options);
+  return AD.magnet.status()
+      .then(response => response.data.magnets)
+      .then(torrents => (torrents || [])
+          .filter(torrent => statusReady(torrent.statusCode))
+          .map(torrent => ({
+            id: `${KEY}:${torrent.id}`,
+            type: Type.OTHER,
+            name: torrent.filename
+          })));
+}
+
+async function getItemMeta(itemId, apiKey) {
+  const options = await getDefaultOptions(apiKey);
+  const AD = new AllDebridClient(apiKey, options);
+  return AD.magnet.status(itemId)
+      .then(response => response.data.magnets)
+      .then(torrent => ({
+        id: `${KEY}:${torrent.id}`,
+        type: Type.OTHER,
+        name: torrent.filename,
+        videos: torrent.links
+            .filter(file => isVideo(file.filename))
+            .map((file, index) => ({
+              id: `${KEY}:${torrent.id}:${index}`,
+              title: file.filename,
+              released: new Date(torrent.uploadDate * 1000).toISOString(),
+              streams: [
+                { url: `${apiKey}/${torrent.hash.toLowerCase()}/${encodeURIComponent(file.filename)}/${index}` }
+              ]
+            }))
+      }))
+}
+
 async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex }) {
   console.log(`Unrestricting AllDebrid ${infoHash} [${fileIndex}]`);
   const options = await getDefaultOptions(apiKey, ip);
   const AD = new AllDebridClient(apiKey, options);
+
+  return _resolve(AD, infoHash, cachedEntryInfo, fileIndex)
+      .catch(error => {
+        if (errorExpiredSubscriptionError(error)) {
+          console.log(`Access denied to AllDebrid ${infoHash} [${fileIndex}]`);
+          return StaticResponse.FAILED_ACCESS;
+        }
+        return Promise.reject(`Failed AllDebrid adding torrent ${error}`);
+      });
+}
+
+async function _resolve(AD, infoHash, cachedEntryInfo, fileIndex) {
   const torrent = await _createOrFindTorrent(AD, infoHash);
   if (torrent && statusReady(torrent.statusCode)) {
     return _unrestrictLink(AD, torrent, cachedEntryInfo, fileIndex);
@@ -41,10 +95,8 @@ async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex }) {
   } else if (torrent && statusHandledError(torrent.statusCode)) {
     console.log(`Retrying downloading to AllDebrid ${infoHash} [${fileIndex}]...`);
     return _retryCreateTorrent(AD, infoHash, cachedEntryInfo, fileIndex);
-  } else if (torrent && errorExpiredSubscriptionError(torrent)) {
-    console.log(`Access denied to AllDebrid ${infoHash} [${fileIndex}]`);
-    return StaticResponse.FAILED_ACCESS;
   }
+
   return Promise.reject(`Failed AllDebrid adding torrent ${torrent}`);
 }
 
@@ -126,4 +178,4 @@ function errorExpiredSubscriptionError(error) {
   return ['MUST_BE_PREMIUM', 'MAGNET_MUST_BE_PREMIUM', 'FREE_TRIAL_LIMIT_REACHED'].includes(error.code);
 }
 
-module.exports = { getCachedStreams, resolve };
+module.exports = { getCachedStreams, resolve, getCatalog, getItemMeta };

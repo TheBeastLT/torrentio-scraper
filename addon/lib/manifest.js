@@ -1,4 +1,5 @@
 const { MochOptions } = require('../moch/moch');
+const { Type } = require('./types');
 
 const Providers = [
   'YTS',
@@ -12,6 +13,7 @@ const Providers = [
   'NyaaPantsu'
 ];
 const DefaultProviders = Providers
+const CatalogMochs = [MochOptions.realdebrid, MochOptions.alldebrid];
 
 function manifest(config = {}) {
   const providersList = config.providers && config.providers.map(provider => getProvider(provider)) || DefaultProviders;
@@ -26,15 +28,14 @@ function manifest(config = {}) {
   const mochsDesc = enabledMochs ? ` and ${enabledMochs} enabled ` : '';
   return {
     id: 'com.stremio.torrentio.addon',
-    version: '0.0.6',
+    version: '0.0.7',
     name: 'Torrentio',
     description: 'Provides torrent streams from scraped torrent providers.'
         + ` Currently supports ${enabledProvidersDesc}${mochsDesc}.`
         + ` To configure providers, ${possibleMochs} support and other settings visit https://torrentio.strem.fun`,
-    catalogs: [],
-    resources: ['stream'],
-    types: ['movie', 'series'],
-    idPrefixes: ['tt', 'kitsu'],
+    catalogs: getCatalogs(config),
+    resources: getResources(config),
+    types: [Type.MOVIE, Type.SERIES, Type.OTHER],
     background: `https://i.ibb.co/VtSfFP9/t8wVwcg.jpg`,
     logo: `https://i.ibb.co/w4BnkC9/GwxAcDV.png`,
     behaviorHints: {
@@ -44,8 +45,42 @@ function manifest(config = {}) {
   }
 }
 
+function dummyManifest() {
+  const manifestDefault = manifest();
+  manifestDefault.catalogs = [{ id: 'dummy', type: Type.OTHER }];
+  manifestDefault.resources = ['stream', 'meta'];
+  return manifestDefault;
+}
+
 function getProvider(configProvider) {
   return Providers.find(provider => provider.toLowerCase() === configProvider);
 }
 
-module.exports = { manifest, Providers, DefaultProviders };
+function getCatalogs(config) {
+  return CatalogMochs
+      .filter(moch => config[moch.key])
+      .map(moch => ({
+        id: `torrentio-${moch.key}`,
+        name: `${moch.name}`,
+        type: 'other',
+      }));
+}
+
+function getResources(config) {
+  const streamResource = {
+    name: 'stream',
+    types: [Type.MOVIE, Type.SERIES],
+    idPrefixes: ['tt', 'kitsu']
+  };
+  const metaResource = {
+    name: 'meta',
+    types: [Type.OTHER],
+    idPrefixes: CatalogMochs.filter(moch => config[moch.key]).map(moch => moch.key)
+  };
+  if (CatalogMochs.filter(moch => config[moch.key]).length) {
+    return [streamResource, metaResource];
+  }
+  return [streamResource];
+}
+
+module.exports = { manifest, dummyManifest, Providers, DefaultProviders };

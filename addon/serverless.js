@@ -1,12 +1,13 @@
 const rateLimit = require('express-rate-limit');
 const { getRouter } = require('stremio-addon-sdk');
 const addonInterface = require('./addon');
+const qs = require('querystring')
 const { manifest } = require('./lib/manifest');
 const parseConfiguration = require('./lib/configuration');
 const landingTemplate = require('./lib/landingTemplate');
 const moch = require('./moch/moch');
 
-const router = getRouter(addonInterface);
+const router = getRouter({ ...addonInterface, manifest: manifest() });
 const limiter = rateLimit({
   windowMs: 10 * 1000, // 10 seconds
   max: 10, // limit each IP to 10 requests per windowMs
@@ -27,16 +28,17 @@ router.get('/:configuration?/configure', (req, res) => {
   res.end(landingHTML);
 });
 
-router.get('/:configuration/manifest.json', (req, res) => {
-  const configValues = parseConfiguration(req.params.configuration);
+router.get('/:configuration?/manifest.json', (req, res) => {
+  const configValues = parseConfiguration(req.params.configuration || '');
   const manifestBuf = JSON.stringify(manifest(configValues));
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
   res.end(manifestBuf)
 });
 
-router.get('/:configuration/:resource/:type/:id.json', (req, res, next) => {
+router.get('/:configuration/:resource/:type/:id/:extra?.json', (req, res, next) => {
   const { configuration, resource, type, id } = req.params;
-  const configValues = parseConfiguration(configuration);
+  const extra = req.params.extra ? qs.parse(req.url.split('/').pop().slice(0, -5)) : {}
+  const configValues = { ...extra, ...parseConfiguration(configuration) };
   addonInterface.get(resource, type, id, configValues)
       .then(resp => {
         const cacheHeaders = {

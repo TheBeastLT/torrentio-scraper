@@ -1,5 +1,6 @@
 const RealDebridClient = require('real-debrid-api');
 const { encode } = require('magnet-uri');
+const { Type } = require('../lib/types');
 const { isVideo, isArchive } = require('../lib/extension');
 const delay = require('./delay');
 const StaticResponse = require('./static');
@@ -7,6 +8,8 @@ const { getRandomProxy, getProxyAgent, getRandomUserAgent, blacklistProxy } = re
 const { cacheWrapProxy, cacheUserAgent, uncacheProxy } = require('../lib/cache');
 
 const MIN_SIZE = 15728640; // 15 MB
+const CATALOG_MAX_PAGE = 5;
+const KEY = "realdebrid"
 
 async function getCachedStreams(streams, apiKey) {
   const hashes = streams.map(stream => stream.infoHash);
@@ -63,6 +66,48 @@ function _getCachedFileIds(fileIndex, hosterResults) {
       .map(cached => Object.keys(cached))
       .sort((a, b) => b.length - a.length);
   return cachedTorrents.length && cachedTorrents[0] || [];
+}
+
+async function getCatalog(apiKey, offset = 0) {
+  if (offset > 0) {
+    return [];
+  }
+  const options = await getDefaultOptions(apiKey);
+  const RD = new RealDebridClient(apiKey, options);
+  let page = 1;
+  return RD.torrents.get(page - 1, page)
+      .then(torrents => torrents && torrents.length === 50 && page < CATALOG_MAX_PAGE
+          ? RD.torrents.get(page, page = page + 1).then(nextTorrents => torrents.concat(nextTorrents)).catch(() => [])
+          : torrents)
+      .then(torrents => (torrents || [])
+          .filter(torrent => statusReady(torrent.status))
+          .map(torrent => ({
+            id: `${KEY}:${torrent.id}`,
+            type: Type.OTHER,
+            name: torrent.filename
+          })));
+}
+
+async function getItemMeta(itemId, apiKey) {
+  const options = await getDefaultOptions(apiKey);
+  const RD = new RealDebridClient(apiKey, options);
+  return _getTorrentInfo(RD, itemId)
+      .then(torrent => ({
+        id: `${KEY}:${torrent.id}`,
+        type: Type.OTHER,
+        name: torrent.filename,
+        videos: torrent.files
+            .filter(file => file.selected)
+            .filter(file => isVideo(file.path))
+            .map(file => ({
+              id: `${KEY}:${torrent.id}:${file.id}`,
+              title: file.path,
+              released: torrent.added,
+              streams: [
+                { url: `${apiKey}/${torrent.hash.toLowerCase()}/null/${file.id - 1}` }
+              ]
+            }))
+      }))
 }
 
 async function resolve({ apiKey, infoHash, cachedEntryInfo, fileIndex }) {
@@ -215,4 +260,4 @@ async function getDefaultOptions(id) {
   return { timeout: 30000, agent: agent, headers: { 'User-Agent': userAgent } };
 }
 
-module.exports = { getCachedStreams, resolve };
+module.exports = { getCachedStreams, resolve, getCatalog, getItemMeta };

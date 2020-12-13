@@ -1,12 +1,12 @@
 const Bottleneck = require('bottleneck');
 const { addonBuilder } = require('stremio-addon-sdk');
 const { Type } = require('./lib/types');
-const { manifest, DefaultProviders } = require('./lib/manifest');
+const { dummyManifest, DefaultProviders } = require('./lib/manifest');
 const { cacheWrapStream } = require('./lib/cache');
 const { toStreamInfo } = require('./lib/streamInfo');
 const repository = require('./lib/repository');
 const applySorting = require('./lib/sort');
-const { applyMochs } = require('./moch/moch');
+const { applyMochs, getMochCatalog, getMochItemMeta } = require('./moch/moch');
 
 const CACHE_MAX_AGE = process.env.CACHE_MAX_AGE || 4 * 60 * 60; // 4 hours in seconds
 const CACHE_MAX_AGE_EMPTY = 30 * 60; // 30 minutes
@@ -14,7 +14,7 @@ const STALE_REVALIDATE_AGE = 4 * 60 * 60; // 4 hours
 const STALE_ERROR_AGE = 7 * 24 * 60 * 60; // 7 days
 
 const defaultProviders = DefaultProviders.map(provider => provider.toLowerCase());
-const builder = new addonBuilder(manifest());
+const builder = new addonBuilder(dummyManifest());
 const limiter = new Bottleneck({
   maxConcurrent: process.env.LIMIT_MAX_CONCURRENT || 20,
   highWater: process.env.LIMIT_QUEUE_SIZE || 100,
@@ -44,6 +44,34 @@ builder.defineStreamHandler((args) => {
         throw Promise.reject(error);
       });
 });
+
+builder.defineCatalogHandler((args) => {
+  const mochKey = args.id.replace("torrentio-", '');
+  console.log(`Incoming catalog ${args.id} request with skip=${args.extra.skip || 0}`)
+  return getMochCatalog(mochKey, args.extra)
+      .then(metas => ({
+        metas: metas,
+        cacheMaxAge: 0
+      }))
+      .catch(error => {
+        console.log(`Failed retrieving catalog ${args.id}: `, error);
+        throw Promise.reject(error);
+      });
+})
+
+builder.defineMetaHandler((args) => {
+  const [mochKey, metaId] = args.id.split(':');
+  console.log(`Incoming debrid meta ${args.id} request`)
+  return getMochItemMeta(mochKey, metaId, args.extra)
+      .then(meta => ({
+        meta: meta,
+        cacheMaxAge: CACHE_MAX_AGE
+      }))
+      .catch(error => {
+        console.log(`Failed retrieving catalog meta ${args.id}: `, error);
+        throw Promise.reject(error);
+      });
+})
 
 async function streamHandler(args) {
   if (args.type === Type.MOVIE) {
