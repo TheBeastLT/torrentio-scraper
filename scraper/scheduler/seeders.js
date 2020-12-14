@@ -7,6 +7,7 @@ const { updateTorrentSeeders } = require('../lib/torrentEntries')
 
 const DELAY_MS = 15 * 1000; // 15 seconds
 const TIMEOUT_MS = 30 * 1000 // 30 seconds
+const FALLBACK_SCRAPER = { updateSeeders: () => [] };
 const limiter = new Bottleneck({ maxConcurrent: 20, minTime: 250 });
 const updateLimiter = new Bottleneck({ maxConcurrent: 5 });
 const forceSeedersLimiter = new Bottleneck({ maxConcurrent: 5 });
@@ -25,11 +26,9 @@ function scheduleUpdateSeeders() {
 
 async function _updateSeeders(torrent) {
   const provider = await scrapers.find(provider => provider.name === torrent.provider);
-  if (!provider) {
-    console.log(`No provider found for ${torrent.provider} [${torrent.infoHash}]`)
-    return Promise.resolve([]);
-  }
-  const updatedTorrents = await timeout(TIMEOUT_MS, provider.scraper.updateSeeders(torrent, getImdbIdsMethod(torrent)))
+  const scraper = provider ? provider.scraper : FALLBACK_SCRAPER;
+
+  const updatedTorrents = await timeout(TIMEOUT_MS, scraper.updateSeeders(torrent, getImdbIdsMethod(torrent)))
       .then(updated => Array.isArray(updated) ? updated : [updated])
       .catch(error => {
         console.warn(`Failed seeders update ${torrent.provider} [${torrent.infoHash}]: `, error)
