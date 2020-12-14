@@ -9,6 +9,7 @@ const { cacheWrapProxy, cacheUserAgent, uncacheProxy } = require('../lib/cache')
 
 const MIN_SIZE = 15728640; // 15 MB
 const CATALOG_MAX_PAGE = 5;
+const CATALOG_PAGE_SIZE = 100;
 const KEY = "realdebrid"
 
 async function getCachedStreams(streams, apiKey) {
@@ -75,11 +76,14 @@ async function getCatalog(apiKey, offset = 0) {
   const options = await getDefaultOptions(apiKey);
   const RD = new RealDebridClient(apiKey, options);
   let page = 1;
-  return RD.torrents.get(page - 1, page)
-      .then(torrents => torrents && torrents.length === 50 && page < CATALOG_MAX_PAGE
-          ? RD.torrents.get(page, page = page + 1).then(nextTorrents => torrents.concat(nextTorrents)).catch(() => [])
+  return RD.torrents.get(page - 1, page, CATALOG_PAGE_SIZE)
+      .then(torrents => torrents && torrents.length === CATALOG_PAGE_SIZE && page < CATALOG_MAX_PAGE
+          ? RD.torrents.get(page, page = page + 1)
+              .then(nextTorrents => torrents.concat(nextTorrents))
+              .catch(() => torrents)
           : torrents)
-      .then(torrents => (torrents || [])
+      .then(torrents => torrents && torrents.length ? torrents : [])
+      .then(torrents => torrents
           .filter(torrent => statusReady(torrent.status))
           .map(torrent => ({
             id: `${KEY}:${torrent.id}`,
