@@ -101,11 +101,11 @@ async function seriesRecordsHandler(args) {
 }
 
 async function movieRecordsHandler(args) {
-  if (args.id.match(/tt\d+/)) {
+  if (args.id.match(/^tt\d+$/)) {
     const parts = args.id.split(':');
     const imdbId = parts[0];
     return repository.getImdbIdMovieEntries(imdbId);
-  } else if (args.id.match(/kitsu:\d+/i)) {
+  } else if (args.id.match(/^kitsu:\d+$/i)) {
     const parts = args.id.split(':');
     const kitsuId = parts[1];
     return repository.getKitsuIdMovieEntries(kitsuId);
