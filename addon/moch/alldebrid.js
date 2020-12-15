@@ -81,7 +81,7 @@ async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex }) {
           console.log(`Access denied to AllDebrid ${infoHash} [${fileIndex}]`);
           return StaticResponse.FAILED_ACCESS;
         }
-        return Promise.reject(`Failed AllDebrid adding torrent ${error}`);
+        return Promise.reject(`Failed AllDebrid adding torrent ${JSON.stringify(error)}`);
       });
 }
 
@@ -102,11 +102,7 @@ async function _resolve(AD, infoHash, cachedEntryInfo, fileIndex) {
 
 async function _createOrFindTorrent(AD, infoHash) {
   return _findTorrent(AD, infoHash)
-      .catch(() => _createTorrent(AD, infoHash))
-      .catch(error => {
-        console.warn('Failed AllDebrid torrent retrieval', error);
-        return error;
-      });
+      .catch(() => _createTorrent(AD, infoHash));
 }
 
 async function _retryCreateTorrent(AD, infoHash, encodedFileName, fileIndex) {

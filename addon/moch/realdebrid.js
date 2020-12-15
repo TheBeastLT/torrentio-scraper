@@ -82,7 +82,13 @@ async function getCatalog(apiKey, offset = 0) {
               .then(nextTorrents => torrents.concat(nextTorrents))
               .catch(() => torrents)
           : torrents)
-      .then(torrents => torrents && torrents.length ? torrents : [])
+      .then(torrents => {
+        if (Array.isArray(torrents)) {
+          return torrents;
+        }
+        console.log(`Received non array response for RealDebrid catalog: `, torrents)
+        return [];
+      })
       .then(torrents => torrents
           .filter(torrent => statusReady(torrent.status))
           .map(torrent => ({
