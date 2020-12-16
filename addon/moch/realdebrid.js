@@ -75,20 +75,8 @@ async function getCatalog(apiKey, offset = 0) {
   }
   const options = await getDefaultOptions(apiKey);
   const RD = new RealDebridClient(apiKey, options);
-  let page = 1;
-  return RD.torrents.get(page - 1, page, CATALOG_PAGE_SIZE)
-      .then(torrents => torrents && torrents.length === CATALOG_PAGE_SIZE && page < CATALOG_MAX_PAGE
-          ? RD.torrents.get(page, page = page + 1)
-              .then(nextTorrents => torrents.concat(nextTorrents))
-              .catch(() => torrents)
-          : torrents)
-      .then(torrents => {
-        if (Array.isArray(torrents)) {
-          return torrents;
-        }
-        console.log(`Received non array response for RealDebrid catalog: `, torrents)
-        return [];
-      })
+  return _getAllTorrents(RD)
+      .then(torrents => Array.isArray(torrents) ? torrents : [])
       .then(torrents => torrents
           .filter(torrent => statusReady(torrent.status))
           .map(torrent => ({
@@ -96,6 +84,15 @@ async function getCatalog(apiKey, offset = 0) {
             type: Type.OTHER,
             name: torrent.filename
           })));
+}
+
+async function _getAllTorrents(RD, page = 1) {
+  return RD.torrents.get(page - 1, page, CATALOG_PAGE_SIZE)
+      .then(torrents => torrents && torrents.length === CATALOG_PAGE_SIZE && page < CATALOG_MAX_PAGE
+          ? _getAllTorrents(RD, page + 1)
+              .then(nextTorrents => torrents.concat(nextTorrents))
+              .catch(() => torrents)
+          : torrents)
 }
 
 async function getItemMeta(itemId, apiKey) {
