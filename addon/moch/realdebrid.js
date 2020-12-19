@@ -7,7 +7,7 @@ const StaticResponse = require('./static');
 const { getRandomProxy, getProxyAgent, getRandomUserAgent, blacklistProxy } = require('../lib/requestHelper');
 const { cacheWrapProxy, cacheUserAgent, uncacheProxy } = require('../lib/cache');
 
-const MIN_SIZE = 15728640; // 15 MB
+const MIN_SIZE = 5 * 1024 * 1024; // 5 MB
 const CATALOG_MAX_PAGE = 5;
 const CATALOG_PAGE_SIZE = 100;
 const KEY = "realdebrid"
@@ -197,11 +197,7 @@ async function _selectTorrentFiles(RD, torrent, cachedFileIds) {
     return RD.torrents.selectFiles(torrent.id, cachedFileIds);
   }
 
-  torrent = torrent.status ? torrent : await _getTorrentInfo(RD, torrent.id);
-  if (torrent && statusOpening(torrent.status)) {
-    // sleep for 2 seconds, maybe the torrent will be converted
-    torrent = await delay(2000).then(() => _getTorrentInfo(RD, torrent.id));
-  }
+  torrent = statusWaitingSelection(torrent.status) ? torrent : await _openTorrent(RD, torrent.id);
   if (torrent && torrent.files && statusWaitingSelection(torrent.status)) {
     const videoFileIds = torrent.files
         .filter(file => isVideo(file.path))
@@ -211,6 +207,13 @@ async function _selectTorrentFiles(RD, torrent, cachedFileIds) {
     return RD.torrents.selectFiles(torrent.id, videoFileIds);
   }
   return Promise.reject('Failed RealDebrid torrent file selection')
+}
+
+async function _openTorrent(RD, torrentId, pollCounter = 0, pollRate = 2000, maxPollNumber = 10) {
+  return _getTorrentInfo(RD, torrentId)
+      .then(torrent => torrent && statusOpening(torrent.status) && pollCounter < maxPollNumber
+          ? delay(pollRate).then(() => _openTorrent(RD, torrentId, pollCounter + 1))
+          : torrent);
 }
 
 async function _unrestrictLink(RD, torrent, fileIndex) {
