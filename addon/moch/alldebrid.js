@@ -40,7 +40,7 @@ async function getCatalog(apiKey, offset = 0) {
   return AD.magnet.status()
       .then(response => response.data.magnets)
       .then(torrents => (torrents || [])
-          .filter(torrent => statusReady(torrent.statusCode))
+          .filter(torrent => torrent && statusReady(torrent.statusCode))
           .map(torrent => ({
             id: `${KEY}:${torrent.id}`,
             type: Type.OTHER,

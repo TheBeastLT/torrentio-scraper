@@ -78,7 +78,7 @@ async function getCatalog(apiKey, offset = 0) {
   return _getAllTorrents(RD)
       .then(torrents => Array.isArray(torrents) ? torrents : [])
       .then(torrents => torrents
-          .filter(torrent => statusReady(torrent.status))
+          .filter(torrent => torrent && statusReady(torrent.status))
           .map(torrent => ({
             id: `${KEY}:${torrent.id}`,
             type: Type.OTHER,

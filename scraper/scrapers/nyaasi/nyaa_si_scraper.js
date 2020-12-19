@@ -45,7 +45,7 @@ async function scrapeLatestTorrents() {
 
 async function scrapeLatestTorrentsForCategory(category, page = 1) {
   console.log(`Scrapping ${NAME} ${category} category page ${page}`);
-  return nyaasi.browse(({ page }))
+  return nyaasi.browse({ page, sort: 'id' })
       .catch(error => {
         console.warn(`Failed ${NAME} scrapping for [${page}] ${category} due: `, error);
         return Promise.resolve([]);

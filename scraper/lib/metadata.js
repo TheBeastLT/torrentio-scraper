@@ -124,9 +124,10 @@ async function getKitsuId(info) {
   const title = escapeTitle(info.title.replace(/\s\|\s.*/, ''));
   const year = info.year ? ` ${info.year}` : '';
   const season = info.season > 1 ? ` S${info.season}` : '';
-  const query = `${title}${year}${season}`;
+  const key = `${title}${year}${season}`;
+  const query = encodeURIComponent(key);
 
-  return cacheWrapKitsuId(query,
+  return cacheWrapKitsuId(key,
       () => needle('get', `${KITSU_URL}/catalog/series/kitsu-anime-list/search=${query}.json`, { open_timeout: 60000 })
           .then((response) => {
             const body = response.body;
