@@ -9,8 +9,8 @@ const moch = require('./moch/moch');
 
 const router = getRouter({ ...addonInterface, manifest: manifest() });
 const limiter = rateLimit({
-  windowMs: 10 * 1000, // 10 seconds
-  max: 10, // limit each IP to 10 requests per windowMs
+  windowMs: 60 * 60 * 1000, // 1 hours
+  max: 300, // limit each IP to 300 requests per windowMs
   headers: false
 });
 
