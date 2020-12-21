@@ -121,6 +121,18 @@ async function resolve({ apiKey, infoHash, cachedEntryInfo, fileIndex }) {
   console.log(`Unrestricting RealDebrid ${infoHash} [${fileIndex}]`);
   const options = await getDefaultOptions(apiKey);
   const RD = new RealDebridClient(apiKey, options);
+
+  return _resolve(RD, infoHash, cachedEntryInfo, fileIndex)
+      .catch(error => {
+        if (accessDeniedError(error)) {
+          console.log(`Access denied to RealDebrid ${infoHash} [${fileIndex}]`);
+          return StaticResponse.FAILED_ACCESS;
+        }
+        return Promise.reject(`Failed RealDebrid adding torrent ${JSON.stringify(error)}`);
+      });
+}
+
+async function _resolve(RD, infoHash, cachedEntryInfo, fileIndex) {
   const torrentId = await _createOrFindTorrentId(RD, infoHash, cachedEntryInfo, fileIndex);
   const torrent = await _getTorrentInfo(RD, torrentId);
   if (torrent && statusReady(torrent.status)) {
@@ -135,20 +147,13 @@ async function resolve({ apiKey, infoHash, cachedEntryInfo, fileIndex }) {
     console.log(`Trying to select files on RealDebrid ${infoHash} [${fileIndex}]...`);
     await _selectTorrentFiles(RD, torrent);
     return StaticResponse.DOWNLOADING;
-  } else if (torrent && torrent.code === 9) {
-    console.log(`Access denied to RealDebrid ${infoHash} [${fileIndex}]`);
-    return StaticResponse.FAILED_ACCESS;
   }
   return Promise.reject("Failed RealDebrid adding torrent");
 }
 
 async function _createOrFindTorrentId(RD, infoHash, cachedFileIds, fileIndex) {
   return _findTorrent(RD, infoHash, fileIndex)
-      .catch(() => _createTorrentId(RD, infoHash, cachedFileIds))
-      .catch(error => {
-        console.warn('Failed RealDebrid torrent retrieval', error);
-        return error;
-      });
+      .catch(() => _createTorrentId(RD, infoHash, cachedFileIds));
 }
 
 async function _retryCreateTorrent(RD, infoHash, cachedFileIds, fileIndex) {
@@ -274,6 +279,10 @@ function statusDownloading(status) {
 
 function statusReady(status) {
   return ['downloaded', 'dead'].includes(status);
+}
+
+function accessDeniedError(error) {
+  return [9, 20].includes(error && error.code);
 }
 
 async function getDefaultOptions(id) {
