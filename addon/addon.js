@@ -3,7 +3,7 @@ const { addonBuilder } = require('stremio-addon-sdk');
 const { Type } = require('./lib/types');
 const { dummyManifest, DefaultProviders } = require('./lib/manifest');
 const { cacheWrapStream } = require('./lib/cache');
-const { toStreamInfo } = require('./lib/streamInfo');
+const { toStreamInfo, applyStaticInfo } = require('./lib/streamInfo');
 const repository = require('./lib/repository');
 const applySorting = require('./lib/sort');
 const { applyMochs, getMochCatalog, getMochItemMeta } = require('./moch/moch');
@@ -17,7 +17,7 @@ const defaultProviders = DefaultProviders.map(provider => provider.toLowerCase()
 const builder = new addonBuilder(dummyManifest());
 const limiter = new Bottleneck({
   maxConcurrent: process.env.LIMIT_MAX_CONCURRENT || 20,
-  highWater: process.env.LIMIT_QUEUE_SIZE || 100,
+  highWater: process.env.LIMIT_QUEUE_SIZE || 50,
   strategy: Bottleneck.strategy.OVERFLOW
 });
 
@@ -32,6 +32,7 @@ builder.defineStreamHandler((args) => {
           .map(record => toStreamInfo(record)))))
       .then(streams => filterByProvider(streams, args.extra.providers || defaultProviders))
       .then(streams => applySorting(streams, args.extra))
+      .then(streams => applyStaticInfo(streams))
       .then(streams => applyMochs(streams, args.extra))
       .then(streams => ({
         streams: streams,
@@ -116,7 +117,7 @@ function filterByProvider(streams, providers) {
     return streams;
   }
   return streams.filter(stream => {
-    const match = stream.title.match(/[🛈⚙].* ([^ \n]+)/);
+    const match = stream.title.match(/⚙.* ([^ \n]+)/);
     const provider = match && match[1].toLowerCase();
     return providers.includes(provider);
   })

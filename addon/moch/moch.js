@@ -123,6 +123,7 @@ function populateCachedLinks(streams, mochResult) {
           stream.url = `${RESOLVER_HOST}/${mochResult.moch.key}/${cachedEntry.url}`;
           delete stream.infoHash;
           delete stream.fileIndex;
+          delete stream.sources;
         }
       });
   return streams;

@@ -1,10 +1,16 @@
 const titleParser = require('parse-torrent-title');
 const { Type } = require('./types');
 const { mapLanguages } = require('./languages');
+const { getAllTrackers } = require('./magnetHelper');
 
 const ADDON_NAME = 'Torrentio';
 const SIZE_DELTA = 0.02;
 const UNKNOWN_SIZE = 300000000;
+const ANIME_PROVIDERS = [
+  'HorribleSubs',
+  'NyaaSi',
+  'NyaaPantsu'
+].map(provider => provider.toLowerCase());
 
 function toStreamInfo(record) {
   const torrentInfo = titleParser.parse(record.torrent.title);
@@ -86,4 +92,19 @@ function formatSize(size) {
   return Number((size / Math.pow(1024, i)).toFixed(2)) + ' ' + ['B', 'kB', 'MB', 'GB', 'TB'][i];
 }
 
-module.exports = { toStreamInfo };
+function applyStaticInfo(streams) {
+  return streams.map(stream => enrichStaticInfo(stream));
+}
+
+function enrichStaticInfo(stream) {
+  const match = stream.title.match(/⚙.* ([^ \n]+)/);
+  const provider = match && match[1].toLowerCase();
+  if (ANIME_PROVIDERS.includes(provider)) {
+    const infoHash = stream.infoHash;
+    const sources = getAllTrackers().map(tracker => `tracker:${tracker}`).concat(`dht:${infoHash}`);
+    return { ...stream, sources };
+  }
+  return stream;
+}
+
+module.exports = { toStreamInfo, applyStaticInfo };
