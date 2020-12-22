@@ -25,8 +25,8 @@ function torrent(torrentId) {
   return pantsu.infoRequest(torrentId)
       .then(result => parseTorrent(result))
       .catch(error => {
-        if (error.statusCode && error.statusCode === 404) {
-          return Promise.reject(new Error(`404: [${torrentId}] not found on NyaaPantsu`));
+        if (error.statusCode && error.statusCode >= 400) {
+          return Promise.reject(new Error(`${error.statusCode}: [${torrentId}] failed retrieval on NyaaPantsu`));
         }
         return Promise.reject(error);
       });
