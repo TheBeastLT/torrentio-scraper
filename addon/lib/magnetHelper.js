@@ -26,7 +26,11 @@ async function initBestTrackers() {
 
   BEST_TRACKERS = await needle('get', TRACKERS_URL, options)
       .then(response => response.body && response.body.trim())
-      .then(body => body && body.split('\n\n') || []);
+      .then(body => body && body.split('\n\n') || [])
+      .catch(error => {
+        console.log(`Failed retrieving best trackers: ${error.message}`);
+        return [];
+      });
   ALL_TRACKERS = BEST_TRACKERS.concat(ANIME_TRACKERS);
 }
 
