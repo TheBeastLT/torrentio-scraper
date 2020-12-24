@@ -8,7 +8,7 @@ const { parseSeriesVideos } = require('../lib/parseHelper');
 const { Type } = require('./types');
 const { isDisk } = require('./extension');
 
-const MIN_SIZE = 10 * 1024 * 1024; // 10 MB
+const MIN_SIZE = 5 * 1024 * 1024; // 5 MB
 const MULTIPLE_FILES_SIZE = 4 * 1024 * 1024 * 1024; // 4 GB
 
 async function parseTorrentFiles(torrent) {
@@ -206,15 +206,30 @@ function preprocessEpisodes(files) {
 }
 
 function isConcatSeasonAndEpisodeFiles(files, sortedEpisodes, metadata) {
+  if (metadata.kitsuId !== undefined) {
+    // anime does not use this naming scheme in 99% of cases;
+    return false;
+  }
   // decompose concat season and episode files (ex. 101=S01E01) in case:
   // 1. file has a season, but individual files are concatenated with that season (ex. path Season 5/511 - Prize
   // Fighters.avi)
   // 2. file does not have a season and the episode does not go out of range for the concat season
   // episode count
-  return sortedEpisodes.every(ep => ep > 100)
-      && sortedEpisodes.slice(1).some((ep, index) => ep - sortedEpisodes[index] > 10)
-      && sortedEpisodes.every(ep => metadata.episodeCount[div100(ep) - 1] >= mod100(ep))
-      && files.every(file => !file.season || file.episodes.every(ep => div100(ep) === file.season))
+  const thresholdAbove = Math.max(Math.ceil(files.length * 0.05), 5);
+  const thresholdSorted = Math.max(Math.ceil(files.length * 0.8), 8);
+  const threshold = Math.max(Math.ceil(files.length * 0.8), 5);
+  const sortedConcatEpisodes = sortedEpisodes
+      .filter(ep => ep > 100)
+      .filter(ep => metadata.episodeCount[div100(ep) - 1] < ep)
+      .filter(ep => metadata.episodeCount[div100(ep) - 1] >= mod100(ep));
+  const concatFileEpisodes = files
+      .filter(file => !file.isMovie && file.episodes)
+      .filter(file => !file.season || file.episodes.every(ep => div100(ep) === file.season));
+  const concatAboveTotalEpisodeCount = files
+      .filter(file => !file.isMovie && file.episodes && file.episodes.every(ep => ep > 100))
+      .filter(file => file.episodes.every(ep => ep > metadata.totalCount));
+  return sortedConcatEpisodes.length >= thresholdSorted && concatFileEpisodes.length >= threshold
+      || concatAboveTotalEpisodeCount.length >= thresholdAbove;
 }
 
 function isDateEpisodeFiles(files, metadata) {
@@ -228,7 +243,7 @@ function isAbsoluteEpisodeFiles(files, metadata) {
   const absoluteEpisodes = files
       .filter(file => file.season && file.episodes)
       .filter(file => file.episodes.every(ep => metadata.episodeCount[file.season - 1] < ep))
-  return nonMovieEpisodes.every(file => !Number.isInteger(file.season)) || absoluteEpisodes.length > threshold
+  return nonMovieEpisodes.every(file => !file.season) || absoluteEpisodes.length > threshold
   // && !isNewEpisodesNotInMetadata(files, metadata);
 }
 
@@ -244,7 +259,7 @@ function isNewEpisodesNotInMetadata(files, metadata) {
 
 function decomposeConcatSeasonAndEpisodeFiles(torrent, files, metadata) {
   files
-      .filter(file => file.episodes && file.episodes.every(ep => ep > 100))
+      .filter(file => file.episodes && file.season !== 0 && file.episodes.every(ep => ep > 100))
       .filter(file => metadata.episodeCount[(file.season || div100(file.episodes[0])) - 1] < 100)
       .filter(file => file.season && file.episodes.every(ep => div100(ep) === file.season) || !file.season)
       .forEach(file => {
@@ -264,7 +279,8 @@ function decomposeAbsoluteEpisodeFiles(torrent, files, metadata) {
     return;
   }
   files
-      .filter(file => file.episodes && !file.isMovie)
+      .filter(file => file.episodes && !file.isMovie && file.season !== 0)
+      .filter(file => !file.season || (metadata.episodeCount[file.season - 1] || 0) < file.episodes[0])
       .forEach(file => {
         const seasonIdx = ([...metadata.episodeCount.keys()]
             .find((i) => metadata.episodeCount.slice(0, i + 1).reduce((a, b) => a + b) >= file.episodes[0])

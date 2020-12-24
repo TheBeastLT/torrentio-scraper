@@ -70,7 +70,7 @@ function _requestMetadata(url) {
                   return map;
                 }, {})),
             totalCount: body.meta.videos && body.meta.videos
-                .filter((entry) => entry.season !== 0).length
+                .filter((entry) => entry.season !== 0 && entry.episode !== 0).length
           };
         } else {
           throw new Error('No search results');
