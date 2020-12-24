@@ -7,6 +7,7 @@ const putio = require('./putio');
 const StaticResponse = require('./static');
 const { cacheWrapResolvedUrl } = require('../lib/cache');
 
+const MIN_API_KEY_SYMBOLS = 20;
 const RESOLVER_HOST = process.env.RESOLVER_HOST || 'http://localhost:7050';
 const MOCHS = {
   realdebrid: {
@@ -51,6 +52,7 @@ async function applyMochs(streams, config) {
 
   const configuredMochs = Object.keys(config)
       .filter(configKey => MOCHS[configKey])
+      .filter(configKey => config[configKey].length >= MIN_API_KEY_SYMBOLS)
       .map(configKey => MOCHS[configKey]);
   const mochResults = await Promise.all(configuredMochs
       .map(moch => moch.instance.getCachedStreams(streams, config[moch.key])
@@ -92,6 +94,9 @@ async function getMochCatalog(mochKey, config) {
   const moch = MOCHS[mochKey];
   if (!moch) {
     return Promise.reject(`Not a valid moch provider: ${mochKey}`);
+  }
+  if (config[mochKey].length < MIN_API_KEY_SYMBOLS) {
+    return Promise.reject(`Invalid API key for moch provider: ${mochKey}`);
   }
 
   return moch.instance.getCatalog(config[moch.key], config.skip);
