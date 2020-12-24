@@ -1,11 +1,11 @@
 const RealDebridClient = require('real-debrid-api');
-const { encode } = require('magnet-uri');
 const { Type } = require('../lib/types');
 const { isVideo, isArchive } = require('../lib/extension');
 const delay = require('./delay');
 const StaticResponse = require('./static');
 const { getRandomProxy, getProxyAgent, getRandomUserAgent, blacklistProxy } = require('../lib/requestHelper');
 const { cacheWrapProxy, cacheUserAgent, uncacheProxy } = require('../lib/cache');
+const { getMagnetLink } = require('../lib/magnetHelper');
 
 const MIN_SIZE = 5 * 1024 * 1024; // 5 MB
 const CATALOG_MAX_PAGE = 5;
@@ -192,7 +192,8 @@ async function _getTorrentInfo(RD, torrentId) {
 }
 
 async function _createTorrentId(RD, infoHash, cachedFileIds) {
-  const addedMagnet = await RD.torrents.addMagnet(encode({ infoHash }));
+  const magnetLink = await getMagnetLink(infoHash);
+  const addedMagnet = await RD.torrents.addMagnet(magnetLink);
   await _selectTorrentFiles(RD, { id: addedMagnet.id }, cachedFileIds);
   return addedMagnet.id;
 }

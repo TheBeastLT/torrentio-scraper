@@ -1,9 +1,9 @@
 const PremiumizeClient = require('premiumize-api');
-const { encode } = require('magnet-uri');
 const { isVideo } = require('../lib/extension');
 const StaticResponse = require('./static');
 const { getRandomProxy, getProxyAgent, getRandomUserAgent } = require('../lib/requestHelper');
 const { cacheWrapProxy, cacheUserAgent } = require('../lib/cache');
+const { getMagnetLink } = require('../lib/magnetHelper');
 
 async function getCachedStreams(streams, apiKey) {
   const options = await getDefaultOptions(apiKey);
@@ -82,7 +82,8 @@ async function _findTorrent(PM, infoHash) {
 }
 
 async function _createTorrent(PM, infoHash) {
-  return PM.transfer.create(encode({ infoHash })).then(() => _findTorrent(PM, infoHash));
+  const magnetLink = await getMagnetLink(infoHash);
+  return PM.transfer.create(magnetLink).then(() => _findTorrent(PM, infoHash));
 }
 
 async function _retryCreateTorrent(PM, infoHash, encodedFileName, fileIndex) {

@@ -1,8 +1,8 @@
 const PutioAPI = require('@putdotio/api-client').default
-const { encode } = require('magnet-uri');
 const { isVideo } = require('../lib/extension');
 const delay = require('./delay');
 const StaticResponse = require('./static');
+const { getMagnetLink } = require('../lib/magnetHelper');
 
 async function getCachedStreams(streams, apiKey) {
   return streams
@@ -64,7 +64,7 @@ async function _findTorrent(Putio, infoHash) {
 }
 
 async function _createTorrent(Putio, infoHash) {
-  const magnetLink = encode({ infoHash });
+  const magnetLink = await getMagnetLink(infoHash);
   // Add the torrent and then delay for 3 secs for putio to process it and then check it's status.
   return Putio.Transfers.Add({ url: magnetLink })
       .then(response => _getNewTorrent(Putio, response.data.transfer.id));

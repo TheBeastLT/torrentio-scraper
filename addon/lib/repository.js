@@ -44,6 +44,10 @@ const File = database.define('file',
 Torrent.hasMany(File, { foreignKey: 'infoHash', constraints: false });
 File.belongsTo(Torrent, { foreignKey: 'infoHash', constraints: false });
 
+function getTorrent(infoHash) {
+  return Torrent.findOne({ where: { infoHash: infoHash } });
+}
+
 function getImdbIdMovieEntries(imdbId) {
   return File.findAll({
     where: {
@@ -87,4 +91,10 @@ function getKitsuIdSeriesEntries(kitsuId, episode) {
   });
 }
 
-module.exports = { getImdbIdMovieEntries, getImdbIdSeriesEntries, getKitsuIdMovieEntries, getKitsuIdSeriesEntries };
+module.exports = {
+  getTorrent,
+  getImdbIdMovieEntries,
+  getImdbIdSeriesEntries,
+  getKitsuIdMovieEntries,
+  getKitsuIdSeriesEntries
+};

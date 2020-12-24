@@ -4,6 +4,7 @@ const { isVideo, isArchive } = require('../lib/extension');
 const StaticResponse = require('./static');
 const { getRandomProxy, getProxyAgent, getRandomUserAgent } = require('../lib/requestHelper');
 const { cacheWrapProxy, cacheUserAgent } = require('../lib/cache');
+const { getMagnetLink } = require('../lib/magnetHelper');
 
 const KEY = 'alldebrid';
 
@@ -122,7 +123,8 @@ async function _findTorrent(AD, infoHash) {
 }
 
 async function _createTorrent(AD, infoHash) {
-  const uploadResponse = await AD.magnet.upload(infoHash);
+  const magnetLink = await getMagnetLink(infoHash);
+  const uploadResponse = await AD.magnet.upload(magnetLink);
   const torrentId = uploadResponse.data.magnets[0].id;
   return AD.magnet.status(torrentId).then(statusResponse => statusResponse.data.magnets);
 }

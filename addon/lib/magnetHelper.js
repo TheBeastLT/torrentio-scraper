@@ -1,6 +1,9 @@
 const needle = require('needle');
+const magnet = require('magnet-uri');
 const { getRandomProxy, getProxyAgent, getRandomUserAgent } = require('../lib/requestHelper');
 const { cacheWrapProxy } = require('../lib/cache');
+const { getTorrent } = require('../lib/repository');
+const { Type } = require('../lib/types');
 
 const TRACKERS_URL = 'https://ngosang.github.io/trackerslist/trackers_best.txt';
 const ANIME_TRACKERS = [
@@ -16,6 +19,17 @@ let ALL_TRACKERS = [];
 
 function getAllTrackers() {
   return ALL_TRACKERS;
+}
+
+async function getMagnetLink(infoHash) {
+  const torrent = getTorrent(infoHash).catch(() => ({ infoHash }));
+  const torrentTrackers = torrent.trackers && torrent.trackers.split(',');
+  const animeTrackers = torrent.type === Type.ANIME ? ALL_TRACKERS : undefined;
+  const trackers = torrentTrackers || animeTrackers;
+
+  return trackers
+      ? magnet.encode({ infoHash: infoHash, announce: trackers })
+      : magnet.encode({ infoHash: infoHash });
 }
 
 async function initBestTrackers() {
@@ -34,4 +48,4 @@ async function initBestTrackers() {
   ALL_TRACKERS = BEST_TRACKERS.concat(ANIME_TRACKERS);
 }
 
-module.exports = { initBestTrackers, getAllTrackers };
+module.exports = { initBestTrackers, getAllTrackers, getMagnetLink };
