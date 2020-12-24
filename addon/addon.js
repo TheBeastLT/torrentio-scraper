@@ -41,8 +41,7 @@ builder.defineStreamHandler((args) => {
         staleError: STALE_ERROR_AGE
       }))
       .catch(error => {
-        console.log(`Failed request ${args.id}: ${error}`);
-        return Promise.reject(error);
+        return Promise.reject(`Failed request ${args.id}: ${error}`);
       });
 });
 
@@ -55,8 +54,7 @@ builder.defineCatalogHandler((args) => {
         cacheMaxAge: 0
       }))
       .catch(error => {
-        console.log(`Failed retrieving catalog ${args.id}: `, error);
-        return Promise.reject(error);
+        return Promise.reject(`Failed retrieving catalog ${args.id}: ${JSON.stringify(error)}`);
       });
 })
 
@@ -69,8 +67,7 @@ builder.defineMetaHandler((args) => {
         cacheMaxAge: CACHE_MAX_AGE
       }))
       .catch(error => {
-        console.log(`Failed retrieving catalog meta ${args.id}: `, error);
-        return Promise.reject(error);
+        return Promise.reject(`Failed retrieving catalog meta ${args.id}: ${JSON.stringify(error)}`);
       });
 })
 
