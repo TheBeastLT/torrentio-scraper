@@ -18,7 +18,7 @@
     "magnet-uri": "^5.1.7",
     "named-queue": "^2.2.1",
     "needle": "^2.2.4",
-    "parse-torrent-title": "git://github.com/TheBeastLT/parse-torrent-title.git#b6b0d86aac59063f0e3e01dd9ebf6e1789b0748b",
+    "parse-torrent-title": "git://github.com/TheBeastLT/parse-torrent-title.git#3e3932737604f4a9215a6800f6c263bb2f92f1ce",
     "pg": "^7.8.2",
     "pg-hstore": "^2.3.2",
     "premiumize-api": "^1.0.1",
