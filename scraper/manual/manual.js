@@ -71,7 +71,13 @@ async function reapplyEpisodeDecomposing(infoHash, includeSourceFiles = true) {
   const kitsuId = undefined;
   const imdbId = kitsuId
       ? undefined
-      : mostCommonValue(storedFiles.map(file => file.imdbId)) || await getImdbId(parse(torrent.title));
+      : mostCommonValue(storedFiles.map(file => file.imdbId))
+      || await getImdbId(parse(torrent.title)).catch(() => undefined);
+
+  if (!imdbId && !kitsuId) {
+    console.log(`imdbId or kitsuId not found:  ${torrent.provider} ${torrent.title}`);
+    return Promise.resolve();
+  }
 
   return parseTorrentFiles({ ...torrent.get(), imdbId, kitsuId, files })
       .then(torrentContents => torrentContents.videos)

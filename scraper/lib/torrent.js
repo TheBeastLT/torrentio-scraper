@@ -130,6 +130,9 @@ function filesAndSizeFromTorrentStream(torrent, timeout = 30000) {
 }
 
 function filterVideos(files) {
+  if (files.length === 1 && !Number.isInteger(files[0].fileIndex)) {
+    return files;
+  }
   const videos = files.filter(file => isVideo(file.path));
   const maxSize = Math.max(...videos.map(video => video.size));
   const minSampleRatio = videos.length <= 3 ? 5 : 10;
