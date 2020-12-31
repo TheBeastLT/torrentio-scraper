@@ -7,7 +7,7 @@ const repository = require('../../lib/repository');
 const { createTorrentEntry, checkAndUpdateTorrent } = require('../../lib/torrentEntries');
 
 const NAME = 'NyaaSi';
-const UNTIL_PAGE = 5
+const UNTIL_PAGE = 10
 
 const limiter = new Bottleneck({ maxConcurrent: 10 });
 
