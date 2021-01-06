@@ -10,16 +10,17 @@ function parseSeriesVideos(torrent, videos) {
 
 function parseSeriesVideo(video, parsedTorrentName) {
   const videoInfo = parse(video.name);
+  const hasSeason = Number.isInteger(videoInfo.season);
   // the episode may be in a folder containing season number
-  if (!videoInfo.season && video.path.includes('/')) {
+  if (!hasSeason && video.path.includes('/')) {
     const folders = video.path.split('/');
     const pathInfo = parse(folders[folders.length - 2]);
     videoInfo.season = pathInfo.season;
   }
-  if (!videoInfo.season && parsedTorrentName.season) {
+  if (!hasSeason && parsedTorrentName.season) {
     videoInfo.season = parsedTorrentName.season;
   }
-  if (!videoInfo.season && videoInfo.seasons && videoInfo.seasons.length > 1) {
+  if (!hasSeason && videoInfo.seasons && videoInfo.seasons.length > 1) {
     // in case single file was interpreted as having multiple seasons
     videoInfo.season = videoInfo.seasons[0];
   }
