@@ -138,14 +138,19 @@ async function mapSeriesEpisode(file, torrent, files) {
 async function mapSeriesMovie(file, torrent) {
   const kitsuId = torrent.type === Type.ANIME ? await findMovieKitsuId(file) : undefined;
   const imdbId = !kitsuId ? await findMovieImdbId(file) : undefined;
-  const metadata = await getMetadata(kitsuId || imdbId, Type.MOVIE).catch(() => undefined);
+  const metadata = await getMetadata(kitsuId || imdbId, Type.MOVIE).catch(() => ({}));
+  const episodeIndex = (file.episode || 1) - 1;
+  const episodeVideo = metadata.videos && metadata.videos.length && metadata.videos[episodeIndex];
   return [{
     infoHash: torrent.infoHash,
     fileIndex: file.fileIndex,
     title: file.path || file.name,
     size: file.size,
-    imdbId: metadata && metadata.imdbId || imdbId,
-    kitsuId: metadata && metadata.kitsuId || kitsuId
+    imdbId: metadata.imdbId || imdbId,
+    kitsuId: metadata.kitsuId || kitsuId,
+    imdbSeason: episodeVideo && metadata.imdbId ? episodeVideo.imdbSeason || episodeVideo.season : undefined,
+    imdbEpisode: episodeVideo && metadata.imdbId ? episodeVideo.imdbEpisode || episodeVideo.episode : undefined,
+    kitsuEpisode: episodeVideo && metadata.kitsuId ? episodeVideo.kitsuEpisode || episodeVideo.episode : undefined
   }];
 }
 
@@ -171,7 +176,7 @@ async function decomposeEpisodes(torrent, files, metadata = { episodeCount: [] }
     } else {
       // otherwise for anime type episodes are always absolute and for a single season
       files
-          .filter(file => file.episodes)
+          .filter(file => file.episodes && file.season !== 0)
           .forEach(file => file.season = 1);
       return files;
     }
@@ -272,7 +277,7 @@ function decomposeConcatSeasonAndEpisodeFiles(torrent, files, metadata) {
 function decomposeAbsoluteEpisodeFiles(torrent, files, metadata) {
   if (metadata.episodeCount.length === 0) {
     files
-        .filter(file => !file.season && file.episodes && !file.isMovie)
+        .filter(file => !Number.isInteger(file.season) && file.episodes && !file.isMovie)
         .forEach(file => {
           file.season = 1;
         });
@@ -373,7 +378,7 @@ function assignKitsuOrImdbEpisodes(torrent, files, metadata) {
   if (metadata.videos.some(video => video.imdbSeason) || !metadata.imdbId) {
     // kitsu episode info is the base
     files
-        .filter(file => file.season && file.episodes)
+        .filter(file => Number.isInteger(file.season) && file.episodes)
         .map(file => {
           const seasonMapping = seriesMapping[file.season];
           file.kitsuEpisodes = file.episodes;
