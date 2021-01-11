@@ -139,8 +139,8 @@ async function mapSeriesMovie(file, torrent) {
   const kitsuId = torrent.type === Type.ANIME ? await findMovieKitsuId(file) : undefined;
   const imdbId = !kitsuId ? await findMovieImdbId(file) : undefined;
   const metadata = await getMetadata(kitsuId || imdbId, Type.MOVIE).catch(() => ({}));
-  const episodeIndex = (file.episode || 1) - 1;
-  const episodeVideo = metadata.videos && metadata.videos.length && metadata.videos[episodeIndex];
+  const hasEpisode = metadata.videos && metadata.videos.length && (file.episode || metadata.videos.length === 1);
+  const episodeVideo = hasEpisode && metadata.videos[(file.episode || 1) - 1];
   return [{
     infoHash: torrent.infoHash,
     fileIndex: file.fileIndex,
