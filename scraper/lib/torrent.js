@@ -28,7 +28,7 @@ async function updateCurrentSeeders(torrent) {
     const magnetTrackers = torrent.magnetLink && decode(torrent.magnetLink).tr;
     const torrentTrackers = torrent.trackers && torrent.trackers.split(',');
     const trackers = magnetTrackers || torrentTrackers || await getDefaultTrackers(torrent);
-    const callback = () => resolve(Math.max(...Object.values(seeders).map(values => values[0]).concat(0)));
+    const callback = () => resolve(seeders);
     setTimeout(callback, SEEDS_CHECK_TIMEOUT);
 
     async.each(trackers, function (tracker, ready) {
@@ -40,7 +40,11 @@ async function updateCurrentSeeders(torrent) {
       })
     }, callback);
   }).then(seeders => {
-    torrent.seeders = seeders;
+    if (!Object.values(seeders).length) {
+      console.log(`Retrying seeders update for [${torrent.infoHash}] ${torrent.title || torrent.name}`)
+      return updateCurrentSeeders(torrent);
+    }
+    torrent.seeders = Math.max(...Object.values(seeders).map(values => values[0]).concat(0));
     return torrent;
   });
 }
