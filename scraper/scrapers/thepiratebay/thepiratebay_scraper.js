@@ -4,17 +4,17 @@ const thepiratebay = require('./thepiratebay_api.js');
 const { Type } = require('../../lib/types');
 const repository = require('../../lib/repository');
 const Promises = require('../../lib/promises');
+const { updateCurrentSeeders } = require('../../lib/torrent');
 const { createTorrentEntry, checkAndUpdateTorrent } = require('../../lib/torrentEntries');
 
 const NAME = 'ThePirateBay';
 const UNTIL_PAGE = 5;
 
-const limiter = new Bottleneck({ maxConcurrent: 10 });
+const limiter = new Bottleneck({ maxConcurrent: 5 });
 
 const allowedCategories = [
   thepiratebay.Categories.VIDEO.MOVIES,
   thepiratebay.Categories.VIDEO.MOVIES_HD,
-  thepiratebay.Categories.VIDEO.MOVIES_DVDR,
   thepiratebay.Categories.VIDEO.MOVIES_3D,
   thepiratebay.Categories.VIDEO.TV_SHOWS,
   thepiratebay.Categories.VIDEO.TV_SHOWS_HD
@@ -38,7 +38,8 @@ async function scrape() {
 }
 
 async function updateSeeders(torrent) {
-  return limiter.schedule(() => thepiratebay.torrent(torrent.torrentId));
+  // return limiter.schedule(() => thepiratebay.torrent(torrent.torrentId));
+  return Promise.resolve([]);
 }
 
 async function scrapeLatestTorrents() {
@@ -64,23 +65,24 @@ async function processTorrentRecord(record) {
     return record;
   }
 
-  const torrentFound = await thepiratebay.torrent(record.torrentId).catch(() => undefined);
-
-  if (!torrentFound || !allowedCategories.includes(torrentFound.subcategory)) {
+  if (!record || !allowedCategories.includes(record.subcategory)) {
     return Promise.resolve('Invalid torrent record');
+  }
+  if (record.seeders === null || record.seeders === undefined) {
+    await updateCurrentSeeders(record);
   }
 
   const torrent = {
-    infoHash: torrentFound.infoHash,
+    infoHash: record.infoHash,
     provider: NAME,
-    torrentId: torrentFound.torrentId,
-    title: torrentFound.name.replace(/\t|\s+/g, ' '),
-    type: seriesCategories.includes(torrentFound.subcategory) ? Type.SERIES : Type.MOVIE,
-    size: torrentFound.size,
-    seeders: torrentFound.seeders,
-    uploadDate: torrentFound.uploadDate,
-    imdbId: seriesCategories.includes(torrentFound.subcategory) && torrentFound.imdbId || undefined,
-    languages: torrentFound.languages && torrentFound.languages.trim() || undefined
+    torrentId: record.torrentId,
+    title: record.name.replace(/\t|\s+/g, ' '),
+    type: seriesCategories.includes(record.subcategory) ? Type.SERIES : Type.MOVIE,
+    size: record.size,
+    seeders: record.seeders,
+    uploadDate: record.uploadDate,
+    imdbId: seriesCategories.includes(record.subcategory) && record.imdbId || undefined,
+    languages: record.languages && record.languages.trim() || undefined
   };
 
   return createTorrentEntry(torrent);

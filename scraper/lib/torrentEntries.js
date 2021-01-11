@@ -152,7 +152,7 @@ async function createTorrentContents(torrent) {
 
 async function updateTorrentSeeders(torrent) {
   if (!(torrent.infoHash || (torrent.provider && torrent.torrentId)) || !Number.isInteger(torrent.seeders)) {
-    return;
+    return torrent;
   }
 
   return repository.setTorrentSeeders(torrent, torrent.seeders)
