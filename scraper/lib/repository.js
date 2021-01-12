@@ -273,7 +273,7 @@ function getUnassignedSubtitles() {
 
 function createContents(infoHash, contents) {
   if (contents && contents.length) {
-    return Content.bulkCreate(contents.map(content => ({ infoHash, ...content })))
+    return Content.bulkCreate(contents.map(content => ({ infoHash, ...content })), { ignoreDuplicates: true })
         .then(() => Torrent.update({ opened: true }, { where: { infoHash: infoHash }, silent: true }));
   }
   return Promise.resolve();
