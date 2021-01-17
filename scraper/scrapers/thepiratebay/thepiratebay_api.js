@@ -117,7 +117,7 @@ function toTorrent(result) {
     name: escapeHTML(result.name),
     infoHash: result.info_hash.toLowerCase(),
     size: parseInt(result.size),
-    // seeders: parseInt(result.seeders),
+    seeders: parseInt(result.seeders),
     leechers: parseInt(result.leechers),
     subcategory: parseInt(result.category),
     uploadDate: new Date(result.added * 1000),

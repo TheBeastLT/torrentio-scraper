@@ -4,13 +4,12 @@ const thepiratebay = require('./thepiratebay_api.js');
 const { Type } = require('../../lib/types');
 const repository = require('../../lib/repository');
 const Promises = require('../../lib/promises');
-const { updateCurrentSeeders } = require('../../lib/torrent');
 const { createTorrentEntry, checkAndUpdateTorrent } = require('../../lib/torrentEntries');
 
 const NAME = 'ThePirateBay';
 const UNTIL_PAGE = 5;
 
-const limiter = new Bottleneck({ maxConcurrent: 5 });
+const limiter = new Bottleneck({ maxConcurrent: 10 });
 
 const allowedCategories = [
   thepiratebay.Categories.VIDEO.MOVIES,
@@ -38,8 +37,7 @@ async function scrape() {
 }
 
 async function updateSeeders(torrent) {
-  // return limiter.schedule(() => thepiratebay.torrent(torrent.torrentId));
-  return Promise.resolve([]);
+  return limiter.schedule(() => thepiratebay.torrent(torrent.torrentId));
 }
 
 async function scrapeLatestTorrents() {
@@ -67,9 +65,6 @@ async function processTorrentRecord(record) {
 
   if (!record || !allowedCategories.includes(record.subcategory)) {
     return Promise.resolve('Invalid torrent record');
-  }
-  if (record.seeders === null || record.seeders === undefined) {
-    await updateCurrentSeeders(record);
   }
 
   const torrent = {
