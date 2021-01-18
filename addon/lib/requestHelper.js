@@ -23,7 +23,7 @@ function getRandomProxy() {
 }
 
 function getProxyAgent(proxy) {
-  return new HttpsProxyAgent(proxy);
+  return proxy && new HttpsProxyAgent(proxy);
 }
 
 function blacklistProxy(proxy) {

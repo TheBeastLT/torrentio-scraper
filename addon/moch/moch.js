@@ -7,7 +7,7 @@ const putio = require('./putio');
 const StaticResponse = require('./static');
 const { cacheWrapResolvedUrl } = require('../lib/cache');
 
-const MIN_API_KEY_SYMBOLS = 20;
+const MIN_API_KEY_SYMBOLS = 15;
 const RESOLVER_HOST = process.env.RESOLVER_HOST || 'http://localhost:7050';
 const MOCHS = {
   realdebrid: {
@@ -16,13 +16,12 @@ const MOCHS = {
     name: "RealDebrid",
     shortName: 'RD'
   },
-  // @TODO disabled until it is possible to resolve stream url for specific ip
-  // premiumize: {
-  //   key: 'premiumize',
-  //   instance: premiumize,
-  //   name: 'Premiumize',
-  //   shortName: 'PM'
-  // },
+  premiumize: {
+    key: 'premiumize',
+    instance: premiumize,
+    name: 'Premiumize',
+    shortName: 'PM'
+  },
   alldebrid: {
     key: 'alldebrid',
     instance: alldebrid,
@@ -113,6 +112,7 @@ async function getMochItemMeta(mochKey, itemId, config) {
         meta.videos
             .map(video => video.streams)
             .reduce((a, b) => a.concat(b), [])
+            .filter(stream => !stream.url.startsWith('http'))
             .forEach(stream => stream.url = `${RESOLVER_HOST}/${moch.key}/${stream.url}`)
         return meta;
       });

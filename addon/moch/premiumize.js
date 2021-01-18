@@ -1,9 +1,13 @@
 const PremiumizeClient = require('premiumize-api');
+const magnet = require('magnet-uri');
+const { Type } = require('../lib/types');
 const { isVideo } = require('../lib/extension');
 const StaticResponse = require('./static');
 const { getRandomProxy, getProxyAgent, getRandomUserAgent } = require('../lib/requestHelper');
 const { cacheWrapProxy, cacheUserAgent } = require('../lib/cache');
 const { getMagnetLink } = require('../lib/magnetHelper');
+
+const KEY = 'premiumize';
 
 async function getCachedStreams(streams, apiKey) {
   const options = await getDefaultOptions(apiKey);
@@ -28,19 +32,70 @@ async function getCachedStreams(streams, apiKey) {
       }, {})
 }
 
+async function getCatalog(apiKey, offset = 0) {
+  if (offset > 0) {
+    return [];
+  }
+  const options = await getDefaultOptions(apiKey);
+  const PM = new PremiumizeClient(apiKey, options);
+  return PM.folder.list()
+      .then(response => response.content)
+      .then(torrents => (torrents || [])
+          .filter(torrent => torrent && torrent.type === 'folder')
+          .map(torrent => ({
+            id: `${KEY}:${torrent.id}`,
+            type: Type.OTHER,
+            name: torrent.name
+          })));
+}
+
+async function getItemMeta(itemId, apiKey) {
+  const options = await getDefaultOptions(apiKey);
+  const PM = new PremiumizeClient(apiKey, options);
+  const rootFolder = await PM.folder.list(itemId, null);
+  return getFolderContents(PM, itemId)
+      .then(contents => ({
+        id: `${KEY}:${itemId}`,
+        type: Type.OTHER,
+        name: rootFolder.name,
+        videos: contents
+            .map((file, index) => ({
+              id: `${KEY}:${file.id}:${index}`,
+              title: file.name,
+              released: new Date(file.created_at * 1000 - index).toISOString(),
+              streams: [
+                { url: file.stream_link || file.link }
+              ]
+            }))
+      }))
+}
+
+async function getFolderContents(PM, itemId, ip, folderPrefix = '') {
+  return PM.folder.list(itemId, null, ip)
+      .then(response => response.content)
+      .then(contents => Promise.all(contents
+          .filter(content => content.type === 'folder')
+          .map(content => getFolderContents(PM, content.id, ip, [folderPrefix, content.name].join('/'))))
+          .then(otherContents => otherContents.reduce((a, b) => a.concat(b), []))
+          .then(otherContents => contents
+              .filter(content => content.type === 'file' && isVideo(content.name))
+              .map(content => ({ ...content, name: [folderPrefix, content.name].join('/') }))
+              .concat(otherContents)));
+}
+
 async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex }) {
-  console.log(`Unrestricting ${infoHash} [${fileIndex}]`);
+  console.log(`Unrestricting ${infoHash} [${fileIndex}] for IP ${ip}`);
   const options = await getDefaultOptions(apiKey, ip);
   const PM = new PremiumizeClient(apiKey, options);
 
-  const cachedLink = await _getCachedLink(PM, infoHash, cachedEntryInfo, fileIndex).catch(() => undefined);
+  const cachedLink = await _getCachedLink(PM, infoHash, cachedEntryInfo, fileIndex, ip).catch(() => undefined);
   if (cachedLink) {
     return cachedLink;
   }
 
-  const torrent = await _createOrFindTorrent(PM, infoHash, cachedEntryInfo, fileIndex);
+  const torrent = await _createOrFindTorrent(PM, infoHash);
   if (torrent && statusReady(torrent.status)) {
-    return _getCachedLink(PM, infoHash, cachedEntryInfo, fileIndex);
+    return _getCachedLink(PM, infoHash, cachedEntryInfo, fileIndex, ip);
   } else if (torrent && statusDownloading(torrent.status)) {
     return StaticResponse.DOWNLOADING;
   } else if (torrent && statusError(torrent.status)) {
@@ -49,8 +104,8 @@ async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex }) {
   return Promise.reject("Failed Premiumize adding torrent");
 }
 
-async function _getCachedLink(PM, infoHash, encodedFileName, fileIndex) {
-  const cachedTorrent = await PM.transfer.directDownload(encode({ infoHash }));
+async function _getCachedLink(PM, infoHash, encodedFileName, fileIndex, ip) {
+  const cachedTorrent = await PM.transfer.directDownload(magnet.encode({ infoHash }), ip);
   if (cachedTorrent && cachedTorrent.content && cachedTorrent.content.length) {
     const targetFileName = decodeURIComponent(encodedFileName);
     const videos = cachedTorrent.content.filter(file => isVideo(file.path));
@@ -113,4 +168,4 @@ async function getDefaultOptions(id, ip) {
   return { timeout: 30000, agent: agent, headers: { 'User-Agent': userAgent } };
 }
 
-module.exports = { getCachedStreams, resolve };
+module.exports = { getCachedStreams, resolve, getCatalog, getItemMeta };

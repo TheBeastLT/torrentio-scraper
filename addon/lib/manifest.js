@@ -25,7 +25,7 @@ function manifest(config = {}) {
       .map(moch => moch.name)
       .join(' & ');
   const possibleMochs = Object.values(MochOptions).map(moch => moch.name).join('/')
-  const mochsDesc = enabledMochs ? ` and ${enabledMochs} enabled ` : '';
+  const mochsDesc = enabledMochs ? ` and ${enabledMochs} enabled` : '';
   return {
     id: 'com.stremio.torrentio.addon',
     version: '0.0.7',

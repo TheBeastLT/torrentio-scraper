@@ -1,5 +1,6 @@
 const rateLimit = require('express-rate-limit');
 const { getRouter } = require('stremio-addon-sdk');
+const requestIp = require('request-ip');
 const addonInterface = require('./addon');
 const qs = require('querystring')
 const { manifest } = require('./lib/manifest');
@@ -77,7 +78,7 @@ router.get('/:moch/:apiKey/:infoHash/:cachedEntryInfo/:fileIndex?', (req, res) =
     infoHash: req.params.infoHash,
     fileIndex: isNaN(req.params.fileIndex) ? undefined : parseInt(req.params.fileIndex),
     cachedEntryInfo: req.params.cachedEntryInfo,
-    ip: req.ip
+    ip: requestIp.getClientIp(req)
   }
   moch.resolve(parameters)
       .then(url => {

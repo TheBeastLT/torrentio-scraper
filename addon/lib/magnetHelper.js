@@ -1,7 +1,6 @@
 const needle = require('needle');
 const magnet = require('magnet-uri');
-const { getRandomProxy, getProxyAgent, getRandomUserAgent } = require('../lib/requestHelper');
-const { cacheWrapProxy } = require('../lib/cache');
+const { getRandomUserAgent } = require('../lib/requestHelper');
 const { getTorrent } = require('../lib/repository');
 const { Type } = require('../lib/types');
 
@@ -33,10 +32,7 @@ async function getMagnetLink(infoHash) {
 }
 
 async function initBestTrackers() {
-  const userAgent = getRandomUserAgent();
-  const proxy = await cacheWrapProxy('moch', () => getRandomProxy()).catch(() => getRandomProxy());
-  const agent = getProxyAgent(proxy);
-  const options = { timeout: 30000, agent: agent, headers: { 'User-Agent': userAgent } };
+  const options = { timeout: 30000, headers: { 'User-Agent': getRandomUserAgent() } };
 
   BEST_TRACKERS = await needle('get', TRACKERS_URL, options)
       .then(response => response.body && response.body.trim())
@@ -46,6 +42,7 @@ async function initBestTrackers() {
         return [];
       });
   ALL_TRACKERS = BEST_TRACKERS.concat(ANIME_TRACKERS);
+  console.log('Retrieved best trackers: ', BEST_TRACKERS);
 }
 
 module.exports = { initBestTrackers, getAllTrackers, getMagnetLink };
