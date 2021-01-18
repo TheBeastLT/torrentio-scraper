@@ -37,7 +37,8 @@ async function scrape() {
 }
 
 async function updateSeeders(torrent) {
-  return limiter.schedule(() => thepiratebay.torrent(torrent.torrentId));
+  // return limiter.schedule(() => thepiratebay.torrent(torrent.torrentId));
+  return Promise.resolve([]);
 }
 
 async function scrapeLatestTorrents() {
