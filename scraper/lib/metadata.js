@@ -45,7 +45,7 @@ function _requestMetadata(url) {
             genres: body.meta.genres,
             status: body.meta.status,
             videos: (body.meta.videos || [])
-                .map((video) => video.imdbSeason
+                .map((video) => Number.isInteger(video.imdbSeason)
                     ? {
                       name: video.name || video.title,
                       season: video.season,

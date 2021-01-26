@@ -375,16 +375,17 @@ function assignKitsuOrImdbEpisodes(torrent, files, metadata) {
         return map;
       }, {});
 
-  if (metadata.videos.some(video => video.imdbSeason) || !metadata.imdbId) {
+  if (metadata.videos.some(video => Number.isInteger(video.imdbSeason)) || !metadata.imdbId) {
     // kitsu episode info is the base
     files
         .filter(file => Number.isInteger(file.season) && file.episodes)
         .map(file => {
           const seasonMapping = seriesMapping[file.season];
+          const episodeMapping = seasonMapping && seasonMapping[file.episodes[0]];
           file.kitsuEpisodes = file.episodes;
-          if (seasonMapping && seasonMapping[file.episodes[0]] && seasonMapping[file.episodes[0]].imdbSeason) {
+          if (episodeMapping && Number.isInteger(episodeMapping.imdbSeason)) {
             file.imdbId = metadata.imdbId;
-            file.season = seasonMapping[file.episodes[0]].imdbSeason;
+            file.season = episodeMapping.imdbSeason;
             file.episodes = file.episodes.map(ep => seasonMapping[ep] && seasonMapping[ep].imdbEpisode);
           } else {
             // no imdb mapping available for episode
