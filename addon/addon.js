@@ -81,7 +81,7 @@ async function streamHandler(args) {
 }
 
 async function seriesRecordsHandler(args) {
-  if (args.id.match(/tt\d+/)) {
+  if (args.id.match(/^tt\d+:\d+:\d+$/)) {
     const parts = args.id.split(':');
     const imdbId = parts[0];
     const season = parts[1] !== undefined ? parseInt(parts[1], 10) : 1;
@@ -95,7 +95,8 @@ async function seriesRecordsHandler(args) {
         ? repository.getKitsuIdSeriesEntries(kitsuId, episode)
         : repository.getKitsuIdMovieEntries(kitsuId);
   }
-  return Promise.reject(`Unsupported series id type: ${args.id}`);
+  // return Promise.reject(`Unsupported series id type: ${args.id}`);
+  return Promise.resolve([]);
 }
 
 async function movieRecordsHandler(args) {
@@ -106,7 +107,8 @@ async function movieRecordsHandler(args) {
   } else if (args.id.match(/^kitsu:\d+(?::\d+)?$/i)) {
     return seriesRecordsHandler(args);
   }
-  return Promise.reject(`Unsupported movie id type: ${args.id}`);
+  // return Promise.reject(`Unsupported movie id type: ${args.id}`);
+  return Promise.resolve([]);
 }
 
 function filterByProvider(streams, providers) {
