@@ -28,6 +28,11 @@ function parseSeriesVideo(video, parsedTorrentName) {
   if (!videoInfo.episodes && !videoInfo.date && parsedTorrentName.date) {
     videoInfo.date = parsedTorrentName.date;
   }
+  // limit number of episodes in case of incorrect parsing
+  if (videoInfo.episodes && videoInfo.episodes.length > 20) {
+    videoInfo.episodes = [videoInfo.episodes[0]];
+    videoInfo.episode = videoInfo.episodes[0];
+  }
   // force episode to any found number if it was not parsed
   if (!videoInfo.episodes && !videoInfo.date) {
     const epMatcher = videoInfo.title.match(
