@@ -10,6 +10,9 @@ const { getMagnetLink } = require('../lib/magnetHelper');
 const MIN_SIZE = 5 * 1024 * 1024; // 5 MB
 const CATALOG_MAX_PAGE = 5;
 const CATALOG_PAGE_SIZE = 100;
+const DNS_FAILED_MESSAGE = 'ERR_DNS_FAIL';
+const BLACKLIST_ERRORS = ['ENOTFOUND', 'ETIMEDOUT', DNS_FAILED_MESSAGE];
+const NON_BLACKLIST_ERRORS = ['ESOCKETTIMEDOUT', 'EAI_AGAIN'];
 const KEY = "realdebrid"
 
 async function getCachedStreams(streams, apiKey) {
@@ -34,7 +37,9 @@ async function _getInstantAvailable(hashes, apiKey, retries = 3) {
   return RD.torrents.instantAvailability(hashes)
       .then(response => {
         if (typeof response !== 'object') {
-          if (retries > 0) {
+          if (response.includes(DNS_FAILED_MESSAGE)) {
+            return Promise.reject({ message: DNS_FAILED_MESSAGE });
+          } else if (retries > 0) {
             return _getInstantAvailable(hashes, apiKey, retries - 1);
           } else {
             return Promise.reject(new Error('RD returned non JSON response: ' + response));
@@ -43,11 +48,11 @@ async function _getInstantAvailable(hashes, apiKey, retries = 3) {
         return response;
       })
       .catch(error => {
-        if (retries > 0 && ['ENOTFOUND', 'ETIMEDOUT'].some(v => error.message && error.message.includes(v))) {
+        if (retries > 0 && BLACKLIST_ERRORS.some(v => error.message && error.message.includes(v))) {
           blacklistProxy(options.agent.proxy.host);
           return uncacheProxy('moch').then(() => _getInstantAvailable(hashes, apiKey, retries - 1));
         }
-        if (retries > 0 && ['ESOCKETTIMEDOUT', 'EAI_AGAIN'].some(v => error.message && error.message.includes(v))) {
+        if (retries > 0 && NON_BLACKLIST_ERRORS.some(v => error.message && error.message.includes(v))) {
           return _getInstantAvailable(hashes, apiKey, retries - 1);
         }
         console.warn(`Failed RealDebrid cached [${hashes[0]}] torrent availability request: `, error.message);
