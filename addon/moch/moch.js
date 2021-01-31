@@ -45,9 +45,8 @@ async function applyMochs(streams, config) {
     return streams;
   }
 
-  const onlyCached = options.onlyCachedLinks(config);
-  const onlyCachedIfAvailable = options.onlyCachedLinksIfAvailable(config);
-  const includeDownloadLinks = options.includeDownloadLinks(config);
+  const includeTorrentLinks = options.includeTorrentLinks(config);
+  const excludeDownloadLinks = options.excludeDownloadLinks(config);
 
   const configuredMochs = Object.keys(config)
       .filter(configKey => MOCHS[configKey])
@@ -60,12 +59,9 @@ async function applyMochs(streams, config) {
       .then(results => results.filter(result => result && result.mochStreams));
   const cachedStreams = mochResults
       .reduce((resultStreams, mochResult) => populateCachedLinks(resultStreams, mochResult), streams);
-  const hasCachedStreams = cachedStreams.find(stream => stream.url);
+  const resultStreams = excludeDownloadLinks ? cachedStreams : populateDownloadLinks(cachedStreams, mochResults);
 
-  const resultStreams = includeDownloadLinks ? populateDownloadLinks(cachedStreams, mochResults) : cachedStreams;
-  return onlyCached || onlyCachedIfAvailable && hasCachedStreams
-      ? resultStreams.filter(stream => stream.url)
-      : resultStreams;
+  return includeTorrentLinks ? resultStreams : resultStreams.filter(stream => stream.url);
 }
 
 async function resolve(parameters) {
@@ -119,19 +115,16 @@ async function getMochItemMeta(mochKey, itemId, config) {
 }
 
 function populateCachedLinks(streams, mochResult) {
-  streams
-      .filter(stream => stream.infoHash)
-      .forEach(stream => {
-        const cachedEntry = mochResult.mochStreams[stream.infoHash];
-        if (cachedEntry && cachedEntry.cached) {
-          stream.name = `[${mochResult.moch.shortName}+] ${stream.name}`;
-          stream.url = `${RESOLVER_HOST}/${mochResult.moch.key}/${cachedEntry.url}`;
-          delete stream.infoHash;
-          delete stream.fileIndex;
-          delete stream.sources;
-        }
-      });
-  return streams;
+  return streams.map(stream => {
+    const cachedEntry = stream.infoHash && mochResult.mochStreams[stream.infoHash];
+    if (cachedEntry && cachedEntry.cached) {
+      return {
+        name: `[${mochResult.moch.shortName}+] ${stream.name}`,
+        url: `${RESOLVER_HOST}/${mochResult.moch.key}/${cachedEntry.url}`
+      };
+    }
+    return stream;
+  });
 }
 
 function populateDownloadLinks(streams, mochResults) {

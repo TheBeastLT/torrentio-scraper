@@ -1,34 +1,25 @@
 const DebridOptions = {
   key: 'debridoptions',
   options: {
-    onlyCached: {
-      key: 'onlycached',
-      description: 'Show only cached debrid links'
+    noDownloadLinks: {
+      key: 'nodownloadlinks',
+      description: 'Don\'t show download to debrid links'
     },
-    onlyCachedIfAvailable: {
-      key: 'onlycachedifavailable',
-      description: 'Show only cached debrid links if available'
-    },
-    downloadLinks: {
-      key: 'downloadlinks',
-      description: 'Show download to debrid links for uncached'
+    torrentLinks: {
+      key: 'torrentlinks',
+      description: 'Show P2P torrent links for uncached'
     }
   }
 }
 
-function onlyCachedLinks(config) {
+function excludeDownloadLinks(config) {
   return config[DebridOptions.key] && config[DebridOptions.key]
-      .includes(DebridOptions.options.onlyCached.key);
+      .includes(DebridOptions.options.noDownloadLinks.key);
 }
 
-function onlyCachedLinksIfAvailable(config) {
+function includeTorrentLinks(config) {
   return config[DebridOptions.key] && config[DebridOptions.key]
-      .includes(DebridOptions.options.onlyCachedIfAvailable.key);
+      .includes(DebridOptions.options.torrentLinks.key);
 }
 
-function includeDownloadLinks(config) {
-  return config[DebridOptions.key] && config[DebridOptions.key]
-      .includes(DebridOptions.options.downloadLinks.key);
-}
-
-module.exports = { DebridOptions, onlyCachedLinks, onlyCachedLinksIfAvailable, includeDownloadLinks }
+module.exports = { DebridOptions, excludeDownloadLinks, includeTorrentLinks }
