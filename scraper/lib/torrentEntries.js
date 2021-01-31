@@ -5,6 +5,7 @@ const repository = require('./repository');
 const { getImdbId, getKitsuId } = require('./metadata');
 const { parseTorrentFiles } = require('./torrentFiles');
 const { assignSubtitles } = require('./torrentSubtitles');
+const { isPackTorrent } = require('./parseHelper')
 
 async function createTorrentEntry(torrent, overwrite = false) {
   const titleInfo = parse(torrent.title);
@@ -30,7 +31,7 @@ async function createTorrentEntry(torrent, overwrite = false) {
         .catch(() => undefined);
   }
 
-  if (!torrent.imdbId && !torrent.kitsuId && !titleInfo.complete && typeof titleInfo.year !== 'string') {
+  if (!torrent.imdbId && !torrent.kitsuId && !isPackTorrent(torrent)) {
     console.log(`imdbId or kitsuId not found:  ${torrent.provider} ${torrent.title}`);
     return;
   }

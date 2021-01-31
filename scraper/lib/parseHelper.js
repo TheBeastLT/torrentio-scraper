@@ -1,6 +1,8 @@
 const { parse } = require('parse-torrent-title');
 const { Type } = require('./types');
 
+const MULTIPLE_FILES_SIZE = 4 * 1024 * 1024 * 1024; // 4 GB
+
 function parseSeriesVideos(torrent, videos) {
   const parsedTorrentName = parse(torrent.title);
   const hasMovies = parsedTorrentName.complete || !!torrent.title.match(/movies?(?:\W|$)/i);
@@ -68,4 +70,18 @@ function isMovieVideo(video, otherVideos, type, hasMovies) {
       && otherVideos.filter(other => other.title === video.title && other.year === video.year) < 3;
 }
 
-module.exports = { parseSeriesVideos }
+function isPackTorrent(torrent) {
+  if (torrent.pack) {
+    return true;
+  }
+  const parsedInfo = parse(torrent.title);
+  if (torrent.type === Type.MOVIE) {
+    return parsedInfo.complete || typeof parsedInfo.year === 'string' || /movies/i.test(torrent.title);
+  }
+  const hasMultipleEpisodes = parsedInfo.complete || torrent.size > MULTIPLE_FILES_SIZE ||
+      (parsedInfo.seasons && parsedInfo.seasons.length > 1);
+  const hasSingleEpisode = Number.isInteger(parsedInfo.episode) || (!parsedInfo.episodes && parsedInfo.date);
+  return hasMultipleEpisodes && !hasSingleEpisode;
+}
+
+module.exports = { parseSeriesVideos, isPackTorrent }

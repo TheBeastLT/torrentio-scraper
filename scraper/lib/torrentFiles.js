@@ -4,12 +4,11 @@ const { parse } = require('parse-torrent-title');
 const Promises = require('../lib/promises');
 const { torrentFiles } = require('../lib/torrent');
 const { getMetadata, getImdbId, getKitsuId } = require('../lib/metadata');
-const { parseSeriesVideos } = require('../lib/parseHelper');
+const { parseSeriesVideos, isPackTorrent } = require('../lib/parseHelper');
 const { Type } = require('./types');
 const { isDisk } = require('./extension');
 
 const MIN_SIZE = 5 * 1024 * 1024; // 5 MB
-const MULTIPLE_FILES_SIZE = 4 * 1024 * 1024 * 1024; // 4 GB
 
 async function parseTorrentFiles(torrent) {
   const parsedTorrentName = parse(torrent.title);
@@ -34,7 +33,7 @@ async function parseTorrentFiles(torrent) {
 }
 
 async function parseMovieFiles(torrent, parsedName, metadata) {
-  const { contents, videos, subtitles } = await getMoviesTorrentContent(torrent, parsedName);
+  const { contents, videos, subtitles } = await getMoviesTorrentContent(torrent);
   const filteredVideos = videos
       .filter(video => video.size > MIN_SIZE)
       .filter(video => !isFeaturette(video));
@@ -65,7 +64,7 @@ async function parseMovieFiles(torrent, parsedName, metadata) {
 }
 
 async function parseSeriesFiles(torrent, parsedName, metadata) {
-  const { contents, videos, subtitles } = await getSeriesTorrentContent(torrent, parsedName);
+  const { contents, videos, subtitles } = await getSeriesTorrentContent(torrent);
   const parsedVideos = await Promise.resolve(videos)
       .then(videos => videos.filter(video => videos.length === 1 || video.size > MIN_SIZE))
       .then(videos => parseSeriesVideos(torrent, videos))
@@ -80,28 +79,24 @@ async function parseSeriesFiles(torrent, parsedName, metadata) {
   return { contents, videos: parsedVideos, subtitles };
 }
 
-async function getMoviesTorrentContent(torrent, parsedName) {
-  const hasMultipleMovie = parsedName.complete || typeof parsedName.year === 'string';
+async function getMoviesTorrentContent(torrent) {
   const files = await torrentFiles(torrent)
       .catch(error => {
-        if (!hasMultipleMovie) {
+        if (!isPackTorrent(torrent)) {
           return { videos: [{ name: torrent.title, path: torrent.title, size: torrent.size }] }
         }
         return Promise.reject(error);
       });
-  if (files.contents && files.contents.length && !files.length && isDiskTorrent(files.contents)) {
+  if (files.contents && files.contents.length && !files.videos.length && isDiskTorrent(files.contents)) {
     files.videos = [{ name: torrent.title, path: torrent.title, size: torrent.size }];
   }
   return files;
 }
 
-async function getSeriesTorrentContent(torrent, parsedName) {
-  const hasMultipleEpisodes = parsedName.complete || torrent.size > MULTIPLE_FILES_SIZE ||
-      (parsedName.seasons && parsedName.seasons.length > 1);
-  const hasSingleEpisode = Number.isInteger(parsedName.episode) || (!parsedName.episodes && parsedName.date);
+async function getSeriesTorrentContent(torrent) {
   return torrentFiles(torrent)
       .catch(error => {
-        if (!hasMultipleEpisodes && hasSingleEpisode) {
+        if (!isPackTorrent(torrent)) {
           return { videos: [{ name: torrent.title, path: torrent.title, size: torrent.size }] }
         }
         return Promise.reject(error);
