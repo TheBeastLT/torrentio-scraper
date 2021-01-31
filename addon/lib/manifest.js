@@ -13,7 +13,7 @@ const Providers = [
   'NyaaPantsu'
 ];
 const DefaultProviders = Providers
-const CatalogMochs = [MochOptions.realdebrid, MochOptions.alldebrid];
+const CatalogMochs = Object.values(MochOptions).filter(moch => moch.catalog);
 
 function manifest(config = {}) {
   const providersList = config.providers && config.providers.map(provider => getProvider(provider)) || DefaultProviders;

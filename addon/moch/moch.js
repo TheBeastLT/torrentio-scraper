@@ -14,25 +14,29 @@ const MOCHS = {
     key: 'realdebrid',
     instance: realdebrid,
     name: "RealDebrid",
-    shortName: 'RD'
+    shortName: 'RD',
+    catalog: true
   },
   premiumize: {
     key: 'premiumize',
     instance: premiumize,
     name: 'Premiumize',
-    shortName: 'PM'
+    shortName: 'PM',
+    catalog: true
   },
   alldebrid: {
     key: 'alldebrid',
     instance: alldebrid,
     name: 'AllDebrid',
-    shortName: 'AD'
+    shortName: 'AD',
+    catalog: true
   },
   putio: {
     key: 'putio',
     instance: putio,
     name: 'Put.io',
-    shortName: 'Putio'
+    shortName: 'Putio',
+    catalog: false
   }
 };
 
