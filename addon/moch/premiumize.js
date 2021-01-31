@@ -49,11 +49,11 @@ async function getCatalog(apiKey, offset = 0) {
           })));
 }
 
-async function getItemMeta(itemId, apiKey) {
+async function getItemMeta(itemId, apiKey, ip) {
   const options = await getDefaultOptions(apiKey);
   const PM = new PremiumizeClient(apiKey, options);
   const rootFolder = await PM.folder.list(itemId, null);
-  return getFolderContents(PM, itemId)
+  return getFolderContents(PM, itemId, ip)
       .then(contents => ({
         id: `${KEY}:${itemId}`,
         type: Type.OTHER,
@@ -85,7 +85,7 @@ async function getFolderContents(PM, itemId, ip, folderPrefix = '') {
 
 async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex }) {
   console.log(`Unrestricting ${infoHash} [${fileIndex}] for IP ${ip}`);
-  const options = await getDefaultOptions(apiKey, ip);
+  const options = await getDefaultOptions(apiKey);
   const PM = new PremiumizeClient(apiKey, options);
 
   const cachedLink = await _getCachedLink(PM, infoHash, cachedEntryInfo, fileIndex, ip).catch(() => undefined);
@@ -160,12 +160,10 @@ function statusReady(status) {
   return ['finished', 'seeding'].includes(status);
 }
 
-async function getDefaultOptions(id, ip) {
+async function getDefaultOptions(id) {
   const userAgent = await cacheUserAgent(id, () => getRandomUserAgent()).catch(() => getRandomUserAgent());
-  const proxy = await cacheWrapProxy('moch', () => getRandomProxy()).catch(() => getRandomProxy());
-  const agent = getProxyAgent(proxy);
 
-  return { timeout: 30000, agent: agent, headers: { 'User-Agent': userAgent } };
+  return { timeout: 30000, headers: { 'User-Agent': userAgent } };
 }
 
 module.exports = { getCachedStreams, resolve, getCatalog, getItemMeta };

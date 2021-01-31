@@ -98,7 +98,7 @@ async function getMochCatalog(mochKey, config) {
     return Promise.reject(`Invalid API key for moch provider: ${mochKey}`);
   }
 
-  return moch.instance.getCatalog(config[moch.key], config.skip);
+  return moch.instance.getCatalog(config[moch.key], config.skip, config.ip);
 }
 
 async function getMochItemMeta(mochKey, itemId, config) {
@@ -107,7 +107,7 @@ async function getMochItemMeta(mochKey, itemId, config) {
     return Promise.reject(`Not a valid moch provider: ${mochKey}`);
   }
 
-  return moch.instance.getItemMeta(itemId, config[moch.key])
+  return moch.instance.getItemMeta(itemId, config[moch.key], config.ip)
       .then(meta => {
         meta.videos
             .map(video => video.streams)
