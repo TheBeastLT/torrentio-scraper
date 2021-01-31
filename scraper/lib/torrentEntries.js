@@ -100,6 +100,10 @@ async function checkAndUpdateTorrent(torrent) {
   if (!storedTorrent) {
     return false;
   }
+  if (storedTorrent.provider === 'KickassTorrents' && torrent.provider) {
+    storedTorrent.provider = torrent.provider;
+    storedTorrent.torrentId = torrent.torrentId;
+  }
   return createTorrentContents({ ...storedTorrent.get(), torrentLink: torrent.torrentLink })
       .then(() => updateTorrentSeeders(torrent));
 }
