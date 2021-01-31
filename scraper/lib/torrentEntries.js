@@ -100,7 +100,7 @@ async function checkAndUpdateTorrent(torrent) {
   if (!storedTorrent) {
     return false;
   }
-  return createTorrentContents(storedTorrent)
+  return createTorrentContents({ ...storedTorrent.get(), torrentLink: torrent.torrentLink })
       .then(() => updateTorrentSeeders(torrent));
 }
 
@@ -116,7 +116,7 @@ async function createTorrentContents(torrent) {
   const imdbId = Promises.mostCommonValue(storedVideos.map(stored => stored.imdbId));
   const kitsuId = Promises.mostCommonValue(storedVideos.map(stored => stored.kitsuId));
 
-  const { contents, videos, subtitles } = await parseTorrentFiles({ ...torrent.get(), imdbId, kitsuId })
+  const { contents, videos, subtitles } = await parseTorrentFiles({ ...torrent, imdbId, kitsuId })
       .then(torrentContents => notOpenedVideo ? torrentContents : { ...torrentContents, videos: storedVideos })
       .then(torrentContents => assignSubtitles(torrentContents))
       .catch(error => {
@@ -138,7 +138,7 @@ async function createTorrentContents(torrent) {
   // no videos available or more than one new videos were in the torrent
   const shouldDeleteOld = notOpenedVideo && videos.every(video => !video.id);
 
-  return repository.createTorrent({ ...torrent.get(), contents, subtitles })
+  return repository.createTorrent({ ...torrent, contents, subtitles })
       .then(() => {
         if (shouldDeleteOld) {
           console.error(`Deleting old video for [${torrent.infoHash}] ${torrent.title}`)
