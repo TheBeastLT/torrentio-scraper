@@ -190,8 +190,10 @@ function landingTemplate(manifest, config = {}) {
   const sort = config.sort || SortOptions.options.qualitySeeders.key;
   const limit = config.limit || '';
 
+  const debridProvider = Object.keys(MochOptions).find(mochKey => config[mochKey]);
   const debridOptions = config[DebridOptions.key] || [];
   const realDebridApiKey = config[MochOptions.realdebrid.key] || '';
+  const premiumizeApiKey = config[MochOptions.premiumize.key] || '';
   const allDebridApiKey = config[MochOptions.alldebrid.key] || '';
   const putioKey = config[MochOptions.putio.key] || '';
   const putioClientId = putioKey.replace(/@.*/, '');
@@ -210,8 +212,11 @@ function landingTemplate(manifest, config = {}) {
   const sortOptionsHTML = Object.values(SortOptions.options)
       .map((option, i) => `<option value="${option.key}" ${i === 0 ? 'selected' : ''}>${option.description}</option>`)
       .join('\n');
+  const debridProvidersHTML = Object.values(MochOptions)
+      .map(moch => `<option value="${moch.key}">${moch.name}</option>`)
+      .join('\n');
   const debridOptionsHTML = Object.values(DebridOptions.options)
-      .map((option) => `<option value="${option.key}">${option.description}</option>`)
+      .map(option => `<option value="${option.key}">${option.description}</option>`)
       .join('\n');
   const stylizedTypes = manifest.types
       .map(t => t[0].toUpperCase() + t.slice(1) + (t !== 'series' ? 's' : ''));
@@ -265,20 +270,39 @@ function landingTemplate(manifest, config = {}) {
          <label class="label" id="iLimitLabel" for="iLimit">Max results per quality:</label>
          <input type="text" id="iLimit" onchange="generateInstallLink()" class="input"  placeholder="All results">
          
-         <label class="label" for="iDebridOptions">Debrid options:</label>
-         <select id="iDebridOptions" class="input" name="debridOptions[]" multiple="multiple">
-            ${debridOptionsHTML}
+         <label class="label" for="iDebridProviders">Debrid provider:</label>
+         <select id="iDebridProviders" class="input" onchange="debridProvidersChange()">
+            <option value="none" selected>None</option>
+            ${debridProvidersHTML}
          </select>
          
-         <label class="label" for="iRealDebrid">RealDebrid API Key (Find it <a href='https://real-debrid.com/apitoken' target="_blank">here</a>):</label>
-         <input type="text" id="iRealDebrid" onchange="generateInstallLink()" class="input">
+         <div id="dRealDebrid">
+           <label class="label" for="iRealDebrid">RealDebrid API Key (Find it <a href='https://real-debrid.com/apitoken' target="_blank">here</a>):</label>
+           <input type="text" id="iRealDebrid" onchange="generateInstallLink()" class="input">
+         </div>
          
-         <label class="label" for="iAllDebrid">AllDebrid API Key (Create it <a href='https://alldebrid.com/apikeys' target="_blank">here</a>):</label>
-         <input type="text" id="iAllDebrid" onchange="generateInstallLink()" class="input">
+         <div id="dAllDebrid">
+           <label class="label" for="iAllDebrid">AllDebrid API Key (Create it <a href='https://alldebrid.com/apikeys' target="_blank">here</a>):</label>
+           <input type="text" id="iAllDebrid" onchange="generateInstallLink()" class="input">
+         </div>
          
-         <label class="label" for="iPutio">Put.io ClientId and Token (Create new OAuth App <a href='https://app.put.io/settings/account/oauth/apps' target="_blank">here</a>):</label>
-         <input type="text" id="iPutioClientId" placeholder="ClientId" onchange="generateInstallLink()" class="input">
-         <input type="text" id="iPutioToken" placeholder="Token" onchange="generateInstallLink()" class="input">
+         <div id="dPremiumize">
+           <label class="label" for="iPremiumize">Premiumize API Key (Find it <a href='https://www.premiumize.me/account' target="_blank">here</a>):</label>
+           <input type="text" id="iPremiumize" onchange="generateInstallLink()" class="input">
+         </div>
+         
+         <div id="dPutio">
+           <label class="label" for="iPutio">Put.io ClientId and Token (Create new OAuth App <a href='https://app.put.io/settings/account/oauth/apps' target="_blank">here</a>):</label>
+           <input type="text" id="iPutioClientId" placeholder="ClientId" onchange="generateInstallLink()" class="input">
+           <input type="text" id="iPutioToken" placeholder="Token" onchange="generateInstallLink()" class="input">
+         </div>
+         
+         <div id="dDebridOptions">
+           <label class="label" for="iDebridOptions">Debrid options:</label>
+           <select id="iDebridOptions" class="input" name="debridOptions[]" multiple="multiple">
+              ${debridOptionsHTML}
+           </select>
+         </div>
          
          <div class="separator"></div>
 
@@ -299,13 +323,16 @@ function landingTemplate(manifest, config = {}) {
                   onChange: () => generateInstallLink()
               });
               $('#iDebridOptions').multiselect('select', [${debridOptions.map(option => '"' + option + '"')}]);
+              $('#iDebridProviders').val("${debridProvider || 'none'}");
               $('#iRealDebrid').val("${realDebridApiKey}");
+              $('#iPremiumize').val("${premiumizeApiKey}");
               $('#iAllDebrid').val("${allDebridApiKey}");
               $('#iPutioClientId').val("${putioClientId}");
               $('#iPutioToken').val("${putioToken}");
               $('#iSort').val("${sort}");
               $('#iLimit').val("${limit}");
               generateInstallLink();
+              debridProvidersChange();
           });
           
           function sortModeChange() {
@@ -317,6 +344,15 @@ function landingTemplate(manifest, config = {}) {
             generateInstallLink();
           }
           
+          function debridProvidersChange() {
+            const provider = $('#iDebridProviders').val()
+            $('#dDebridOptions').toggle(provider !== 'none');
+            $('#dRealDebrid').toggle(provider === '${MochOptions.realdebrid.key}');
+            $('#dPremiumize').toggle(provider === '${MochOptions.premiumize.key}');
+            $('#dAllDebrid').toggle(provider === '${MochOptions.alldebrid.key}');
+            $('#dPutio').toggle(provider === '${MochOptions.putio.key}');
+          }
+          
           function generateInstallLink() {
               const providersValue = $('#iProviders').val().join(',') || '';
               const sortValue = $('#iSort').val() || '';
@@ -325,6 +361,7 @@ function landingTemplate(manifest, config = {}) {
               const debridOptionsValue = $('#iDebridOptions').val().join(',') || '';
               const realDebridValue = $('#iRealDebrid').val() || '';
               const allDebridValue = $('#iAllDebrid').val() || '';
+              const premiumizeValue = $('#iPremiumize').val() || '';
               const putioClientIdValue = $('#iPutioClientId').val() || '';
               const putioTokenValue = $('#iPutioToken').val() || '';
               
@@ -335,16 +372,18 @@ function landingTemplate(manifest, config = {}) {
               
               const debridOptions = debridOptionsValue.length && debridOptionsValue.trim();
               const realDebrid = realDebridValue.length && realDebridValue.trim();
+              const premiumize = premiumizeValue.length && premiumizeValue.trim();
               const allDebrid = allDebridValue.length && allDebridValue.trim();
               const putio = putioClientIdValue.length && putioTokenValue.length && putioClientIdValue.trim() + '@' + putioTokenValue.trim();
               
               const configurationValue = [
-                    ['providers', providers], 
-                    ['${SortOptions.key}', sort], 
-                    ['limit', limit], 
+                    ['providers', providers],
+                    ['${SortOptions.key}', sort],
+                    ['limit', limit],
                     ['${DebridOptions.key}', debridOptions], 
-                    ['${MochOptions.realdebrid.key}', realDebrid], 
-                    ['${MochOptions.alldebrid.key}', allDebrid], 
+                    ['${MochOptions.realdebrid.key}', realDebrid],
+                    ['${MochOptions.premiumize.key}', premiumize],
+                    ['${MochOptions.alldebrid.key}', allDebrid],
                     ['${MochOptions.putio.key}', putio]
                   ].filter(([_, value]) => value.length).map(([key, value]) => key + '=' + value).join('|');
               const configuration = configurationValue && configurationValue.length ? '/' + configurationValue : '';
