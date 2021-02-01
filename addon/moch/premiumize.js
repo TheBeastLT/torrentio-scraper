@@ -84,7 +84,7 @@ async function getFolderContents(PM, itemId, ip, folderPrefix = '') {
 }
 
 async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex }) {
-  console.log(`Unrestricting ${infoHash} [${fileIndex}] for IP ${ip}`);
+  console.log(`Unrestricting Premiumize ${infoHash} [${fileIndex}] for IP ${ip}`);
   const options = await getDefaultOptions(apiKey);
   const PM = new PremiumizeClient(apiKey, options);
 
@@ -124,7 +124,7 @@ async function _getCachedLink(PM, infoHash, encodedFileName, fileIndex, ip) {
         ? videos.find(video => video.path.includes(targetFileName))
         : videos.sort((a, b) => b.size - a.size)[0];
     const unrestrictedLink = targetVideo.stream_link || targetVideo.link;
-    console.log(`Unrestricted ${infoHash} [${fileIndex}] to ${unrestrictedLink}`);
+    console.log(`Unrestricted Premiumize ${infoHash} [${fileIndex}] to ${unrestrictedLink}`);
     return unrestrictedLink;
   }
   return Promise.reject('No cached entry found');

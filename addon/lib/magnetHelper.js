@@ -32,17 +32,23 @@ async function getMagnetLink(infoHash) {
 }
 
 async function initBestTrackers() {
-  const options = { timeout: 30000, headers: { 'User-Agent': getRandomUserAgent() } };
+  BEST_TRACKERS = await getBestTrackers();
+  ALL_TRACKERS = BEST_TRACKERS.concat(ANIME_TRACKERS);
+  console.log('Retrieved best trackers: ', BEST_TRACKERS);
+}
 
-  BEST_TRACKERS = await needle('get', TRACKERS_URL, options)
+async function getBestTrackers(retry = 2) {
+  const options = { timeout: 30000, headers: { 'User-Agent': getRandomUserAgent() } };
+  return needle('get', TRACKERS_URL, options)
       .then(response => response.body && response.body.trim())
       .then(body => body && body.split('\n\n') || [])
       .catch(error => {
-        console.log(`Failed retrieving best trackers: ${error.message}`);
-        return [];
+        if (retry === 0) {
+          console.log(`Failed retrieving best trackers: ${error.message}`);
+          return [];
+        }
+        return getBestTrackers(retry - 1);
       });
-  ALL_TRACKERS = BEST_TRACKERS.concat(ANIME_TRACKERS);
-  console.log('Retrieved best trackers: ', BEST_TRACKERS);
 }
 
 module.exports = { initBestTrackers, getAllTrackers, getMagnetLink };
