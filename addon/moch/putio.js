@@ -26,6 +26,17 @@ async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex }) {
   const Putio = new PutioAPI({ clientID: clientId });
   Putio.setToken(token);
 
+  return _resolve(Putio, infoHash, cachedEntryInfo, fileIndex)
+      .catch(error => {
+        if (error && error.data && error.data.status_code === 401) {
+          console.log(`Access denied to Putio ${infoHash} [${fileIndex}]`);
+          return StaticResponse.FAILED_ACCESS;
+        }
+        return Promise.reject(`Failed Putio adding torrent ${JSON.stringify(error.data || error)}`);
+      });
+}
+
+async function _resolve(Putio, infoHash, cachedEntryInfo, fileIndex) {
   const torrent = await _createOrFindTorrent(Putio, infoHash);
   if (torrent && statusReady(torrent.status)) {
     return _unrestrictLink(Putio, torrent, cachedEntryInfo, fileIndex);
@@ -41,11 +52,7 @@ async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex }) {
 
 async function _createOrFindTorrent(Putio, infoHash) {
   return _findTorrent(Putio, infoHash)
-      .catch(() => _createTorrent(Putio, infoHash))
-      .catch(error => {
-        console.warn('Failed Putio torrent retrieval', error);
-        return error;
-      });
+      .catch(() => _createTorrent(Putio, infoHash));
 }
 
 async function _retryCreateTorrent(Putio, infoHash, encodedFileName, fileIndex) {
