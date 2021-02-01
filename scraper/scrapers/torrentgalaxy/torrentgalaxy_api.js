@@ -3,11 +3,12 @@ const needle = require('needle');
 const moment = require('moment');
 const decode = require('magnet-uri');
 const Promises = require('../../lib/promises');
+const { getRandomUserAgent } = require('../../lib/requestHelper');
 
 const defaultProxies = [
-  'https://torrentgalaxy.to',
+  // 'https://torrentgalaxy.to',
   // 'https://torrentgalaxy.mx',
-  // 'https://torrentgalaxy.su'
+  'https://torrentgalaxy.su'
 ];
 const defaultTimeout = 10000;
 
@@ -53,9 +54,9 @@ function search(keyword, config = {}, retries = 2) {
       .catch(() => search(keyword, config, retries - 1));
 }
 
-function browse(config = {}, retries = 2) {
+function browse(config = {}, retries = 2, error = null) {
   if (retries === 0) {
-    return Promise.reject(new Error(`Failed browse request`));
+    return Promise.reject(error || new Error(`Failed browse request`));
   }
   const proxyList = config.proxyList || defaultProxies;
   const page = config.page || 1;
@@ -64,17 +65,17 @@ function browse(config = {}, retries = 2) {
   return Promises.first(proxyList
       .map((proxyUrl) => singleRequest(`${proxyUrl}/torrents.php?cat=${category}&page=${page - 1}`)))
       .then((body) => parseTableBody(body))
-      .catch(() => browse(config, retries - 1));
+      .catch((err) => browse(config, retries - 1, err));
 }
 
 function singleRequest(requestUrl) {
-  const options = { open_timeout: defaultTimeout, follow: 2 };
+  const options = { userAgent: getRandomUserAgent(), open_timeout: defaultTimeout, follow: 2 };
 
   return needle('get', requestUrl, options)
       .then((response) => {
         const body = response.body;
         if (!body) {
-          throw new Error(`No body: ${requestUrl}`);
+          throw new Error(`No body: ${requestUrl} with status ${response.statusCode}`);
         } else if (body.includes('Access Denied')) {
           console.log(`Access Denied: ${requestUrl}`);
           throw new Error(`Access Denied: ${requestUrl}`);
@@ -102,21 +103,25 @@ function parseTableBody(body) {
       const row = $(element);
       const magnetLink = row.find('div:nth-of-type(n+2) .collapsehide > a:nth-of-type(2)').attr('href');
       const imdbIdMatch = row.html().match(/search=(tt\d+)/i);
-      torrents.push({
-        name: row.find('.tgxtablecell div a[title]').first().text(),
-        infoHash: decode(magnetLink).infoHash,
-        magnetLink: magnetLink,
-        torrentLink: row.find('div:nth-of-type(n+2) .collapsehide > a:nth-of-type(1)').first().attr('href'),
-        torrentId: row.find('.tgxtablecell div a[title]').first().attr('href').match(/torrent\/(\d+)/)[1],
-        verified: !!row.find('i.fa-check').length,
-        category: row.find('div:nth-of-type(n+2) .shrink a').first().attr('href').match(/cat=(\d+)$/)[1],
-        seeders: parseInt(row.find('div:nth-of-type(n+2) .collapsehide [color=\'green\'] b').first().text()),
-        leechers: parseInt(row.find('div:nth-of-type(n+2) .collapsehide [color=\'#ff0000\'] b').first().text()),
-        languages: row.find('.tgxtablecell img[title]').first().attr('title'),
-        size: parseSize(row.find('.collapsehide span.badge-secondary').first().text()),
-        uploadDate: parseDate(row.find('div.collapsehide:nth-of-type(12)').first().text()),
-        imdbId: imdbIdMatch && imdbIdMatch[1],
-      });
+      try {
+        torrents.push({
+          name: row.find('.tgxtablecell div a[title]').first().text(),
+          infoHash: decode(magnetLink).infoHash,
+          magnetLink: magnetLink,
+          torrentLink: row.find('div:nth-of-type(n+2) .collapsehide > a:nth-of-type(1)').first().attr('href'),
+          torrentId: row.find('.tgxtablecell div a[title]').first().attr('href').match(/torrent\/(\d+)/)[1],
+          verified: !!row.find('i.fa-check').length,
+          category: row.find('div:nth-of-type(n+2) .shrink a').first().attr('href').match(/cat=(\d+)$/)[1],
+          seeders: parseInt(row.find('div:nth-of-type(n+2) .collapsehide [color=\'green\'] b').first().text()),
+          leechers: parseInt(row.find('div:nth-of-type(n+2) .collapsehide [color=\'#ff0000\'] b').first().text()),
+          languages: row.find('.tgxtablecell img[title]').first().attr('title'),
+          size: parseSize(row.find('.collapsehide span.badge-secondary').first().text()),
+          uploadDate: parseDate(row.find('div.collapsehide:nth-of-type(12)').first().text()),
+          imdbId: imdbIdMatch && imdbIdMatch[1],
+        });
+      } catch (e) {
+        console.error('Failed parsing TorrentGalaxy row: ', e);
+      }
     });
 
     resolve(torrents);

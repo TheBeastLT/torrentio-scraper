@@ -9,6 +9,7 @@ const { createTorrentEntry, checkAndUpdateTorrent } = require('../../lib/torrent
 const NAME = 'TorrentGalaxy';
 const TYPE_MAPPING = typeMapping();
 
+const api_limiter = new Bottleneck({ maxConcurrent: 1, minTime: 5000 });
 const limiter = new Bottleneck({ maxConcurrent: 10 });
 const allowedCategories = [
   torrentGalaxy.Categories.ANIME,
@@ -21,7 +22,6 @@ const allowedCategories = [
   torrentGalaxy.Categories.TV_SD,
   torrentGalaxy.Categories.TV_HD,
   torrentGalaxy.Categories.TV_PACKS,
-  torrentGalaxy.Categories.TV_SPORT,
   torrentGalaxy.Categories.DOCUMENTARIES,
 ];
 const packCategories = [
@@ -57,7 +57,7 @@ async function scrapeLatestTorrents() {
 
 async function scrapeLatestTorrentsForCategory(category, page = 1) {
   console.log(`Scrapping ${NAME} ${category} category page ${page}`);
-  return torrentGalaxy.browse(({ category, page }))
+  return api_limiter.schedule(() => torrentGalaxy.browse({ category, page }))
       .catch(error => {
         console.warn(`Failed ${NAME} scrapping for [${page}] ${category} due: `, error);
         return Promise.resolve([]);
@@ -71,10 +71,6 @@ async function scrapeLatestTorrentsForCategory(category, page = 1) {
 async function processTorrentRecord(record) {
   if (!record || !TYPE_MAPPING[record.category] || !record.verified) {
     return Promise.resolve('Invalid torrent record');
-  }
-
-  if (await checkAndUpdateTorrent(record)) {
-    return record;
   }
 
   const torrent = {
@@ -91,6 +87,15 @@ async function processTorrentRecord(record) {
     pack: packCategories.includes(record.category),
     languages: !(record.languages || '').includes('Other') ? record.languages : undefined
   };
+
+  if (await checkAndUpdateTorrent(torrent)) {
+    return torrent;
+  }
+  const isOld = moment(torrent.uploadDate).isBefore(moment().subtract(18, 'month'));
+  if (torrent.seeders === 0 && isOld && !torrent.pack) {
+    console.log(`Skipping old unseeded torrent [${torrent.infoHash}] ${torrent.title}`)
+    return torrent;
+  }
 
   return createTorrentEntry(torrent).then(() => torrent);
 }
@@ -116,7 +121,6 @@ function getMaxPage(category) {
   switch (category) {
     case torrentGalaxy.Categories.TV_SD:
     case torrentGalaxy.Categories.TV_HD:
-      return 10;
     case torrentGalaxy.Categories.MOVIE_SD:
     case torrentGalaxy.Categories.MOVIE_HD:
       return 5;
