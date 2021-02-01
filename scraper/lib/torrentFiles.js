@@ -143,7 +143,7 @@ async function mapSeriesMovie(file, torrent) {
     size: file.size,
     imdbId: metadata.imdbId || imdbId,
     kitsuId: metadata.kitsuId || kitsuId,
-    imdbSeason: episodeVideo && metadata.imdbId ? episodeVideo.imdbSeason || episodeVideo.season : undefined,
+    imdbSeason: episodeVideo && metadata.imdbId ? episodeVideo.imdbSeason : undefined,
     imdbEpisode: episodeVideo && metadata.imdbId ? episodeVideo.imdbEpisode || episodeVideo.episode : undefined,
     kitsuEpisode: episodeVideo && metadata.kitsuId ? episodeVideo.kitsuEpisode || episodeVideo.episode : undefined
   }];
