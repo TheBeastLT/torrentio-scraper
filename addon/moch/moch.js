@@ -124,6 +124,7 @@ function populateCachedLinks(streams, mochResult) {
     if (cachedEntry && cachedEntry.cached) {
       return {
         name: `[${mochResult.moch.shortName}+] ${stream.name}`,
+        title: stream.title,
         url: `${RESOLVER_HOST}/${mochResult.moch.key}/${cachedEntry.url}`
       };
     }
