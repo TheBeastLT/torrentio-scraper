@@ -93,6 +93,17 @@ async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex }) {
     return cachedLink;
   }
 
+  return _resolve(PM, infoHash, cachedEntryInfo, fileIndex)
+      .catch(error => {
+        if (error && error.message && error.message.includes('purchase')) {
+          console.log(`Access denied to Premiumize ${infoHash} [${fileIndex}]`);
+          return StaticResponse.FAILED_ACCESS;
+        }
+        return Promise.reject(`Failed Premiumize adding torrent ${JSON.stringify(error)}`);
+      });
+}
+
+async function _resolve(PM, infoHash, cachedEntryInfo, fileIndex) {
   const torrent = await _createOrFindTorrent(PM, infoHash);
   if (torrent && statusReady(torrent.status)) {
     return _getCachedLink(PM, infoHash, cachedEntryInfo, fileIndex, ip);
@@ -121,11 +132,7 @@ async function _getCachedLink(PM, infoHash, encodedFileName, fileIndex, ip) {
 
 async function _createOrFindTorrent(PM, infoHash) {
   return _findTorrent(PM, infoHash)
-      .catch(() => _createTorrent(PM, infoHash))
-      .catch(error => {
-        console.warn('Failed Premiumize torrent retrieval', error);
-        return error;
-      });
+      .catch(() => _createTorrent(PM, infoHash));
 }
 
 async function _findTorrent(PM, infoHash) {
