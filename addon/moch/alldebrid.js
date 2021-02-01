@@ -7,6 +7,7 @@ const { cacheWrapProxy, cacheUserAgent } = require('../lib/cache');
 const { getMagnetLink } = require('../lib/magnetHelper');
 
 const KEY = 'alldebrid';
+const AGENT = 'torrentio';
 
 async function getCachedStreams(streams, apiKey) {
   const options = await getDefaultOptions(apiKey);
@@ -153,7 +154,7 @@ async function getDefaultOptions(id, ip) {
   const proxy = await cacheWrapProxy('moch', () => getRandomProxy()).catch(() => getRandomProxy());
   const agent = getProxyAgent(proxy);
 
-  return { timeout: 30000, agent: agent, headers: { 'User-Agent': userAgent } };
+  return { base_agent: AGENT, timeout: 30000, agent: agent, headers: { 'User-Agent': userAgent } };
 }
 
 function statusError(statusCode) {
