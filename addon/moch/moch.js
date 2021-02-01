@@ -45,7 +45,7 @@ const unrestrictQueue = new namedQueue((task, callback) => task.method()
     .catch((error => callback(error))));
 
 async function applyMochs(streams, config) {
-  if (!streams || !streams.length) {
+  if (!streams || !streams.length || !Object.keys(MOCHS).find(moch => config[moch])) {
     return streams;
   }
 
