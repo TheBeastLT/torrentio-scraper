@@ -3,8 +3,8 @@ const magnet = require('magnet-uri');
 const { Type } = require('../lib/types');
 const { isVideo } = require('../lib/extension');
 const StaticResponse = require('./static');
-const { getRandomProxy, getProxyAgent, getRandomUserAgent } = require('../lib/requestHelper');
-const { cacheWrapProxy, cacheUserAgent } = require('../lib/cache');
+const { getRandomUserAgent } = require('../lib/requestHelper');
+const { cacheUserAgent } = require('../lib/cache');
 const { getMagnetLink } = require('../lib/magnetHelper');
 
 const KEY = 'premiumize';
@@ -93,7 +93,7 @@ async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex }) {
     return cachedLink;
   }
 
-  return _resolve(PM, infoHash, cachedEntryInfo, fileIndex)
+  return _resolve(PM, infoHash, cachedEntryInfo, fileIndex, ip)
       .catch(error => {
         if (error && error.message && error.message.includes('purchase')) {
           console.log(`Access denied to Premiumize ${infoHash} [${fileIndex}]`);
@@ -103,7 +103,7 @@ async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex }) {
       });
 }
 
-async function _resolve(PM, infoHash, cachedEntryInfo, fileIndex) {
+async function _resolve(PM, infoHash, cachedEntryInfo, fileIndex, ip) {
   const torrent = await _createOrFindTorrent(PM, infoHash);
   if (torrent && statusReady(torrent.status)) {
     return _getCachedLink(PM, infoHash, cachedEntryInfo, fileIndex, ip);

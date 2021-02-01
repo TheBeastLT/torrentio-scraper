@@ -22,7 +22,7 @@
     "pg": "^7.8.2",
     "pg-hstore": "^2.3.2",
     "premiumize-api": "^1.0.3",
-    "real-debrid-api": "git://github.com/TheBeastLT/node-real-debrid.git#935a5c23ae809edbcd2a111526a7f74d6767c50d",
+    "real-debrid-api": "git://github.com/TheBeastLT/node-real-debrid.git#874f150f4c0b6ea5c67535c82b47f75ad96e50b8",
     "request-ip": "^2.1.3",
     "sequelize": "^4.43.0",
     "stremio-addon-sdk": "^1.6.1",

@@ -2,8 +2,8 @@ const AllDebridClient = require('all-debrid-api');
 const { Type } = require('../lib/types');
 const { isVideo, isArchive } = require('../lib/extension');
 const StaticResponse = require('./static');
-const { getRandomProxy, getProxyAgent, getRandomUserAgent } = require('../lib/requestHelper');
-const { cacheWrapProxy, cacheUserAgent } = require('../lib/cache');
+const { getRandomUserAgent } = require('../lib/requestHelper');
+const { cacheUserAgent } = require('../lib/cache');
 const { getMagnetLink } = require('../lib/magnetHelper');
 
 const KEY = 'alldebrid';
@@ -151,10 +151,8 @@ async function _unrestrictLink(AD, torrent, encodedFileName, fileIndex) {
 
 async function getDefaultOptions(id, ip) {
   const userAgent = await cacheUserAgent(id, () => getRandomUserAgent()).catch(() => getRandomUserAgent());
-  const proxy = await cacheWrapProxy('moch', () => getRandomProxy()).catch(() => getRandomProxy());
-  const agent = getProxyAgent(proxy);
 
-  return { base_agent: AGENT, timeout: 30000, agent: agent, headers: { 'User-Agent': userAgent } };
+  return { base_agent: AGENT, timeout: 30000, headers: { 'User-Agent': userAgent } };
 }
 
 function statusError(statusCode) {

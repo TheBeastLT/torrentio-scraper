@@ -3,8 +3,8 @@ const { Type } = require('../lib/types');
 const { isVideo, isArchive } = require('../lib/extension');
 const delay = require('./delay');
 const StaticResponse = require('./static');
-const { getRandomProxy, getProxyAgent, getRandomUserAgent, blacklistProxy } = require('../lib/requestHelper');
-const { cacheWrapProxy, cacheUserAgent, uncacheProxy } = require('../lib/cache');
+const { getRandomUserAgent } = require('../lib/requestHelper');
+const { cacheUserAgent } = require('../lib/cache');
 const { getMagnetLink } = require('../lib/magnetHelper');
 
 const MIN_SIZE = 5 * 1024 * 1024; // 5 MB
@@ -49,8 +49,7 @@ async function _getInstantAvailable(hashes, apiKey, retries = 3) {
       })
       .catch(error => {
         if (retries > 0 && BLACKLIST_ERRORS.some(v => error.message && error.message.includes(v))) {
-          blacklistProxy(options.agent.proxy.host);
-          return uncacheProxy('moch').then(() => _getInstantAvailable(hashes, apiKey, retries - 1));
+          return _getInstantAvailable(hashes, apiKey, retries - 1);
         }
         if (retries > 0 && NON_BLACKLIST_ERRORS.some(v => error.message && error.message.includes(v))) {
           return _getInstantAvailable(hashes, apiKey, retries - 1);
@@ -74,11 +73,11 @@ function _getCachedFileIds(fileIndex, hosterResults) {
   return cachedTorrents.length && cachedTorrents[0] || [];
 }
 
-async function getCatalog(apiKey, offset = 0) {
+async function getCatalog(apiKey, offset, ip) {
   if (offset > 0) {
     return [];
   }
-  const options = await getDefaultOptions(apiKey);
+  const options = await getDefaultOptions(apiKey, ip);
   const RD = new RealDebridClient(apiKey, options);
   return _getAllTorrents(RD)
       .then(torrents => Array.isArray(torrents) ? torrents : [])
@@ -100,8 +99,8 @@ async function _getAllTorrents(RD, page = 1) {
           : torrents)
 }
 
-async function getItemMeta(itemId, apiKey) {
-  const options = await getDefaultOptions(apiKey);
+async function getItemMeta(itemId, apiKey, ip) {
+  const options = await getDefaultOptions(apiKey, ip);
   const RD = new RealDebridClient(apiKey, options);
   return _getTorrentInfo(RD, itemId)
       .then(torrent => ({
@@ -122,9 +121,9 @@ async function getItemMeta(itemId, apiKey) {
       }))
 }
 
-async function resolve({ apiKey, infoHash, cachedEntryInfo, fileIndex }) {
+async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex }) {
   console.log(`Unrestricting RealDebrid ${infoHash} [${fileIndex}]`);
-  const options = await getDefaultOptions(apiKey);
+  const options = await getDefaultOptions(apiKey, ip);
   const RD = new RealDebridClient(apiKey, options);
 
   return _resolve(RD, infoHash, cachedEntryInfo, fileIndex)
@@ -291,12 +290,10 @@ function accessDeniedError(error) {
   return [9, 20].includes(error && error.code);
 }
 
-async function getDefaultOptions(id) {
+async function getDefaultOptions(id, ip) {
   const userAgent = await cacheUserAgent(id, () => getRandomUserAgent()).catch(() => getRandomUserAgent());
-  const proxy = await cacheWrapProxy('moch', () => getRandomProxy()).catch(() => getRandomProxy());
-  const agent = getProxyAgent(proxy);
 
-  return { timeout: 30000, agent: agent, headers: { 'User-Agent': userAgent } };
+  return { ip, timeout: 30000, headers: { 'User-Agent': userAgent } };
 }
 
 module.exports = { getCachedStreams, resolve, getCatalog, getItemMeta };
