@@ -108,8 +108,10 @@ async function _resolve(PM, infoHash, cachedEntryInfo, fileIndex, ip) {
   if (torrent && statusReady(torrent.status)) {
     return _getCachedLink(PM, infoHash, cachedEntryInfo, fileIndex, ip);
   } else if (torrent && statusDownloading(torrent.status)) {
+    console.log(`Downloading to Premiumize ${infoHash} [${fileIndex}]...`);
     return StaticResponse.DOWNLOADING;
   } else if (torrent && statusError(torrent.status)) {
+    console.log(`Retrying downloading to Premiumize ${infoHash} [${fileIndex}]...`);
     return _retryCreateTorrent(PM, infoHash, cachedEntryInfo, fileIndex);
   }
   return Promise.reject("Failed Premiumize adding torrent");
