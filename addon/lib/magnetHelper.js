@@ -45,7 +45,7 @@ async function getBestTrackers(retry = 2) {
       .catch(error => {
         if (retry === 0) {
           console.log(`Failed retrieving best trackers: ${error.message}`);
-          return [];
+          throw error;
         }
         return getBestTrackers(retry - 1);
       });

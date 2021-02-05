@@ -15,7 +15,10 @@ const ANIME_PROVIDERS = [
 function toStreamInfo(record) {
   const torrentInfo = titleParser.parse(record.torrent.title);
   const fileInfo = titleParser.parse(record.title);
-  const sameInfo = !Number.isInteger(record.fileIndex) || Math.abs(record.size / record.torrent.size - 1) < SIZE_DELTA;
+  const sameInfo = !Number.isInteger(record.fileIndex)
+      || Math.abs(record.size / record.torrent.size - 1) < SIZE_DELTA
+      || record.title.includes(record.torrent.title);
+  const quality = getQuality(record, torrentInfo, fileInfo);
   const title = joinDetailParts(
       [
         joinDetailParts([record.torrent.title.replace(/[, ]+/g, ' ')]),
@@ -33,17 +36,23 @@ function toStreamInfo(record) {
   const name = joinDetailParts(
       [
         joinDetailParts([ADDON_NAME]),
-        joinDetailParts([getQuality(record, torrentInfo, fileInfo)])
+        joinDetailParts([quality])
       ],
       '',
       '\n'
   );
+  const behaviorHints = {
+    bingeGroup: sameInfo
+        ? `torrentio|${quality}|${fileInfo.group}`
+        : `torrentio|${record.infoHash}`
+  };
 
   return {
     name: name,
     title: title,
     infoHash: record.infoHash,
-    fileIdx: record.fileIndex
+    fileIdx: record.fileIndex,
+    behaviorHints: record.torrent.type !== Type.MOVIE ? behaviorHints : null
   };
 }
 
@@ -96,7 +105,7 @@ function applyStaticInfo(streams) {
   return streams.map(stream => enrichStaticInfo(stream));
 }
 
-function enrichStaticInfo(stream) {
+function enrichStreamSources(stream) {
   const match = stream.title.match(/⚙.* ([^ \n]+)/);
   const provider = match && match[1].toLowerCase();
   if (ANIME_PROVIDERS.includes(provider)) {
@@ -105,6 +114,10 @@ function enrichStaticInfo(stream) {
     return { ...stream, sources };
   }
   return stream;
+}
+
+function enrichStaticInfo(stream) {
+  return enrichStreamSources(stream);
 }
 
 module.exports = { toStreamInfo, applyStaticInfo };
