@@ -61,9 +61,7 @@ async function getItemMeta(itemId, apiKey, ip) {
               id: `${KEY}:${file.id}:${index}`,
               title: file.name,
               released: new Date(file.created_at * 1000 - index).toISOString(),
-              streams: [
-                { url: file.stream_link || file.link }
-              ]
+              stream: { url: file.stream_link || file.link }
             }))
       }))
 }
