@@ -3,14 +3,12 @@ const magnet = require('magnet-uri');
 const { Type } = require('../lib/types');
 const { isVideo } = require('../lib/extension');
 const StaticResponse = require('./static');
-const { getRandomUserAgent } = require('../lib/requestHelper');
-const { cacheUserAgent } = require('../lib/cache');
 const { getMagnetLink } = require('../lib/magnetHelper');
 
 const KEY = 'premiumize';
 
 async function getCachedStreams(streams, apiKey) {
-  const options = await getDefaultOptions(apiKey);
+  const options = await getDefaultOptions();
   const PM = new PremiumizeClient(apiKey, options);
   const hashes = streams.map(stream => stream.infoHash);
   const available = await PM.cache.check(hashes)
@@ -36,7 +34,7 @@ async function getCatalog(apiKey, offset = 0) {
   if (offset > 0) {
     return [];
   }
-  const options = await getDefaultOptions(apiKey);
+  const options = await getDefaultOptions();
   const PM = new PremiumizeClient(apiKey, options);
   return PM.folder.list()
       .then(response => response.content)
@@ -50,7 +48,7 @@ async function getCatalog(apiKey, offset = 0) {
 }
 
 async function getItemMeta(itemId, apiKey, ip) {
-  const options = await getDefaultOptions(apiKey);
+  const options = await getDefaultOptions();
   const PM = new PremiumizeClient(apiKey, options);
   const rootFolder = await PM.folder.list(itemId, null);
   return getFolderContents(PM, itemId, ip)
@@ -85,7 +83,7 @@ async function getFolderContents(PM, itemId, ip, folderPrefix = '') {
 
 async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex }) {
   console.log(`Unrestricting Premiumize ${infoHash} [${fileIndex}] for IP ${ip}`);
-  const options = await getDefaultOptions(apiKey);
+  const options = await getDefaultOptions();
   const PM = new PremiumizeClient(apiKey, options);
 
   const cachedLink = await _getCachedLink(PM, infoHash, cachedEntryInfo, fileIndex, ip).catch(() => undefined);
@@ -169,10 +167,8 @@ function statusReady(status) {
   return ['finished', 'seeding'].includes(status);
 }
 
-async function getDefaultOptions(id) {
-  const userAgent = await cacheUserAgent(id, () => getRandomUserAgent()).catch(() => getRandomUserAgent());
-
-  return { timeout: 30000, headers: { 'User-Agent': userAgent } };
+async function getDefaultOptions(ip) {
+  return { timeout: 30000 };
 }
 
 module.exports = { getCachedStreams, resolve, getCatalog, getItemMeta };

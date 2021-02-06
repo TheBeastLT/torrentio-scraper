@@ -3,8 +3,6 @@ const { Type } = require('../lib/types');
 const { isVideo, isArchive } = require('../lib/extension');
 const delay = require('./delay');
 const StaticResponse = require('./static');
-const { getRandomUserAgent } = require('../lib/requestHelper');
-const { cacheUserAgent } = require('../lib/cache');
 const { getMagnetLink } = require('../lib/magnetHelper');
 
 const MIN_SIZE = 5 * 1024 * 1024; // 5 MB
@@ -32,7 +30,7 @@ async function getCachedStreams(streams, apiKey) {
 }
 
 async function _getInstantAvailable(hashes, apiKey, retries = 3) {
-  const options = await getDefaultOptions(apiKey);
+  const options = await getDefaultOptions();
   const RD = new RealDebridClient(apiKey, options);
   return RD.torrents.instantAvailability(hashes)
       .then(response => {
@@ -77,7 +75,7 @@ async function getCatalog(apiKey, offset, ip) {
   if (offset > 0) {
     return [];
   }
-  const options = await getDefaultOptions(apiKey, ip);
+  const options = await getDefaultOptions(ip);
   const RD = new RealDebridClient(apiKey, options);
   return _getAllTorrents(RD)
       .then(torrents => Array.isArray(torrents) ? torrents : [])
@@ -100,7 +98,7 @@ async function _getAllTorrents(RD, page = 1) {
 }
 
 async function getItemMeta(itemId, apiKey, ip) {
-  const options = await getDefaultOptions(apiKey, ip);
+  const options = await getDefaultOptions(ip);
   const RD = new RealDebridClient(apiKey, options);
   return _getTorrentInfo(RD, itemId)
       .then(torrent => ({
@@ -123,7 +121,7 @@ async function getItemMeta(itemId, apiKey, ip) {
 
 async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex }) {
   console.log(`Unrestricting RealDebrid ${infoHash} [${fileIndex}]`);
-  const options = await getDefaultOptions(apiKey, ip);
+  const options = await getDefaultOptions(ip);
   const RD = new RealDebridClient(apiKey, options);
 
   return _resolve(RD, infoHash, cachedEntryInfo, fileIndex)
@@ -290,10 +288,8 @@ function accessDeniedError(error) {
   return [9, 20].includes(error && error.code);
 }
 
-async function getDefaultOptions(id, ip) {
-  const userAgent = await cacheUserAgent(id, () => getRandomUserAgent()).catch(() => getRandomUserAgent());
-
-  return { ip, timeout: 30000, headers: { 'User-Agent': userAgent } };
+async function getDefaultOptions(ip) {
+  return { ip, timeout: 30000 };
 }
 
 module.exports = { getCachedStreams, resolve, getCatalog, getItemMeta };

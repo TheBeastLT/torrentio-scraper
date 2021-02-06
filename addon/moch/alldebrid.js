@@ -2,15 +2,13 @@ const AllDebridClient = require('all-debrid-api');
 const { Type } = require('../lib/types');
 const { isVideo, isArchive } = require('../lib/extension');
 const StaticResponse = require('./static');
-const { getRandomUserAgent } = require('../lib/requestHelper');
-const { cacheUserAgent } = require('../lib/cache');
 const { getMagnetLink } = require('../lib/magnetHelper');
 
 const KEY = 'alldebrid';
 const AGENT = 'torrentio';
 
 async function getCachedStreams(streams, apiKey) {
-  const options = await getDefaultOptions(apiKey);
+  const options = await getDefaultOptions();
   const AD = new AllDebridClient(apiKey, options);
   const hashes = streams.map(stream => stream.infoHash);
   const available = await AD.magnet.instant(hashes)
@@ -37,7 +35,7 @@ async function getCatalog(apiKey, offset = 0) {
   if (offset > 0) {
     return [];
   }
-  const options = await getDefaultOptions(apiKey);
+  const options = await getDefaultOptions();
   const AD = new AllDebridClient(apiKey, options);
   return AD.magnet.status()
       .then(response => response.data.magnets)
@@ -51,7 +49,7 @@ async function getCatalog(apiKey, offset = 0) {
 }
 
 async function getItemMeta(itemId, apiKey) {
-  const options = await getDefaultOptions(apiKey);
+  const options = await getDefaultOptions();
   const AD = new AllDebridClient(apiKey, options);
   return AD.magnet.status(itemId)
       .then(response => response.data.magnets)
@@ -74,7 +72,7 @@ async function getItemMeta(itemId, apiKey) {
 
 async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex }) {
   console.log(`Unrestricting AllDebrid ${infoHash} [${fileIndex}]`);
-  const options = await getDefaultOptions(apiKey, ip);
+  const options = await getDefaultOptions(ip);
   const AD = new AllDebridClient(apiKey, options);
 
   return _resolve(AD, infoHash, cachedEntryInfo, fileIndex)
@@ -149,10 +147,8 @@ async function _unrestrictLink(AD, torrent, encodedFileName, fileIndex) {
   return unrestrictedLink;
 }
 
-async function getDefaultOptions(id, ip) {
-  const userAgent = await cacheUserAgent(id, () => getRandomUserAgent()).catch(() => getRandomUserAgent());
-
-  return { base_agent: AGENT, timeout: 30000, headers: { 'User-Agent': userAgent } };
+async function getDefaultOptions(ip) {
+  return { base_agent: AGENT, timeout: 30000 };
 }
 
 function statusError(statusCode) {
