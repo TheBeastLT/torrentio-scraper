@@ -1,4 +1,5 @@
 const { MochOptions } = require('../moch/moch');
+const { showDebridCatalog } = require('../moch/options');
 const { Type } = require('./types');
 
 const Providers = [
@@ -58,7 +59,7 @@ function getProvider(configProvider) {
 
 function getCatalogs(config) {
   return CatalogMochs
-      .filter(moch => config[moch.key])
+      .filter(moch => showDebridCatalog(config) && config[moch.key])
       .map(moch => ({
         id: `torrentio-${moch.key}`,
         name: `${moch.name}`,
@@ -77,7 +78,7 @@ function getResources(config) {
     types: [Type.OTHER],
     idPrefixes: CatalogMochs.filter(moch => config[moch.key]).map(moch => moch.key)
   };
-  if (CatalogMochs.filter(moch => config[moch.key]).length) {
+  if (showDebridCatalog(config) && CatalogMochs.filter(moch => config[moch.key]).length) {
     return [streamResource, metaResource];
   }
   return [streamResource];

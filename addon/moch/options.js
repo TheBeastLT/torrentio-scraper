@@ -5,6 +5,10 @@ const DebridOptions = {
       key: 'nodownloadlinks',
       description: 'Don\'t show download to debrid links'
     },
+    noCatalog: {
+      key: 'nocatalog',
+      description: 'Don\'t show debrid catalog'
+    },
     torrentLinks: {
       key: 'torrentlinks',
       description: 'Show P2P torrent links for uncached'
@@ -22,4 +26,9 @@ function includeTorrentLinks(config) {
       .includes(DebridOptions.options.torrentLinks.key);
 }
 
-module.exports = { DebridOptions, excludeDownloadLinks, includeTorrentLinks }
+function showDebridCatalog(config) {
+  return !(config[DebridOptions.key] && config[DebridOptions.key]
+      .includes(DebridOptions.options.noCatalog.key));
+}
+
+module.exports = { DebridOptions, excludeDownloadLinks, showDebridCatalog, includeTorrentLinks }
