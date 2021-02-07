@@ -183,14 +183,14 @@ function getTorrentsWithoutSize() {
   });
 }
 
-function getUpdateSeedersTorrents() {
+function getUpdateSeedersTorrents(limit = 100) {
   const until = moment().subtract(7, 'days').format('YYYY-MM-DD');
   return Torrent.findAll({
     where: literal(`torrent."updatedAt" < \'${until}\'`),
-    limit: 100,
+    limit: limit,
     order: [
       ['seeders', 'DESC'],
-      ['uploadDate', 'DESC']
+      ['updatedAt', 'ASC']
     ]
   });
 }

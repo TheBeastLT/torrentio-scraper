@@ -8,9 +8,9 @@ const { Type } = require('./types');
 const { isVideo, isSubtitle } = require('./extension');
 const { cacheTrackers } = require('./cache');
 
-const TRACKERS_URL = 'https://ngosang.github.io/trackerslist/trackers_best.txt';
+const TRACKERS_URL = 'https://ngosang.github.io/trackerslist/trackers_all.txt';
 const MAX_PEER_CONNECTIONS = process.env.MAX_PEER_CONNECTIONS || 20;
-const SEEDS_CHECK_TIMEOUT = process.env.SEEDS_CHECK_TIMEOUT || 10 * 1000; // 10 secs
+const SEEDS_CHECK_TIMEOUT = 30 * 1000; // 30 secs
 const ANIME_TRACKERS = [
   "http://nyaa.tracker.wf:7777/announce",
   "http://anidex.moe:6969/announce",
@@ -18,34 +18,41 @@ const ANIME_TRACKERS = [
   "udp://tracker.uw0.xyz:6969/announce"
 ];
 
-async function updateCurrentSeeders(torrent) {
+async function updateCurrentSeeders(torrentsInput) {
   return new Promise(async (resolve) => {
-    if (!torrent.magnetLink && !torrent.infoHash) {
-      return resolve(0);
-    }
-
-    const seeders = {};
-    const magnetTrackers = torrent.magnetLink && decode(torrent.magnetLink).tr;
-    const torrentTrackers = torrent.trackers && torrent.trackers.split(',');
-    const trackers = magnetTrackers || torrentTrackers || await getDefaultTrackers(torrent);
-    const callback = () => resolve(seeders);
+    const torrents = Array.isArray(torrentsInput) ? torrentsInput : [torrentsInput];
+    const perTorrentResults = Object.fromEntries(new Map(torrents.map(torrent => [torrent.infoHash, {}])));
+    const perTrackerInfoHashes = await Promise.all(torrents.map(torrent => getTorrentTrackers(torrent)
+        .then(torrentTrackers => ({ infoHash: torrent.infoHash, trackers: torrentTrackers }))))
+        .then(allTorrentTrackers => allTorrentTrackers
+            .reduce((allTrackersMap, torrentTrackers) => {
+              torrentTrackers.trackers.forEach(tracker =>
+                  allTrackersMap[tracker] = (allTrackersMap[tracker] || []).concat(torrentTrackers.infoHash));
+              return allTrackersMap;
+            }, {}));
+    const callback = () => resolve(perTorrentResults);
     setTimeout(callback, SEEDS_CHECK_TIMEOUT);
 
-    async.each(trackers, function (tracker, ready) {
-      BTClient.scrape({ infoHash: torrent.infoHash, announce: tracker }, (_, results) => {
+    async.each(Object.keys(perTrackerInfoHashes), function (tracker, ready) {
+      BTClient.scrape({ infoHash: perTrackerInfoHashes[tracker], announce: tracker }, (_, results) => {
         if (results) {
-          seeders[tracker] = [results.complete, results.incomplete];
+          Object.entries(results)
+              .filter(([infoHash]) => perTorrentResults[infoHash])
+              .forEach(([infoHash, seeders]) =>
+                  perTorrentResults[infoHash][tracker] = [seeders.complete, seeders.incomplete])
         }
         ready();
       })
     }, callback);
-  }).then(seeders => {
-    if (!Object.values(seeders).length) {
-      console.log(`Retrying seeders update for [${torrent.infoHash}] ${torrent.title || torrent.name}`)
-      return updateCurrentSeeders(torrent);
-    }
-    torrent.seeders = Math.max(...Object.values(seeders).map(values => values[0]).concat(0));
-    return torrent;
+  }).then(perTorrentResults => {
+    const torrents = Array.isArray(torrentsInput) ? torrentsInput : [torrentsInput];
+    torrents.forEach(torrent => {
+      const results = perTorrentResults[torrent.infoHash];
+      const newSeeders = Math.max(...Object.values(results).map(values => values[0]).concat(0));
+      console.log(`Updating seeders for [${torrent.infoHash}] ${torrent.title} - ${torrent.seeders} -> ${newSeeders}`)
+      torrent.seeders = newSeeders;
+    })
+    return torrentsInput;
   });
 }
 
@@ -158,11 +165,17 @@ function filterSubtitles(files) {
   return files.filter(file => isSubtitle(file.path));
 }
 
+async function getTorrentTrackers(torrent) {
+  const magnetTrackers = torrent.magnetLink && decode(torrent.magnetLink).tr;
+  const torrentTrackers = torrent.trackers && torrent.trackers.split(',');
+  return magnetTrackers || torrentTrackers || getDefaultTrackers(torrent);
+}
+
 async function getDefaultTrackers(torrent) {
   return cacheTrackers(() => needle('get', TRACKERS_URL, { open_timeout: SEEDS_CHECK_TIMEOUT })
       .then(response => response.body && response.body.trim())
       .then(body => body && body.split('\n\n') || []))
-      .then(trackers => torrent.type === Type.ANIME ? trackers.concat(ANIME_TRACKERS) : trackers);
+      .then(trackers => torrent.type === Type.ANIME ? Array.from(new Set(trackers.concat(ANIME_TRACKERS))) : trackers);
 }
 
 module.exports = { updateCurrentSeeders, updateTorrentSize, sizeAndFiles, torrentFiles }
