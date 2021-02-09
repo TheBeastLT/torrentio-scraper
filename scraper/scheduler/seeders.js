@@ -10,7 +10,7 @@ const statistics = {};
 
 function scheduleUpdateSeeders() {
   console.log('Starting seeders update...')
-  return repository.getUpdateSeedersTorrents(100)
+  return repository.getUpdateSeedersTorrents(50)
       .then(torrents => updateCurrentSeeders(torrents))
       .then(updatedTorrents => Promise.all(
           updatedTorrents.map(updated => updateLimiter.schedule(() => updateTorrentSeeders(updated)))))

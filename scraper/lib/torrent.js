@@ -8,9 +8,9 @@ const { Type } = require('./types');
 const { isVideo, isSubtitle } = require('./extension');
 const { cacheTrackers } = require('./cache');
 
-const TRACKERS_URL = 'https://ngosang.github.io/trackerslist/trackers_all_udp.txt';
+const TRACKERS_URL = 'https://ngosang.github.io/trackerslist/trackers_all.txt';
 const MAX_PEER_CONNECTIONS = process.env.MAX_PEER_CONNECTIONS || 20;
-const SEEDS_CHECK_TIMEOUT = 20 * 1000; // 30 secs
+const SEEDS_CHECK_TIMEOUT = 15 * 1000; // 30 secs
 const ADDITIONAL_TRACKERS = [
   'http://tracker.trackerfix.com:80/announce',
   'udp://9.rarbg.me:2780',
@@ -39,12 +39,16 @@ async function updateCurrentSeeders(torrentsInput) {
     setTimeout(callback, SEEDS_CHECK_TIMEOUT);
 
     async.each(Object.keys(perTrackerInfoHashes), function (tracker, ready) {
-      BTClient.scrape({ infoHash: perTrackerInfoHashes[tracker], announce: tracker }, (_, results) => {
+      BTClient.scrape({ infoHash: perTrackerInfoHashes[tracker], announce: tracker }, (error, results) => {
         if (results) {
           Object.entries(results)
               .filter(([infoHash]) => perTorrentResults[infoHash])
               .forEach(([infoHash, seeders]) =>
                   perTorrentResults[infoHash][tracker] = [seeders.complete, seeders.incomplete])
+        } else if (error) {
+          perTrackerInfoHashes[tracker]
+              .filter(infoHash => perTorrentResults[infoHash])
+              .forEach(infoHash => perTorrentResults[infoHash][tracker] = [0, 0, error.message])
         }
         ready();
       })
@@ -171,9 +175,10 @@ function filterSubtitles(files) {
 }
 
 async function getTorrentTrackers(torrent) {
-  const magnetTrackers = torrent.magnetLink && decode(torrent.magnetLink).tr;
-  const torrentTrackers = torrent.trackers && torrent.trackers.split(',');
-  return magnetTrackers || torrentTrackers || getDefaultTrackers(torrent);
+  const magnetTrackers = torrent.magnetLink && decode(torrent.magnetLink).tr || [];
+  const torrentTrackers = torrent.trackers && torrent.trackers.split(',') || [];
+  const defaultTrackers = await getDefaultTrackers(torrent);
+  return Array.from(new Set([].concat(magnetTrackers).concat(torrentTrackers).concat(defaultTrackers)));
 }
 
 async function getDefaultTrackers(torrent) {
@@ -181,8 +186,7 @@ async function getDefaultTrackers(torrent) {
       .then(response => response.body && response.body.trim())
       .then(body => body && body.split('\n\n') || []))
       .then(trackers => trackers.concat(ADDITIONAL_TRACKERS))
-      .then(trackers => torrent.type === Type.ANIME ? trackers.concat(ANIME_TRACKERS) : trackers)
-      .then(trackers => Array.from(new Set(trackers)));
+      .then(trackers => torrent.type === Type.ANIME ? trackers.concat(ANIME_TRACKERS) : trackers);
 }
 
 module.exports = { updateCurrentSeeders, updateTorrentSize, sizeAndFiles, torrentFiles }
