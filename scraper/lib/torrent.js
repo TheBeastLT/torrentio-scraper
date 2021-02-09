@@ -11,6 +11,11 @@ const { cacheTrackers } = require('./cache');
 const TRACKERS_URL = 'https://ngosang.github.io/trackerslist/trackers_all.txt';
 const MAX_PEER_CONNECTIONS = process.env.MAX_PEER_CONNECTIONS || 20;
 const SEEDS_CHECK_TIMEOUT = 30 * 1000; // 30 secs
+const ADDITIONAL_TRACKERS = [
+  'http://tracker.trackerfix.com:80/announce',
+  'udp://9.rarbg.me:2780',
+  'udp://9.rarbg.to:2870'
+];
 const ANIME_TRACKERS = [
   "http://nyaa.tracker.wf:7777/announce",
   "http://anidex.moe:6969/announce",
@@ -175,7 +180,9 @@ async function getDefaultTrackers(torrent) {
   return cacheTrackers(() => needle('get', TRACKERS_URL, { open_timeout: SEEDS_CHECK_TIMEOUT })
       .then(response => response.body && response.body.trim())
       .then(body => body && body.split('\n\n') || []))
-      .then(trackers => torrent.type === Type.ANIME ? Array.from(new Set(trackers.concat(ANIME_TRACKERS))) : trackers);
+      .then(trackers => trackers.concat(ADDITIONAL_TRACKERS))
+      .then(trackers => torrent.type === Type.ANIME ? trackers.concat(ANIME_TRACKERS) : trackers)
+      .then(trackers => Array.from(new Set(trackers)));
 }
 
 module.exports = { updateCurrentSeeders, updateTorrentSize, sizeAndFiles, torrentFiles }
