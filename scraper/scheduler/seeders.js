@@ -4,13 +4,13 @@ const { delay } = require('../lib/promises')
 const { updateCurrentSeeders } = require('../lib/torrent')
 const { updateTorrentSeeders } = require('../lib/torrentEntries')
 
-const DELAY_MS = 15 * 1000; // 15 seconds
+const DELAY_MS = 0; // 0 seconds
 const updateLimiter = new Bottleneck({ maxConcurrent: 5 });
 const statistics = {};
 
 function scheduleUpdateSeeders() {
   console.log('Starting seeders update...')
-  return repository.getUpdateSeedersTorrents(50)
+  return repository.getUpdateSeedersTorrents(100)
       .then(torrents => updateCurrentSeeders(torrents))
       .then(updatedTorrents => Promise.all(
           updatedTorrents.map(updated => updateLimiter.schedule(() => updateTorrentSeeders(updated)))))

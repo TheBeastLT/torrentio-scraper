@@ -8,9 +8,9 @@ const { Type } = require('./types');
 const { isVideo, isSubtitle } = require('./extension');
 const { cacheTrackers } = require('./cache');
 
-const TRACKERS_URL = 'https://ngosang.github.io/trackerslist/trackers_all.txt';
+const TRACKERS_URL = 'https://ngosang.github.io/trackerslist/trackers_all_udp.txt';
 const MAX_PEER_CONNECTIONS = process.env.MAX_PEER_CONNECTIONS || 20;
-const SEEDS_CHECK_TIMEOUT = 30 * 1000; // 30 secs
+const SEEDS_CHECK_TIMEOUT = 20 * 1000; // 30 secs
 const ADDITIONAL_TRACKERS = [
   'http://tracker.trackerfix.com:80/announce',
   'udp://9.rarbg.me:2780',
@@ -18,8 +18,8 @@ const ADDITIONAL_TRACKERS = [
 ];
 const ANIME_TRACKERS = [
   "http://nyaa.tracker.wf:7777/announce",
-  "http://anidex.moe:6969/announce",
-  "http://tracker.anirena.com:80/announce",
+  "udp://anidex.moe:6969/announce",
+  "udp://tracker-udp.anirena.com:80/announce",
   "udp://tracker.uw0.xyz:6969/announce"
 ];
 
