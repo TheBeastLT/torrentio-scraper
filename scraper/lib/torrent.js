@@ -10,7 +10,7 @@ const { cacheTrackers } = require('./cache');
 
 const TRACKERS_URL = 'https://ngosang.github.io/trackerslist/trackers_all.txt';
 const MAX_PEER_CONNECTIONS = process.env.MAX_PEER_CONNECTIONS || 20;
-const SEEDS_CHECK_TIMEOUT = 15 * 1000; // 30 secs
+const SEEDS_CHECK_TIMEOUT = 15 * 1000; // 15 secs
 const ADDITIONAL_TRACKERS = [
   'http://tracker.trackerfix.com:80/announce',
   'udp://9.rarbg.me:2780',
@@ -35,7 +35,11 @@ async function updateCurrentSeeders(torrentsInput) {
                   allTrackersMap[tracker] = (allTrackersMap[tracker] || []).concat(torrentTrackers.infoHash));
               return allTrackersMap;
             }, {}));
-    const callback = () => resolve(perTorrentResults);
+    let successCounter = 0;
+    const callback = () => {
+      console.log(`Total successful tracker responses: ${successCounter}`)
+      resolve(perTorrentResults);
+    }
     setTimeout(callback, SEEDS_CHECK_TIMEOUT);
 
     async.each(Object.keys(perTrackerInfoHashes), function (tracker, ready) {
@@ -45,6 +49,7 @@ async function updateCurrentSeeders(torrentsInput) {
               .filter(([infoHash]) => perTorrentResults[infoHash])
               .forEach(([infoHash, seeders]) =>
                   perTorrentResults[infoHash][tracker] = [seeders.complete, seeders.incomplete])
+          successCounter++;
         } else if (error) {
           perTrackerInfoHashes[tracker]
               .filter(infoHash => perTorrentResults[infoHash])
