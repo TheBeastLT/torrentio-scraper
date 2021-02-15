@@ -1,5 +1,6 @@
 const moment = require('moment');
 const Bottleneck = require('bottleneck');
+const { parse } = require('parse-torrent-title');
 const rutor = require('./rutor_api');
 const { Type } = require('../../lib/types');
 const repository = require('../../lib/repository');
@@ -17,8 +18,7 @@ const TYPE_MAPPING = {
   'tv': Type.SERIES,
   'multiki': Type.MOVIE,
   'anime': Type.ANIME
-}
-const ALLOWED_WITHOUT_IMDB = ['kino', 'seriali', 'anime'];
+};
 
 const api_limiter = new Bottleneck({ maxConcurrent: 1, minTime: 5000 });
 const api_entry_limiter = new Bottleneck({ maxConcurrent: 1, minTime: 2500 });
@@ -90,7 +90,7 @@ async function processTorrentRecord(record) {
   if (!foundTorrent || !TYPE_MAPPING[foundTorrent.category]) {
     return Promise.resolve(`${NAME}: Invalid torrent record: ${record.torrentId}`);
   }
-  if (!foundTorrent.imdbId && !ALLOWED_WITHOUT_IMDB.includes(foundTorrent.category)) {
+  if (!foundTorrent.imdbId && disallowWithoutImdbId(foundTorrent)) {
     return Promise.resolve(`${NAME}: No imdbId defined: ${record.torrentId}`);
   }
 
@@ -120,6 +120,14 @@ function getMaxPage(category) {
     default:
       return 1;
   }
+}
+
+function disallowWithoutImdbId(torrent) {
+  if (['kino', 'anime'].includes(torrent.category)) {
+    return false; // allow to search foreign movie and anime ids via search
+  }
+  // allow to search id for non russian series titles via search
+  return !(torrent.category === 'seriali' && !parse(torrent.title).title.match(/[\u0400-\u04ff]/i));
 }
 
 module.exports = { scrape, updateSeeders, NAME };
