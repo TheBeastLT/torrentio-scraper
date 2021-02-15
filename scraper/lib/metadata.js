@@ -84,7 +84,7 @@ function escapeTitle(title) {
       .replace(/[\u0300-\u036F]/g, '')
       .replace(/&/g, 'and')
       .replace(/[;, ~./]+/g, ' ') // replace dots, commas or underscores with spaces
-      .replace(/[^\w \-()+#@!']+/g, '') // remove all non-alphanumeric chars
+      .replace(/[^\w \-()+#@!'\u0400-\u04ff]+/g, '') // remove all non-alphanumeric chars
       .replace(/\s{2,}/, ' ') // replace multiple spaces
       .trim();
 }
@@ -102,7 +102,7 @@ async function getImdbId(info, type) {
 
   return cacheWrapImdbId(key,
       () => new Promise((resolve, reject) => {
-        nameToImdb({ name, year: info.year, type }, function (err, res) {
+        nameToImdb({ name: encodeURIComponent(name), year: info.year, type }, function (err, res) {
           if (res) {
             resolve(res);
           } else {

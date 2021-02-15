@@ -95,8 +95,11 @@ async function torrentFiles(torrent, timeout) {
 }
 
 function getFilesFromObject(torrent) {
-  if (torrent.files && torrent.files.length) {
+  if (Array.isArray(torrent.files)) {
     return Promise.resolve(torrent.files);
+  }
+  if (typeof torrent.files === 'function') {
+    return torrent.files();
   }
   return Promise.reject("No files in the object");
 }

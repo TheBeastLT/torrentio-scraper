@@ -1,4 +1,5 @@
 const moment = require('moment');
+const Bottleneck = require('bottleneck');
 const distance = require('jaro-winkler');
 const { parse } = require('parse-torrent-title');
 const Promises = require('../lib/promises');
@@ -9,6 +10,7 @@ const { Type } = require('./types');
 const { isDisk } = require('./extension');
 
 const MIN_SIZE = 5 * 1024 * 1024; // 5 MB
+const imdb_limiter = new Bottleneck({ maxConcurrent: 1, minTime: 1000 });
 
 async function parseTorrentFiles(torrent) {
   const parsedTorrentName = parse(torrent.title);
@@ -391,7 +393,7 @@ function assignKitsuOrImdbEpisodes(torrent, files, metadata) {
   } else if (metadata.videos.some(video => video.kitsuEpisode)) {
     // imdb episode info is base
     files
-        .filter(file => file.season && file.episodes)
+        .filter(file => Number.isInteger(file.season) && file.episodes)
         .forEach(file => {
           if (seriesMapping[file.season]) {
             const seasonMapping = seriesMapping[file.season];
@@ -460,7 +462,7 @@ async function updateToCinemetaMetadata(metadata) {
 
 function findMovieImdbId(title) {
   const parsedTitle = typeof title === 'string' ? parse(title) : title;
-  return getImdbId(parsedTitle, Type.MOVIE).catch(() => undefined);
+  return imdb_limiter.schedule(() => getImdbId(parsedTitle, Type.MOVIE).catch(() => undefined));
 }
 
 function findMovieKitsuId(title) {

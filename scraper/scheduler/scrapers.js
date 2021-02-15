@@ -6,7 +6,8 @@ const kickassScraper = require('../scrapers/kickass/kickass_scraper');
 const rarbgScraper = require('../scrapers/rarbg/rarbg_scraper');
 const nyaaPantsuScraper = require('../scrapers/nyaapantsu/nyaa_pantsu_scraper');
 const nyaaSiScraper = require('../scrapers/nyaasi/nyaa_si_scraper');
-const torrentGalaxySiScraper = require('../scrapers/torrentgalaxy/torrentgalaxy_scraper');
+const torrentGalaxyScraper = require('../scrapers/torrentgalaxy/torrentgalaxy_scraper');
+const rutorScraper = require('../scrapers/rutor/rutor_scraper');
 
 module.exports = [
   { scraper: ytsScraper, name: ytsScraper.NAME, cron: '0 0 */4 ? * *' },
@@ -14,9 +15,10 @@ module.exports = [
   { scraper: nyaaSiScraper, name: nyaaSiScraper.NAME, cron: '0 0 */4 ? * *' },
   { scraper: nyaaPantsuScraper, name: nyaaPantsuScraper.NAME, cron: '0 0 */4 ? * *' },
   { scraper: rarbgScraper, name: rarbgScraper.NAME, cron: '0 0 */2 ? * *' },
+  { scraper: rutorScraper, name: rutorScraper.NAME, cron: '0 0 */4 ? * *' },
   { scraper: thepiratebayScraper, name: thepiratebayScraper.NAME, cron: '0 0 */2 ? * *' },
+  { scraper: torrentGalaxyScraper, name: torrentGalaxyScraper.NAME, cron: '0 0 */4 ? * *' },
   { scraper: leetxScraper, name: leetxScraper.NAME, cron: '0 0 */4 ? * *' },
-  { scraper: torrentGalaxySiScraper, name: torrentGalaxySiScraper.NAME, cron: '0 0 */4 ? * *' },
   // { scraper: kickassScraper, name: kickassScraper.NAME, cron: '0 0 */4 ? * *' },
   // { scraper: require('../scrapers/rarbg/rarbg_dump_scraper') }
   // { scraper: require('../scrapers/1337x/1337x_search_scraper') }
