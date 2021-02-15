@@ -5,6 +5,7 @@ const languageMapping = {
   'dual audio': 'Dual Audio',
   'english': '🇬🇧',
   'japanese': '🇯🇵',
+  'russian': '🇷🇺',
   'korean': '🇰🇷',
   'chinese': '🇨🇳',
   'french': '🇫🇷',
@@ -13,16 +14,17 @@ const languageMapping = {
   'portuguese': '🇵🇹',
   'spanish': '🇪🇸',
   'italian': '🇮🇹',
-  'russian': '🇷🇺',
   'hindi': '🇮🇳',
   'telugu': '🇮🇳',
   'tamil': '🇮🇳',
   'polish': '🇵🇱',
   'lithuanian': '🇱🇹',
   'czech': '🇨🇿',
+  'slovakian': '🇸🇰',
   'hungarian': '🇭🇺',
   'romanian': '🇷🇴',
   'croatian': '🇭🇷',
+  'ukrainian': '🇺🇦',
   'greek': '🇬🇷',
   'danish': '🇩🇰',
   'finnish': '🇫🇮',
@@ -30,7 +32,10 @@ const languageMapping = {
   'norwegian': '🇳🇴',
   'turkish': '🇹🇷',
   'arabic': '🇸🇦',
-  'hebrew': '🇮🇱'
+  'hebrew': '🇮🇱',
+  'vietnamese': '🇻🇳',
+  'indonesian': '🇮🇩',
+  'thai': '🇹🇭'
 }
 
 function mapLanguages(languages) {
