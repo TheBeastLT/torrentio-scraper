@@ -181,7 +181,8 @@ const languageMatchers = {
   'german': /(?:Язык|Звук|Аудио|audio|language).*(german|\bger\b|Немецкий)/i,
   'korean': /(?:Язык|Звук|Аудио|audio|language).*(korean|Корейский)/i,
   'arabic': /(?:Язык|Звук|Аудио|audio|language).*(arabic|Арабский)/i,
-  'portuguese': /(?:Язык|Звук|Аудио|audio|language).*(portuguese|Португальский)/i
+  'portuguese': /(?:Язык|Звук|Аудио|audio|language).*(portuguese|Португальский)/i,
+  'japanese': /(?:Язык|Звук|Аудио|audio|language).*(japanese|\bjap\b|\bjp\b|[Яя]понский)/i,
 }
 
 function parseLanguages(details) {
