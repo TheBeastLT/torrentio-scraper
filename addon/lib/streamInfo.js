@@ -47,13 +47,14 @@ function toStreamInfo(record) {
         : `torrentio|${record.infoHash}`
   };
 
-  return {
+  return cleanOutputObject({
     name: name,
     title: title,
     infoHash: record.infoHash,
     fileIdx: record.fileIndex,
-    behaviorHints: record.torrent.type !== Type.MOVIE ? behaviorHints : null
-  };
+    behaviorHints: record.torrent.type !== Type.MOVIE ? behaviorHints : null,
+    sources: getSources(record.torrent.trackers, record.infoHash)
+  });
 }
 
 function getQuality(record, torrentInfo, fileInfo) {
@@ -109,8 +110,7 @@ function enrichStreamSources(stream) {
   const match = stream.title.match(/⚙.* ([^ \n]+)/);
   const provider = match && match[1].toLowerCase();
   if (ANIME_PROVIDERS.includes(provider)) {
-    const infoHash = stream.infoHash;
-    const sources = getAllTrackers().map(tracker => `tracker:${tracker}`).concat(`dht:${infoHash}`);
+    const sources = getSources(getAllTrackers(), stream.infoHash);
     return { ...stream, sources };
   }
   return stream;
@@ -118,6 +118,18 @@ function enrichStreamSources(stream) {
 
 function enrichStaticInfo(stream) {
   return enrichStreamSources(stream);
+}
+
+function getSources(trackersInput, infoHash) {
+  if (!trackersInput) {
+    return null;
+  }
+  const trackers = Array.isArray(trackersInput) ? trackersInput : trackersInput.split(',');
+  return trackers.map(tracker => `tracker:${tracker}`).concat(`dht:${infoHash}`)
+}
+
+function cleanOutputObject(object) {
+  return Object.fromEntries(Object.entries(object).filter(([_, v]) => v != null));
 }
 
 module.exports = { toStreamInfo, applyStaticInfo };
