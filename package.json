@@ -32,7 +32,7 @@
     "nodejs-bing": "^0.1.0",
     "nyaapi": "^2.3.3",
     "parse-torrent": "^6.1.2",
-    "parse-torrent-title": "git://github.com/TheBeastLT/parse-torrent-title.git#d570320c4c6370ce71509b97cc67b5edf0b094b2",
+    "parse-torrent-title": "git://github.com/TheBeastLT/parse-torrent-title.git#354953afa5108954c87d76c8985f0bb97dcb2499",
     "pg": "^7.8.2",
     "pg-hstore": "^2.3.2",
     "real-debrid-api": "git://github.com/TheBeastLT/node-real-debrid.git#935a5c23ae809edbcd2a111526a7f74d6767c50d",

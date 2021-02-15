@@ -62,7 +62,7 @@ async function scrapeLatestTorrents() {
       .then(entries => entries.reduce((a, b) => a.concat(b), []));
 }
 
-async function scrapeLatestTorrentsForCategory(category, page = 185) {
+async function scrapeLatestTorrentsForCategory(category, page = 1) {
   console.log(`Scrapping ${NAME} ${category} category page ${page}`);
   return api_limiter.schedule(() => rutor.browse({ category, page }))
       .catch(error => {
