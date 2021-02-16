@@ -43,9 +43,10 @@ async function updateCurrentSeeders(torrentsInput) {
     setTimeout(callback, SEEDS_CHECK_TIMEOUT);
 
     async.each(Object.keys(perTrackerInfoHashes), function (tracker, ready) {
-      BTClient.scrape({ infoHash: perTrackerInfoHashes[tracker], announce: tracker }, (error, results) => {
-        if (results) {
-          Object.entries(results)
+      BTClient.scrape({ infoHash: perTrackerInfoHashes[tracker], announce: tracker }, (error, response) => {
+        if (response) {
+          const results = Array.isArray(torrentsInput) ? Object.entries(response) : [[response.infoHash, response]];
+          results
               .filter(([infoHash]) => perTorrentResults[infoHash])
               .forEach(([infoHash, seeders]) =>
                   perTorrentResults[infoHash][tracker] = [seeders.complete, seeders.incomplete])
