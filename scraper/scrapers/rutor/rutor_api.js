@@ -86,8 +86,8 @@ function parseTableBody(body) {
         magnetLink: magnetLink,
         torrentLink: $(links[0]).attr('href'),
         torrentId: $(links[2]).attr('href').match(/torrent\/(\d+)/)[1],
-        seeds: parseInt(peers.find('.green').text()),
-        leaches: parseInt(peers.find('.red').text()),
+        seeders: parseInt(peers.find('.green').text()),
+        leechers: parseInt(peers.find('.red').text()),
         uploadDate: parseRussianDate($(row[0]).text()),
         size: $(row[row.length - 2]).html().replace('&#xA0;', ' '),
       }

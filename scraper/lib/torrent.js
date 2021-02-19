@@ -134,9 +134,9 @@ function filesAndSizeFromTorrentStream(torrent, timeout = 30000) {
   if (!torrent.infoHash && !torrent.magnetLink) {
     return Promise.reject(new Error("no infoHash or magnetLink"));
   }
-  // const magnet = decode.encode({ infoHash: torrent.infoHash, announce: torrent.trackers });
+  const magnet = torrent.magnetLink || decode.encode({ infoHash: torrent.infoHash, announce: torrent.trackers });
   return new Promise((resolve, rejected) => {
-    const engine = new torrentStream(torrent.infoHash, { connections: MAX_PEER_CONNECTIONS });
+    const engine = new torrentStream(magnet, { connections: MAX_PEER_CONNECTIONS });
 
     engine.ready(() => {
       const files = engine.files
