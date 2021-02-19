@@ -10,7 +10,7 @@ const statistics = {};
 
 function scheduleUpdateSeeders() {
   console.log('Starting seeders update...')
-  return repository.getUpdateSeedersTorrents(50)
+  return getTorrents()
       .then(torrents => updateCurrentSeeders(torrents))
       .then(updatedTorrents => Promise.all(
           updatedTorrents.map(updated => updateLimiter.schedule(() => updateTorrentSeeders(updated)))))
@@ -19,6 +19,11 @@ function scheduleUpdateSeeders() {
       .catch(error => console.warn('Failed seeders update:', error))
       .then(() => delay(DELAY_MS))
       .then(() => scheduleUpdateSeeders());
+}
+
+async function getTorrents() {
+  return repository.getUpdateSeedersTorrents(50)
+      .catch(() => delay(5000).then(() => getTorrents()))
 }
 
 function updateStatistics(updatedTorrents) {
