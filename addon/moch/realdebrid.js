@@ -143,7 +143,7 @@ async function _resolve(RD, infoHash, cachedEntryInfo, fileIndex) {
   } else if (torrent && statusError(torrent.status)) {
     console.log(`Retrying downloading to RealDebrid ${infoHash} [${fileIndex}]...`);
     return _retryCreateTorrent(RD, infoHash, cachedEntryInfo, fileIndex);
-  } else if (torrent && statusWaitingSelection(torrent.status)) {
+  } else if (torrent && (statusWaitingSelection(torrent.status) || statusOpening(torrent.status))) {
     console.log(`Trying to select files on RealDebrid ${infoHash} [${fileIndex}]...`);
     await _selectTorrentFiles(RD, torrent);
     return StaticResponse.DOWNLOADING;
@@ -215,7 +215,7 @@ async function _selectTorrentFiles(RD, torrent, cachedFileIds) {
   return Promise.reject('Failed RealDebrid torrent file selection')
 }
 
-async function _openTorrent(RD, torrentId, pollCounter = 0, pollRate = 2000, maxPollNumber = 10) {
+async function _openTorrent(RD, torrentId, pollCounter = 0, pollRate = 2000, maxPollNumber = 15) {
   return _getTorrentInfo(RD, torrentId)
       .then(torrent => torrent && statusOpening(torrent.status) && pollCounter < maxPollNumber
           ? delay(pollRate).then(() => _openTorrent(RD, torrentId, pollCounter + 1))
