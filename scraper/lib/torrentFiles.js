@@ -477,8 +477,8 @@ function isDiskTorrent(contents) {
 function isSingleMovie(videos) {
   return videos.length === 1 ||
       (videos.length === 2 &&
-          videos.find(v => /\bcd[ .-]?0?1\b/i.test(v.path)) &&
-          videos.find(v => /\bcd[ .-]?0?2\b/i.test(v.path)));
+          videos.find(v => /\b(?:part|disc|cd)[ ._-]?0?1\b|^0?1\.\w{2,4}$/i.test(v.path)) &&
+          videos.find(v => /\b(?:part|disc|cd)[ ._-]?0?2\b|^0?2\.\w{2,4}$/i.test(v.path)));
 }
 
 function isFeaturette(video) {
