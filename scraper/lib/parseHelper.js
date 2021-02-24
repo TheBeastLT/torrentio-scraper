@@ -83,8 +83,11 @@ function isPackTorrent(torrent) {
   if (torrent.type === Type.MOVIE) {
     return parsedInfo.complete || typeof parsedInfo.year === 'string' || /movies/i.test(torrent.title);
   }
-  const hasMultipleEpisodes = parsedInfo.complete || torrent.size > MULTIPLE_FILES_SIZE ||
-      (parsedInfo.seasons && parsedInfo.seasons.length > 0);
+  const hasMultipleEpisodes = parsedInfo.complete ||
+      torrent.size > MULTIPLE_FILES_SIZE ||
+      (parsedInfo.seasons && parsedInfo.seasons.length > 1) ||
+      (parsedInfo.episodes && parsedInfo.episodes.length > 1) ||
+      (parsedInfo.seasons && !parsedInfo.episodes);
   const hasSingleEpisode = Number.isInteger(parsedInfo.episode) || (!parsedInfo.episodes && parsedInfo.date);
   return hasMultipleEpisodes && !hasSingleEpisode;
 }
