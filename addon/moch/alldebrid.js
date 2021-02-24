@@ -95,7 +95,7 @@ async function _resolve(AD, infoHash, cachedEntryInfo, fileIndex) {
     return _retryCreateTorrent(AD, infoHash, cachedEntryInfo, fileIndex);
   }
 
-  return Promise.reject(`Failed AllDebrid adding torrent ${torrent}`);
+  return Promise.reject(`Failed AllDebrid adding torrent ${JSON.stringify(torrent)}`);
 }
 
 async function _createOrFindTorrent(AD, infoHash) {

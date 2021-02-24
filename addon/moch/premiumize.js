@@ -110,7 +110,7 @@ async function _resolve(PM, infoHash, cachedEntryInfo, fileIndex, ip) {
     console.log(`Retrying downloading to Premiumize ${infoHash} [${fileIndex}]...`);
     return _retryCreateTorrent(PM, infoHash, cachedEntryInfo, fileIndex);
   }
-  return Promise.reject("Failed Premiumize adding torrent");
+  return Promise.reject(`Failed Premiumize adding torrent ${JSON.stringify(torrent)}`);
 }
 
 async function _getCachedLink(PM, infoHash, encodedFileName, fileIndex, ip) {

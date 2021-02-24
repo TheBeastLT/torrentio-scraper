@@ -148,7 +148,7 @@ async function _resolve(RD, infoHash, cachedEntryInfo, fileIndex) {
     await _selectTorrentFiles(RD, torrent);
     return StaticResponse.DOWNLOADING;
   }
-  return Promise.reject("Failed RealDebrid adding torrent");
+  return Promise.reject(`Failed RealDebrid adding torrent ${JSON.stringify(torrent)}`);
 }
 
 async function _createOrFindTorrentId(RD, infoHash, cachedFileIds, fileIndex) {
