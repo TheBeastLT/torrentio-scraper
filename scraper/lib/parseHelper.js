@@ -26,6 +26,11 @@ function parseSeriesVideo(video, parsedTorrentName) {
     // in case single file was interpreted as having multiple seasons
     videoInfo.season = videoInfo.seasons[0];
   }
+  if (!hasSeason && video.path.includes('/') && parsedTorrentName.seasons && parsedTorrentName.seasons.length > 1) {
+    // russian season are usually named with 'series name-2` i.e. Улицы разбитых фонарей-6/22. Одиночный выстрел.mkv
+    const folderPathSeasonMatch = video.path.match(/[\u0400-\u04ff]-(\d{1,2})(?=.*\/)/);
+    videoInfo.season = folderPathSeasonMatch && parseInt(folderPathSeasonMatch[1], 10) || undefined;
+  }
   // sometimes video file does not have correct date format as in torrent title
   if (!videoInfo.episodes && !videoInfo.date && parsedTorrentName.date) {
     videoInfo.date = parsedTorrentName.date;
@@ -79,7 +84,7 @@ function isPackTorrent(torrent) {
     return parsedInfo.complete || typeof parsedInfo.year === 'string' || /movies/i.test(torrent.title);
   }
   const hasMultipleEpisodes = parsedInfo.complete || torrent.size > MULTIPLE_FILES_SIZE ||
-      (parsedInfo.seasons && parsedInfo.seasons.length > 1);
+      (parsedInfo.seasons && parsedInfo.seasons.length > 0);
   const hasSingleEpisode = Number.isInteger(parsedInfo.episode) || (!parsedInfo.episodes && parsedInfo.date);
   return hasMultipleEpisodes && !hasSingleEpisode;
 }
