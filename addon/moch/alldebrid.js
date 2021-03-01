@@ -154,7 +154,7 @@ function statusError(statusCode) {
 }
 
 function statusHandledError(statusCode) {
-  return [5, 7, 9, 10].includes(statusCode);
+  return [5, 7, 9, 10, 11].includes(statusCode);
 }
 
 function statusDownloading(statusCode) {
