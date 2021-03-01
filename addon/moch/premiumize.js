@@ -61,7 +61,7 @@ async function getItemMeta(itemId, apiKey, ip) {
               id: `${KEY}:${file.id}:${index}`,
               title: file.name,
               released: new Date(file.created_at * 1000 - index).toISOString(),
-              stream: { url: file.stream_link || file.link }
+              stream: { url: file.link || file.stream_link }
             }))
       }))
 }
@@ -121,7 +121,7 @@ async function _getCachedLink(PM, infoHash, encodedFileName, fileIndex, ip) {
     const targetVideo = Number.isInteger(fileIndex)
         ? videos.find(video => video.path.includes(targetFileName))
         : videos.sort((a, b) => b.size - a.size)[0];
-    const unrestrictedLink = targetVideo.stream_link || targetVideo.link;
+    const unrestrictedLink = targetVideo.link || targetVideo.stream_link;
     console.log(`Unrestricted Premiumize ${infoHash} [${fileIndex}] to ${unrestrictedLink}`);
     return unrestrictedLink;
   }
