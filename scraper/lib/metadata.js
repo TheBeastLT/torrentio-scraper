@@ -85,6 +85,7 @@ function escapeTitle(title) {
       .replace(/&/g, 'and')
       .replace(/[;, ~./]+/g, ' ') // replace dots, commas or underscores with spaces
       .replace(/[^\w \-()+#@!'\u0400-\u04ff]+/g, '') // remove all non-alphanumeric chars
+      .replace(/^\d{1,2}[.#\s]+(?=(?:\d+[.\s]*)?[\u0400-\u04ff])/i, '') // remove russian movie numbering
       .replace(/\s{2,}/, ' ') // replace multiple spaces
       .trim();
 }

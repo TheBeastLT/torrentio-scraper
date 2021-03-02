@@ -47,6 +47,11 @@ function parseSeriesVideo(video, parsedTorrentName) {
     videoInfo.episodes = epMatcher && [parseInt(epMatcher[1], 10)];
     videoInfo.episode = videoInfo.episodes && videoInfo.episodes[0];
   }
+  if (!videoInfo.episodes && !videoInfo.date) {
+    const epMatcher = video.name.match(new RegExp(`(?:\\(${videoInfo.year}\\)|part)[._ ]?(\\d{1,3})(?:\\b|_)`, "i"));
+    videoInfo.episodes = epMatcher && [parseInt(epMatcher[1], 10)];
+    videoInfo.episode = videoInfo.episodes && videoInfo.episodes[0];
+  }
 
   return { ...video, ...videoInfo };
 }
