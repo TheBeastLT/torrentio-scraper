@@ -103,7 +103,7 @@ async function singleRequest(params = {}, config = {}, retries = 10) {
         }
         if ((!response.body || !response.body.length || [5, 20].includes(response.body.error_code)) && retries > 0) {
           // too many requests
-          return Promises.delay(2100).then(() => singleRequest(params, config, retries - 1));
+          return Promises.delay(3000).then(() => singleRequest(params, config, retries - 1));
         }
         if (response.statusCode !== 200 || (response.body && response.body.error)) {
           // something went wrong
