@@ -37,7 +37,7 @@ function _parseVideo(video) {
 
 function _mostProbableSubtitleVideos(subtitle, parsedVideos) {
   const subTitle = (subtitle.title || subtitle.path).split('/').pop().replace(/\.(\w{2,4})$/, '');
-  const parsedSub = parseFilename(subTitle);
+  const parsedSub = parsePath(subtitle.title || subtitle.path);
   const byFileName = parsedVideos.filter(video => subTitle.includes(video.fileName));
   if (byFileName.length === 1) {
     return byFileName.map(v => v.videoFile);
@@ -66,6 +66,12 @@ function _mostProbableSubtitleVideos(subtitle, parsedVideos) {
 
 function singleVideoFile(videos) {
   return new Set(videos.map(v => v.videoFile.fileIndex)).size === 1;
+}
+
+function parsePath(path) {
+  const pathParts = path.split('/').map(part => parseFilename(part));
+  const parsedWithEpisode = pathParts.find(parsed => parsed.season && parsed.episodes);
+  return parsedWithEpisode || pathParts[pathParts.length - 1];
 }
 
 function parseFilename(filename) {
