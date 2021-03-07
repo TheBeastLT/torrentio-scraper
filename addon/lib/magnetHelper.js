@@ -13,6 +13,14 @@ const ANIME_TRACKERS = [
   "http://share.camoe.cn:8080/announce",
   "http://t.nyaatracker.com:80/announce"
 ];
+// Some trackers have limits on original torrent trackers,
+// where downloading ip has to seed the torrents for some amount of time,
+// thus it doesn't work on mochs.
+// So it's better to exclude them and try to download through DHT,
+// as the torrent won't start anyway.
+const LIMITED_PROVIDERS = [
+  'Rutor'
+];
 let BEST_TRACKERS = [];
 let ALL_TRACKERS = [];
 
@@ -22,7 +30,8 @@ function getAllTrackers() {
 
 async function getMagnetLink(infoHash) {
   const torrent = await getTorrent(infoHash).catch(() => ({ infoHash }));
-  const torrentTrackers = torrent.trackers && torrent.trackers.split(',');
+  const torrentTrackers = !LIMITED_PROVIDERS.includes(torrent.provider)
+      && torrent.trackers && torrent.trackers.split(',');
   const animeTrackers = torrent.type === Type.ANIME ? ALL_TRACKERS : undefined;
   const trackers = torrentTrackers || animeTrackers;
 
