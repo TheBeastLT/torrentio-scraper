@@ -9,6 +9,8 @@ const Providers = [
   '1337x',
   'ThePirateBay',
   'KickassTorrents',
+  'TorrentGalaxy',
+  'Rutor',
   'HorribleSubs',
   'NyaaSi',
   'NyaaPantsu'
