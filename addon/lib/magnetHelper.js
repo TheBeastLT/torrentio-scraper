@@ -21,7 +21,7 @@ function getAllTrackers() {
 }
 
 async function getMagnetLink(infoHash) {
-  const torrent = getTorrent(infoHash).catch(() => ({ infoHash }));
+  const torrent = await getTorrent(infoHash).catch(() => ({ infoHash }));
   const torrentTrackers = torrent.trackers && torrent.trackers.split(',');
   const animeTrackers = torrent.type === Type.ANIME ? ALL_TRACKERS : undefined;
   const trackers = torrentTrackers || animeTrackers;
