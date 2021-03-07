@@ -1,3 +1,7 @@
+const { QualityFilter } = require('./filter');
+
+const OTHER_QUALITIES = QualityFilter.options.find(option => option.key === 'other');
+const CAM_QUALITIES = QualityFilter.options.find(option => option.key === 'cam');
 const HEALTHY_SEEDERS = 5;
 const SEEDED_SEEDERS = 1;
 const MIN_HEALTHY_COUNT = 10;
@@ -97,6 +101,10 @@ function extractQuality(title) {
     return '4320p'
   } else if (/4k|uhd/i.test(qualityDesc)) {
     return '2060p'
+  } else if (CAM_QUALITIES.test(qualityDesc)) {
+    return CAM_QUALITIES.label;
+  } else if (OTHER_QUALITIES.test(qualityDesc)) {
+    return OTHER_QUALITIES.label;
   }
   return qualityDesc;
 }

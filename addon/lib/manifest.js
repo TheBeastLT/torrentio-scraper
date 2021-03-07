@@ -3,27 +3,15 @@ const { Providers } = require('./filter');
 const { showDebridCatalog } = require('../moch/options');
 const { Type } = require('./types');
 
-const DefaultProviders = Providers
+const DefaultProviders = Providers.options.map(provider => provider.key);
 const CatalogMochs = Object.values(MochOptions).filter(moch => moch.catalog);
 
 function manifest(config = {}) {
-  const providersList = config.providers && config.providers.map(provider => getProvider(provider)) || DefaultProviders;
-  const enabledProvidersDesc = Providers
-      .map(provider => `${provider}${providersList.includes(provider) ? '(+)' : '(-)'}`)
-      .join(', ')
-  const enabledMochs = Object.values(MochOptions)
-      .filter(moch => config[moch.key])
-      .map(moch => moch.name)
-      .join(' & ');
-  const possibleMochs = Object.values(MochOptions).map(moch => moch.name).join('/')
-  const mochsDesc = enabledMochs ? ` and ${enabledMochs} enabled` : '';
   return {
-    id: 'com.stremio.torrentio.addon',
+    id: `com.stremio.torrentio${config.lite ? '.lite' : ''}.addon`,
     version: '0.0.10',
-    name: 'Torrentio',
-    description: 'Provides torrent streams from scraped torrent providers.'
-        + ` Currently supports ${enabledProvidersDesc}${mochsDesc}.`
-        + ` To configure providers, ${possibleMochs} support and other settings visit https://torrentio.strem.fun`,
+    name: `Torrentio${config.lite ? ' Lite' : ''}`,
+    description: getDescription(config),
     catalogs: getCatalogs(config),
     resources: getResources(config),
     types: [Type.MOVIE, Type.SERIES, Type.OTHER],
@@ -43,8 +31,24 @@ function dummyManifest() {
   return manifestDefault;
 }
 
-function getProvider(configProvider) {
-  return Providers.find(provider => provider.toLowerCase() === configProvider);
+function getDescription(config) {
+  if (config.lite) {
+    return 'Preconfigured Lite version of Torrentio addon.'
+        + ' To configure advanced options visit https://torrentio.strem.fun';
+  }
+  const providersList = config.providers || DefaultProviders;
+  const enabledProvidersDesc = Providers.options
+      .map(provider => `${provider.label}${providersList.includes(provider.key) ? '(+)' : '(-)'}`)
+      .join(', ')
+  const enabledMochs = Object.values(MochOptions)
+      .filter(moch => config[moch.key])
+      .map(moch => moch.name)
+      .join(' & ');
+  const possibleMochs = Object.values(MochOptions).map(moch => moch.name).join('/')
+  const mochsDesc = enabledMochs ? ` and ${enabledMochs} enabled` : '';
+  return 'Provides torrent streams from scraped torrent providers.'
+      + ` Currently supports ${enabledProvidersDesc}${mochsDesc}.`
+      + ` To configure providers, ${possibleMochs} support and other settings visit https://torrentio.strem.fun`
 }
 
 function getCatalogs(config) {

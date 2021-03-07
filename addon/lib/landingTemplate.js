@@ -185,6 +185,7 @@ const { SortOptions } = require('./sort');
 const { QualityFilter } = require('./filter');
 const { DebridOptions } = require('../moch/options');
 const { MochOptions } = require('../moch/moch');
+const { LiteConfigValue } = require('../lib/configuration');
 
 function landingTemplate(manifest, config = {}) {
   const providers = config.providers || [];
@@ -208,8 +209,8 @@ function landingTemplate(manifest, config = {}) {
          <p>Contact ${manifest.name} creator:</p>
          <a href="mailto:${manifest.contactEmail}">${manifest.contactEmail}</a>
       </div>` : '';
-  const providersHTML = Providers
-      .map(provider => `<option value="${provider.toLowerCase()}">${provider}</option>`)
+  const providersHTML = Providers.options
+      .map(provider => `<option value="${provider.key}">${provider.label}</option>`)
       .join('\n');
   const sortOptionsHTML = Object.values(SortOptions.options)
       .map((option, i) => `<option value="${option.key}" ${i === 0 ? 'selected' : ''}>${option.description}</option>`)
@@ -393,17 +394,18 @@ function landingTemplate(manifest, config = {}) {
               const allDebrid = allDebridValue.length && allDebridValue.trim();
               const putio = putioClientIdValue.length && putioTokenValue.length && putioClientIdValue.trim() + '@' + putioTokenValue.trim();
               
-              const configurationValue = [
-                    ['providers', providers],
+              let configurationValue = [
+                    ['${Providers.key}', providers],
                     ['${SortOptions.key}', sort],
-                    ['limit', limit],
                     ['${QualityFilter.key}', qualityFilters],
+                    ['limit', limit],
                     ['${DebridOptions.key}', debridOptions], 
                     ['${MochOptions.realdebrid.key}', realDebrid],
                     ['${MochOptions.premiumize.key}', premiumize],
                     ['${MochOptions.alldebrid.key}', allDebrid],
                     ['${MochOptions.putio.key}', putio]
                   ].filter(([_, value]) => value.length).map(([key, value]) => key + '=' + value).join('|');
+              configurationValue = '${LiteConfigValue}' === configurationValue ? 'lite' : configurationValue;
               const configuration = configurationValue && configurationValue.length ? '/' + configurationValue : '';
               installLink.href = 'stremio://' + window.location.host + configuration + '/manifest.json';
           }

@@ -1,85 +1,126 @@
-const Providers = [
-  'YTS',
-  'EZTV',
-  'RARBG',
-  '1337x',
-  'ThePirateBay',
-  'KickassTorrents',
-  'TorrentGalaxy',
-  'Rutor',
-  'HorribleSubs',
-  'NyaaSi',
-  'NyaaPantsu'
-];
+const Providers = {
+  key: 'providers',
+  options: [
+    {
+      key: 'yts',
+      label: 'YTS'
+    },
+    {
+      key: 'eztv',
+      label: 'EZTV'
+    },
+    {
+      key: 'rarbg',
+      label: 'RARBG'
+    },
+    {
+      key: '1337x',
+      label: '1337x'
+    },
+    {
+      key: 'thepiratebay',
+      label: 'ThePirateBay'
+    },
+    {
+      key: 'kickasstorrents',
+      label: 'KickassTorrents'
+    },
+    {
+      key: 'torrentgalaxy',
+      label: 'TorrentGalaxy'
+    },
+    {
+      key: 'rutor',
+      label: 'Rutor',
+      foreign: true
+    },
+    {
+      key: 'horriblesubs',
+      label: 'HorribleSubs',
+      anime: true
+    },
+    {
+      key: 'nyaasi',
+      label: 'NyaaSi',
+      anime: true
+    },
+    {
+      key: 'nyaapantsu',
+      label: 'NyaaPantsu',
+      anime: true
+    }
+  ]
+};
 const QualityFilter = {
   key: 'qualityfilter',
   options: [
     {
-      key: "4k",
-      label: "4k",
-      items: ["4k"],
+      key: '4k',
+      label: '4k',
+      items: ['4k'],
       test(quality) {
         return this.items.includes(quality);
       }
     },
     {
-      key: "1080p",
-      label: "1080p",
-      items: ["1080p"],
+      key: '1080p',
+      label: '1080p',
+      items: ['1080p'],
       test(quality) {
         return this.items.includes(quality)
       }
     },
     {
-      key: "720p",
-      label: "720p",
-      items: ["720p"],
+      key: '720p',
+      label: '720p',
+      items: ['720p'],
       test(quality) {
         return this.items.includes(quality)
       }
     },
     {
-      key: "480p",
-      label: "480p",
-      items: ["480p"],
+      key: '480p',
+      label: '480p',
+      items: ['480p'],
       test(quality) {
         return this.items.includes(quality)
       }
     },
     {
-      key: "sd",
-      label: "SD",
-      items: ["DVDRip", "HDRip", "BDRip", "BRRip", "BluRay", "WED-DL", "WEBRip", "HDTV", "DivX", "XviD"],
+      key: 'other',
+      label: 'Other (DVDRip/HDRip/BDRip...)',
+      // could be ['DVDRip', 'HDRip', 'BDRip', 'BRRip', 'BluRay', 'WEB-DL', 'WEBRip', 'HDTV', 'DivX', 'XviD']
+      items: ['4k', '1080p', '720p', '480p', 'SCR', 'CAM', 'TeleSync', 'TeleCine'],
+      test(quality) {
+        return quality && !this.items.includes(quality);
+      }
+    },
+    {
+      key: 'scr',
+      label: 'Screener',
+      items: ['SCR'],
       test(quality) {
         return this.items.includes(quality)
       }
     },
     {
-      key: "scr",
-      label: "Screener",
-      items: ["SCR"],
+      key: 'cam',
+      label: 'Cam',
+      items: ['CAM', 'TeleSync', 'TeleCine'],
       test(quality) {
         return this.items.includes(quality)
       }
     },
     {
-      key: "cam",
-      label: "Cam",
-      items: ["CAM", "TeleSync", "TeleCine"],
-      test(quality) {
-        return this.items.includes(quality)
-      }
-    },
-    {
-      key: "unknown",
-      label: "Unknown",
+      key: 'unknown',
+      label: 'Unknown',
       test(quality) {
         return !quality
       }
     }
   ]
 };
-const defaultProviderKeys = Providers.map(provider => provider.toLowerCase());
+const defaultProviderKeys = Providers.options.map(provider => provider.key);
 
 function applyFilters(streams, config) {
   return filterByQuality(filterByProvider(streams, config), config);

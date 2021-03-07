@@ -69,8 +69,9 @@ function getQuality(record, torrentInfo, fileInfo) {
 function getLanguages(record, torrentInfo, fileInfo) {
   const providerLanguages = record.torrent.languages && titleParser.parse(record.torrent.languages).languages || [];
   const torrentLanguages = torrentInfo.languages || [];
+  const fileLanguages = fileInfo.languages || [];
   const dubbed = torrentInfo.dubbed || fileInfo.dubbed;
-  let languages = [].concat(torrentLanguages).concat(providerLanguages);
+  let languages = Array.from(new Set([].concat(torrentLanguages).concat(fileLanguages).concat(providerLanguages)));
   if (record.kitsuId || record.torrent.type === Type.ANIME) {
     // no need to display japanese for anime or english if anime is dubbed
     languages = languages.concat(dubbed ? ['dubbed'] : [])
