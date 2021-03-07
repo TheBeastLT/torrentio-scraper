@@ -1,3 +1,8 @@
+const { DebridOptions } = require('../moch/options');
+const { QualityFilter } = require('./filter');
+
+const keysToSplit = ['providers', QualityFilter.key, DebridOptions.key];
+
 function parseConfiguration(configuration) {
   const configValues = configuration.split('|')
       .reduce((map, next) => {
@@ -7,12 +12,9 @@ function parseConfiguration(configuration) {
         }
         return map;
       }, {});
-  if (configValues.providers) {
-    configValues.providers = configValues.providers.split(',').map(provider => provider.toLowerCase());
-  }
-  if (configValues.debridoptions) {
-    configValues.debridoptions = configValues.debridoptions.split(',').map(option => option.toLowerCase());
-  }
+  keysToSplit
+      .filter(key => configValues[key])
+      .filter(key => configValues[key] = configValues[key].split(',').map(provider => provider.toLowerCase()))
   return configValues;
 }
 

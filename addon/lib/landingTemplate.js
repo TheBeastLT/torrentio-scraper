@@ -180,14 +180,16 @@ button:active {
   box-shadow: 0 0.5vh 1vh rgba(0, 0, 0, 0.2);
 }
 `;
-const { Providers } = require('./manifest');
+const { Providers } = require('./filter');
 const { SortOptions } = require('./sort');
+const { QualityFilter } = require('./filter');
 const { DebridOptions } = require('../moch/options');
 const { MochOptions } = require('../moch/moch');
 
 function landingTemplate(manifest, config = {}) {
   const providers = config.providers || [];
-  const sort = config.sort || SortOptions.options.qualitySeeders.key;
+  const sort = config[SortOptions.key] || SortOptions.options.qualitySeeders.key;
+  const qualityFilters = config[QualityFilter.key] || [];
   const limit = config.limit || '';
 
   const debridProvider = Object.keys(MochOptions).find(mochKey => config[mochKey]);
@@ -211,6 +213,9 @@ function landingTemplate(manifest, config = {}) {
       .join('\n');
   const sortOptionsHTML = Object.values(SortOptions.options)
       .map((option, i) => `<option value="${option.key}" ${i === 0 ? 'selected' : ''}>${option.description}</option>`)
+      .join('\n');
+  const qualityFiltersHTML = Object.values(QualityFilter.options)
+      .map(option => `<option value="${option.key}">${option.label}</option>`)
       .join('\n');
   const debridProvidersHTML = Object.values(MochOptions)
       .map(moch => `<option value="${moch.key}">${moch.name}</option>`)
@@ -267,6 +272,11 @@ function landingTemplate(manifest, config = {}) {
            ${sortOptionsHTML}
          </select>
          
+         <label class="label" for="iQualityFilter">Exclude qualities/resolutions:</label>
+         <select id="iQualityFilter" class="input" name="qualityFilters[]" multiple="multiple">
+            ${qualityFiltersHTML}
+         </select>
+         
          <label class="label" id="iLimitLabel" for="iLimit">Max results per quality:</label>
          <input type="text" id="iLimit" onchange="generateInstallLink()" class="input"  placeholder="All results">
          
@@ -318,6 +328,11 @@ function landingTemplate(manifest, config = {}) {
                   onChange: () => generateInstallLink()
               });
               $('#iProviders').multiselect('select', [${providers.map(provider => '"' + provider + '"')}]);
+              $('#iQualityFilter').multiselect({ 
+                  nonSelectedText: 'None',
+                  onChange: () => generateInstallLink()
+              });
+              $('#iQualityFilter').multiselect('select', [${qualityFilters.map(filter => '"' + filter + '"')}]);
               $('#iDebridOptions').multiselect({ 
                   nonSelectedText: 'None',
                   onChange: () => generateInstallLink()
@@ -355,6 +370,7 @@ function landingTemplate(manifest, config = {}) {
           
           function generateInstallLink() {
               const providersValue = $('#iProviders').val().join(',') || '';
+              const qualityFilterValue = $('#iQualityFilter').val().join(',') || '';
               const sortValue = $('#iSort').val() || '';
               const limitValue = $('#iLimit').val() || '';
               
@@ -367,6 +383,7 @@ function landingTemplate(manifest, config = {}) {
               
               
               const providers = providersValue.length && providersValue;
+              const qualityFilters = qualityFilterValue.length && qualityFilterValue;
               const sort = sortValue !== '${SortOptions.options.qualitySeeders.key}' && sortValue;
               const limit = /^[1-9][0-9]*$/.test(limitValue) && limitValue;
               
@@ -380,6 +397,7 @@ function landingTemplate(manifest, config = {}) {
                     ['providers', providers],
                     ['${SortOptions.key}', sort],
                     ['limit', limit],
+                    ['${QualityFilter.key}', qualityFilters],
                     ['${DebridOptions.key}', debridOptions], 
                     ['${MochOptions.realdebrid.key}', realDebrid],
                     ['${MochOptions.premiumize.key}', premiumize],

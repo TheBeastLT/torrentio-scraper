@@ -1,11 +1,12 @@
 const Bottleneck = require('bottleneck');
 const { addonBuilder } = require('stremio-addon-sdk');
 const { Type } = require('./lib/types');
-const { dummyManifest, DefaultProviders } = require('./lib/manifest');
+const { dummyManifest } = require('./lib/manifest');
 const { cacheWrapStream } = require('./lib/cache');
 const { toStreamInfo, applyStaticInfo } = require('./lib/streamInfo');
 const repository = require('./lib/repository');
 const applySorting = require('./lib/sort');
+const applyFilters = require('./lib/filter');
 const { applyMochs, getMochCatalog, getMochItemMeta } = require('./moch/moch');
 
 const CACHE_MAX_AGE = process.env.CACHE_MAX_AGE || 4 * 60 * 60; // 4 hours in seconds
@@ -13,7 +14,6 @@ const CACHE_MAX_AGE_EMPTY = 30 * 60; // 30 minutes
 const STALE_REVALIDATE_AGE = 4 * 60 * 60; // 4 hours
 const STALE_ERROR_AGE = 7 * 24 * 60 * 60; // 7 days
 
-const defaultProviders = DefaultProviders.map(provider => provider.toLowerCase());
 const builder = new addonBuilder(dummyManifest());
 const limiter = new Bottleneck({
   maxConcurrent: process.env.LIMIT_MAX_CONCURRENT || 20,
@@ -30,7 +30,7 @@ builder.defineStreamHandler((args) => {
       .then(records => records
           .sort((a, b) => b.torrent.seeders - a.torrent.seeders || b.torrent.uploadDate - a.torrent.uploadDate)
           .map(record => toStreamInfo(record)))))
-      .then(streams => filterByProvider(streams, args.extra.providers || defaultProviders))
+      .then(streams => applyFilters(streams, args.extra))
       .then(streams => applySorting(streams, args.extra))
       .then(streams => applyStaticInfo(streams))
       .then(streams => applyMochs(streams, args.extra))
@@ -109,17 +109,6 @@ async function movieRecordsHandler(args) {
   }
   // return Promise.reject(`Unsupported movie id type: ${args.id}`);
   return Promise.resolve([]);
-}
-
-function filterByProvider(streams, providers) {
-  if (!providers || !providers.length) {
-    return streams;
-  }
-  return streams.filter(stream => {
-    const match = stream.title.match(/⚙.* ([^ \n]+)/);
-    const provider = match && match[1].toLowerCase();
-    return providers.includes(provider);
-  })
 }
 
 module.exports = builder.getInterface();

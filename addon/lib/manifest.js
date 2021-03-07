@@ -1,20 +1,8 @@
 const { MochOptions } = require('../moch/moch');
+const { Providers } = require('./filter');
 const { showDebridCatalog } = require('../moch/options');
 const { Type } = require('./types');
 
-const Providers = [
-  'YTS',
-  'EZTV',
-  'RARBG',
-  '1337x',
-  'ThePirateBay',
-  'KickassTorrents',
-  'TorrentGalaxy',
-  'Rutor',
-  'HorribleSubs',
-  'NyaaSi',
-  'NyaaPantsu'
-];
 const DefaultProviders = Providers
 const CatalogMochs = Object.values(MochOptions).filter(moch => moch.catalog);
 
@@ -31,7 +19,7 @@ function manifest(config = {}) {
   const mochsDesc = enabledMochs ? ` and ${enabledMochs} enabled` : '';
   return {
     id: 'com.stremio.torrentio.addon',
-    version: '0.0.9',
+    version: '0.0.10',
     name: 'Torrentio',
     description: 'Provides torrent streams from scraped torrent providers.'
         + ` Currently supports ${enabledProvidersDesc}${mochsDesc}.`
@@ -86,4 +74,4 @@ function getResources(config) {
   return [streamResource];
 }
 
-module.exports = { manifest, dummyManifest, Providers, DefaultProviders };
+module.exports = { manifest, dummyManifest };

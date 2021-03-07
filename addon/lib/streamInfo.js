@@ -60,7 +60,7 @@ function toStreamInfo(record) {
 function getQuality(record, torrentInfo, fileInfo) {
   const resolution = fileInfo.resolution || torrentInfo.resolution || record.torrent.resolution;
   const source = fileInfo.source || torrentInfo.source;
-  if (['CAM', 'TeleSync'].includes(source)) {
+  if (['CAM', 'TeleSync', 'TeleCine'].includes(source)) {
     return source;
   }
   return resolution || source;
