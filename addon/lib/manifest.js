@@ -34,7 +34,7 @@ function dummyManifest() {
 function getDescription(config) {
   if (config.lite) {
     return 'Preconfigured Lite version of Torrentio addon.'
-        + ' To configure advanced options visit https://torrentio.strem.fun';
+        + ' To configure advanced options visit https://torrentio.strem.fun/lite';
   }
   const providersList = config.providers || DefaultProviders;
   const enabledProvidersDesc = Providers.options

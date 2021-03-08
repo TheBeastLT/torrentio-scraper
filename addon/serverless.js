@@ -22,6 +22,11 @@ router.get('/', (_, res) => {
   res.end();
 });
 
+router.get('/lite', (_, res) => {
+  res.redirect('/lite/configure')
+  res.end();
+});
+
 router.get('/:configuration?/configure', (req, res) => {
   const configValues = parseConfiguration(req.params.configuration || '');
   const landingHTML = landingTemplate(manifest(configValues), configValues);
