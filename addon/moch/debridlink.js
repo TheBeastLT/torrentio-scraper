@@ -40,7 +40,7 @@ async function getCatalog(apiKey, offset = 0) {
   return DL.seedbox.list()
       .then(response => response.value)
       .then(torrents => (torrents || [])
-          .filter(torrent => torrent && statusReady(torrent.status))
+          .filter(torrent => torrent && statusReady(torrent))
           .map(torrent => ({
             id: `${KEY}:${torrent.id}`,
             type: Type.OTHER,
@@ -85,12 +85,12 @@ async function resolve({ ip, apiKey, infoHash, fileIndex }) {
 
 async function _resolve(DL, infoHash, fileIndex) {
   const torrent = await _createOrFindTorrent(DL, infoHash);
-  if (torrent && statusReady(torrent.status)) {
+  if (torrent && statusReady(torrent)) {
     return _unrestrictLink(DL, torrent, fileIndex);
-  } else if (torrent && statusDownloading(torrent.status)) {
+  } else if (torrent && statusDownloading(torrent)) {
     console.log(`Downloading to DebridLink ${infoHash} [${fileIndex}]...`);
     return StaticResponse.DOWNLOADING;
-  } else if (torrent && statusOpening(torrent.status)) {
+  } else if (torrent && statusOpening(torrent)) {
     console.log(`Trying to open torrent on DebridLink ${infoHash} [${fileIndex}]...`);
     return _openTorrent(DL, torrent.id)
         .then(() => {
@@ -114,9 +114,7 @@ async function _createOrFindTorrent(DL, infoHash) {
 async function _findTorrent(DL, infoHash) {
   const torrents = await DL.seedbox.list().then(response => response.value);
   const foundTorrents = torrents.filter(torrent => torrent.hashString.toLowerCase() === infoHash);
-  const nonFailedTorrent = foundTorrents.find(torrent => !statusError(torrent.status));
-  const foundTorrent = nonFailedTorrent || foundTorrents[0];
-  return foundTorrent || Promise.reject('No recent torrent found');
+  return foundTorrents[0] || Promise.reject('No recent torrent found');
 }
 
 async function _createTorrent(DL, infoHash) {
@@ -128,9 +126,9 @@ async function _createTorrent(DL, infoHash) {
 async function _openTorrent(DL, torrentId, pollCounter = 0, pollRate = 2000, maxPollNumber = 15) {
   return DL.seedbox.list(torrentId)
       .then(response => response.value[0])
-      .then(torrent => torrent && statusOpening(torrent.status) && pollCounter < maxPollNumber
+      .then(torrent => torrent && statusOpening(torrent) && pollCounter < maxPollNumber
           ? delay(pollRate).then(() => _openTorrent(DL, torrentId, pollCounter + 1))
-          : torrent);
+          : statusOpening(torrent) ? Promise.reject('Failed opening torrent') : torrent);
 }
 
 async function _unrestrictLink(DL, torrent, fileIndex) {
@@ -143,7 +141,7 @@ async function _unrestrictLink(DL, torrent, fileIndex) {
     return StaticResponse.FAILED_RAR;
   }
   if (!targetFile || !targetFile.downloadUrl) {
-    return Promise.reject(`No DebridLink links found for [${torrent.hash}] ${fileIndex}`);
+    return Promise.reject(`No DebridLink links found for index ${fileIndex} in: ${JSON.stringify(torrent)}`);
   }
   console.log(`Unrestricted DebridLink ${torrent.hash} [${fileIndex}] to ${targetFile.downloadUrl}`);
   return targetFile.downloadUrl;
@@ -153,20 +151,16 @@ async function getDefaultOptions(ip) {
   return { timeout: 30000 };
 }
 
-function statusError(status) {
-  return [].includes(status);
+function statusOpening(torrent) {
+  return [2].includes(torrent.status) && torrent.peersConnected === 0;
 }
 
-function statusOpening(status) {
-  return [2].includes(status);
+function statusDownloading(torrent) {
+  return [4].includes(torrent.status) || ([2].includes(torrent.status) && torrent.peersConnected !== 0);
 }
 
-function statusDownloading(status) {
-  return [4].includes(status);
-}
-
-function statusReady(status) {
-  return [6, 100].includes(status);
+function statusReady(torrent) {
+  return torrent.downloadPercent === 100;
 }
 
 function errorExpiredSubscriptionError(error) {
