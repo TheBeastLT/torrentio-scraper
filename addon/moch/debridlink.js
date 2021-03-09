@@ -90,17 +90,6 @@ async function _resolve(DL, infoHash, fileIndex) {
   } else if (torrent && statusDownloading(torrent)) {
     console.log(`Downloading to DebridLink ${infoHash} [${fileIndex}]...`);
     return StaticResponse.DOWNLOADING;
-  } else if (torrent && statusOpening(torrent)) {
-    console.log(`Trying to open torrent on DebridLink ${infoHash} [${fileIndex}]...`);
-    return _openTorrent(DL, torrent.id)
-        .then(() => {
-          console.log(`Downloading to DebridLink ${infoHash} [${fileIndex}]...`);
-          return StaticResponse.DOWNLOADING
-        })
-        .catch(error => {
-          console.log(`Failed DebridLink opening torrent ${infoHash} [${fileIndex}]:`, error);
-          return StaticResponse.FAILED_OPENING;
-        });
   }
 
   return Promise.reject(`Failed DebridLink adding torrent ${JSON.stringify(torrent)}`);
@@ -123,14 +112,6 @@ async function _createTorrent(DL, infoHash) {
   return uploadResponse.value;
 }
 
-async function _openTorrent(DL, torrentId, pollCounter = 0, pollRate = 2000, maxPollNumber = 15) {
-  return DL.seedbox.list(torrentId)
-      .then(response => response.value[0])
-      .then(torrent => torrent && statusOpening(torrent) && pollCounter < maxPollNumber
-          ? delay(pollRate).then(() => _openTorrent(DL, torrentId, pollCounter + 1))
-          : statusOpening(torrent) ? Promise.reject('Failed opening torrent') : torrent);
-}
-
 async function _unrestrictLink(DL, torrent, fileIndex) {
   const targetFile = Number.isInteger(fileIndex)
       ? torrent.files[fileIndex]
@@ -151,12 +132,8 @@ async function getDefaultOptions(ip) {
   return { timeout: 30000 };
 }
 
-function statusOpening(torrent) {
-  return [2].includes(torrent.status) && torrent.peersConnected === 0;
-}
-
 function statusDownloading(torrent) {
-  return [2, 4].includes(torrent.status);
+  return torrent.downloadPercent < 100
 }
 
 function statusReady(torrent) {
