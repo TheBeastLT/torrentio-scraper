@@ -4,12 +4,11 @@ const { isVideo, isArchive } = require('../lib/extension');
 const delay = require('./delay');
 const StaticResponse = require('./static');
 const { getMagnetLink } = require('../lib/magnetHelper');
+const { chunkArray } = require('./mochHelper');
 
 const MIN_SIZE = 5 * 1024 * 1024; // 5 MB
 const CATALOG_MAX_PAGE = 5;
 const CATALOG_PAGE_SIZE = 100;
-const DNS_FAILED_MESSAGE = 'ERR_DNS_FAIL';
-const BLACKLIST_ERRORS = ['ENOTFOUND', 'ETIMEDOUT', DNS_FAILED_MESSAGE];
 const NON_BLACKLIST_ERRORS = ['ESOCKETTIMEDOUT', 'EAI_AGAIN'];
 const KEY = "realdebrid"
 
@@ -32,23 +31,16 @@ async function getCachedStreams(streams, apiKey) {
 async function _getInstantAvailable(hashes, apiKey, retries = 3) {
   const options = await getDefaultOptions();
   const RD = new RealDebridClient(apiKey, options);
-  return RD.torrents.instantAvailability(hashes)
+  const hashBatches = chunkArray(hashes, 150)
+  return Promise.all(hashBatches.map(batch => RD.torrents.instantAvailability(batch)
       .then(response => {
         if (typeof response !== 'object') {
-          if (response.includes(DNS_FAILED_MESSAGE)) {
-            return Promise.reject({ message: DNS_FAILED_MESSAGE });
-          } else if (retries > 0) {
-            return _getInstantAvailable(hashes, apiKey, retries - 1);
-          } else {
-            return Promise.reject(new Error('RD returned non JSON response: ' + response));
-          }
+          return Promise.reject(new Error('RD returned non JSON response: ' + response));
         }
         return response;
-      })
+      })))
+      .then(results => results.reduce((all, result) => Object.assign(all, result), {}))
       .catch(error => {
-        if (retries > 0 && BLACKLIST_ERRORS.some(v => error.message && error.message.includes(v))) {
-          return _getInstantAvailable(hashes, apiKey, retries - 1);
-        }
         if (retries > 0 && NON_BLACKLIST_ERRORS.some(v => error.message && error.message.includes(v))) {
           return _getInstantAvailable(hashes, apiKey, retries - 1);
         }
