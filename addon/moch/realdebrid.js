@@ -132,6 +132,9 @@ async function _resolve(RD, infoHash, cachedEntryInfo, fileIndex) {
   } else if (torrent && statusDownloading(torrent.status)) {
     console.log(`Downloading to RealDebrid ${infoHash} [${fileIndex}]...`);
     return StaticResponse.DOWNLOADING;
+  } else if (torrent && statusMagnetError(torrent.status)) {
+    console.log(`Failed RealDebrid opening torrent ${infoHash} [${fileIndex}] due to magnet error`);
+    return StaticResponse.FAILED_OPENING;
   } else if (torrent && (statusWaitingSelection(torrent.status) || statusOpening(torrent.status))) {
     console.log(`Trying to select files on RealDebrid ${infoHash} [${fileIndex}]...`);
     return _selectTorrentFiles(RD, torrent)
@@ -250,6 +253,10 @@ async function _unrestrictFileLink(RD, fileLink, torrent, fileIndex) {
 
 function statusError(status) {
   return ['error', 'magnet_error', 'dead'].includes(status);
+}
+
+function statusMagnetError(status) {
+  return status === 'magnet_error';
 }
 
 function statusOpening(status) {
