@@ -156,7 +156,7 @@ function statusOpening(torrent) {
 }
 
 function statusDownloading(torrent) {
-  return [4].includes(torrent.status) || ([2].includes(torrent.status) && torrent.peersConnected !== 0);
+  return [2, 4].includes(torrent.status);
 }
 
 function statusReady(torrent) {
