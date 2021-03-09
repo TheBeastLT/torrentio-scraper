@@ -183,7 +183,7 @@ async function _createTorrentId(RD, infoHash, cachedFileIds) {
   const magnetLink = await getMagnetLink(infoHash);
   const addedMagnet = await RD.torrents.addMagnet(magnetLink);
   if (cachedFileIds && !['null', 'undefined'].includes(cachedFileIds)) {
-    await RD.torrents.selectFiles(torrent.id, cachedFileIds);
+    await RD.torrents.selectFiles(addedMagnet.id, cachedFileIds);
   }
   return addedMagnet.id;
 }
