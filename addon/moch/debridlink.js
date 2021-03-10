@@ -3,7 +3,7 @@ const { Type } = require('../lib/types');
 const { isVideo, isArchive } = require('../lib/extension');
 const StaticResponse = require('./static');
 const { getMagnetLink } = require('../lib/magnetHelper');
-const { chunkArray } = require('./mochHelper');
+const { chunkArray, BadTokenError } = require('./mochHelper');
 const delay = require('./delay');
 
 const KEY = 'debridlink';
@@ -17,7 +17,10 @@ async function getCachedStreams(streams, apiKey) {
       .then(results => results.map(result => result.value))
       .then(results => results.reduce((all, result) => Object.assign(all, result), {}))
       .catch(error => {
-        console.warn('Failed DebridLink cached torrent availability request: ', error);
+        if (error === 'badToken') {
+          return Promise.reject(BadTokenError);
+        }
+        console.warn('Failed DebridLink cached torrent availability request:', error);
         return undefined;
       });
   return available && streams

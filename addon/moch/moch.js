@@ -7,8 +7,10 @@ const debridlink = require('./debridlink');
 const putio = require('./putio');
 const StaticResponse = require('./static');
 const { cacheWrapResolvedUrl } = require('../lib/cache');
+const { BadTokenError } = require('./mochHelper');
 
 const MIN_API_KEY_SYMBOLS = 15;
+const TOKEN_BLACKLIST = [];
 const RESOLVER_HOST = process.env.RESOLVER_HOST || 'http://localhost:7050';
 const MOCHS = {
   realdebrid: {
@@ -56,24 +58,23 @@ async function applyMochs(streams, config) {
   if (!streams || !streams.length || !Object.keys(MOCHS).find(moch => config[moch])) {
     return streams;
   }
-
-  const includeTorrentLinks = options.includeTorrentLinks(config);
-  const excludeDownloadLinks = options.excludeDownloadLinks(config);
-
-  const configuredMochs = Object.keys(config)
+  return Promise.all(Object.keys(config)
       .filter(configKey => MOCHS[configKey])
-      .filter(configKey => config[configKey].length >= MIN_API_KEY_SYMBOLS)
-      .map(configKey => MOCHS[configKey]);
-  const mochResults = await Promise.all(configuredMochs
-      .map(moch => moch.instance.getCachedStreams(streams, config[moch.key])
-          .then(mochStreams => ({ moch, mochStreams }))
-          .catch(error => console.warn(error))))
-      .then(results => results.filter(result => result && result.mochStreams));
-  const cachedStreams = mochResults
-      .reduce((resultStreams, mochResult) => populateCachedLinks(resultStreams, mochResult), streams);
-  const resultStreams = excludeDownloadLinks ? cachedStreams : populateDownloadLinks(cachedStreams, mochResults);
-
-  return includeTorrentLinks ? resultStreams : resultStreams.filter(stream => stream.url);
+      .map(configKey => MOCHS[configKey])
+      .map(moch => {
+        if (isInvalidToken(config[moch.key], moch.key)) {
+          return { moch, error: BadTokenError };
+        }
+        return moch.instance.getCachedStreams(streams, config[moch.key])
+            .then(mochStreams => ({ moch, mochStreams }))
+            .catch(error => {
+              if (error === BadTokenError) {
+                blackListToken(config[moch.key], moch.key);
+              }
+              return { moch, error };
+            })
+      }))
+      .then(results => processMochResults(streams, config, results));
 }
 
 async function resolve(parameters) {
@@ -102,10 +103,9 @@ async function getMochCatalog(mochKey, config) {
   if (!moch) {
     return Promise.reject(`Not a valid moch provider: ${mochKey}`);
   }
-  if (config[mochKey].length < MIN_API_KEY_SYMBOLS) {
+  if (isInvalidToken(config[mochKey], mochKey)) {
     return Promise.reject(`Invalid API key for moch provider: ${mochKey}`);
   }
-
   return moch.instance.getCatalog(config[moch.key], config.skip, config.ip);
 }
 
@@ -125,6 +125,22 @@ async function getMochItemMeta(mochKey, itemId, config) {
         });
         return meta;
       });
+}
+
+function processMochResults(streams, config, results) {
+  const errorResults = results.filter(result => result && result.error === BadTokenError);
+  if (errorResults.length) {
+    return errorResults.map(result => badTokenStreamResponse(result.moch.key))
+  }
+
+  const includeTorrentLinks = options.includeTorrentLinks(config);
+  const excludeDownloadLinks = options.excludeDownloadLinks(config);
+  const mochResults = results.filter(result => result && result.mochStreams);
+
+  const cachedStreams = mochResults
+      .reduce((resultStreams, mochResult) => populateCachedLinks(resultStreams, mochResult), streams);
+  const resultStreams = excludeDownloadLinks ? cachedStreams : populateDownloadLinks(cachedStreams, mochResults);
+  return includeTorrentLinks ? resultStreams : resultStreams.filter(stream => stream.url);
 }
 
 function populateCachedLinks(streams, mochResult) {
@@ -157,6 +173,24 @@ function populateDownloadLinks(streams, mochResults) {
             }
           }));
   return streams;
+}
+
+function isInvalidToken(token, mochKey) {
+  return token.length < MIN_API_KEY_SYMBOLS || TOKEN_BLACKLIST.includes(`${mochKey}|${token}`);
+}
+
+function blackListToken(token, mochKey) {
+  const tokenKey = `${mochKey}|${token}`;
+  console.log(`Blacklisting invalid token: ${tokenKey}`)
+  TOKEN_BLACKLIST.push(tokenKey);
+}
+
+function badTokenStreamResponse(mochKey) {
+  return {
+    name: `Torrentio\n${MOCHS[mochKey].shortName} error`,
+    title: `Invalid ${MOCHS[mochKey].name} ApiKey/Token!`,
+    url: StaticResponse.FAILED_ACCESS
+  };
 }
 
 module.exports = { applyMochs, getMochCatalog, getMochItemMeta, resolve, MochOptions: MOCHS }

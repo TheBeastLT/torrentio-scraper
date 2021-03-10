@@ -4,6 +4,7 @@ const { Type } = require('../lib/types');
 const { isVideo } = require('../lib/extension');
 const StaticResponse = require('./static');
 const { getMagnetLink } = require('../lib/magnetHelper');
+const { BadTokenError } = require('./mochHelper');
 
 const KEY = 'premiumize';
 
@@ -13,7 +14,10 @@ async function getCachedStreams(streams, apiKey) {
   const hashes = streams.map(stream => stream.infoHash);
   const available = await PM.cache.check(hashes)
       .catch(error => {
-        console.warn('Failed Premiumize cached torrent availability request: ', error);
+        if (error && error.message === 'customer_id and pin parameter missing or not logged in ') {
+          return Promise.reject(BadTokenError);
+        }
+        console.warn('Failed Premiumize cached torrent availability request:', error);
         return undefined;
       });
   return available && streams
