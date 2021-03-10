@@ -117,12 +117,12 @@ async function getMochItemMeta(mochKey, itemId, config) {
 
   return moch.instance.getItemMeta(itemId, config[moch.key], config.ip)
       .then(meta => {
-        meta.videos
-            // .map(video => video.streams)
-            // .reduce((a, b) => a.concat(b), [])
-            .map(video => video.stream)
-            .filter(stream => !stream.url.startsWith('http'))
-            .forEach(stream => stream.url = `${RESOLVER_HOST}/${moch.key}/${stream.url}`)
+        meta.videos.forEach(video => {
+          if (!video.stream.url.startsWith('http')) {
+            video.stream.url = `${RESOLVER_HOST}/${moch.key}/${video.stream.url}`
+          }
+          video.streams = [video.stream];
+        });
         return meta;
       });
 }
