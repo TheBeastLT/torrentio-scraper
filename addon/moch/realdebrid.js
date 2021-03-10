@@ -4,7 +4,7 @@ const { isVideo, isArchive } = require('../lib/extension');
 const delay = require('./delay');
 const StaticResponse = require('./static');
 const { getMagnetLink } = require('../lib/magnetHelper');
-const { chunkArray } = require('./mochHelper');
+const { chunkArray, BadTokenError } = require('./mochHelper');
 
 const MIN_SIZE = 5 * 1024 * 1024; // 5 MB
 const CATALOG_MAX_PAGE = 5;
@@ -120,6 +120,7 @@ async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex }) {
           console.log(`Access denied to RealDebrid ${infoHash} [${fileIndex}]`);
           return StaticResponse.FAILED_ACCESS;
         }
+        console.log('RealDebrid resolve error: ', error);
         return Promise.reject(`Failed RealDebrid adding torrent ${JSON.stringify(error)}`);
       });
 }
@@ -191,6 +192,16 @@ async function _createTorrentId(RD, infoHash, cachedFileIds) {
   return addedMagnet.id;
 }
 
+async function _retryCreateTorrent(RD, infoHash, fileIndex) {
+  console.log(`Retry failed download in RealDebrid ${infoHash} [${fileIndex}]...`);
+  const newTorrentId = await _createTorrentId(RD, infoHash);
+  await _selectTorrentFiles(RD, { id: newTorrentId });
+  const newTorrent = await _getTorrentInfo(RD, newTorrentId);
+  return newTorrent && statusReady(newTorrent.status)
+      ? _unrestrictLink(RD, newTorrent, fileIndex)
+      : StaticResponse.FAILED_DOWNLOAD;
+}
+
 async function _selectTorrentFiles(RD, torrent) {
   torrent = statusWaitingSelection(torrent.status) ? torrent : await _openTorrent(RD, torrent.id);
   if (torrent && torrent.files && statusWaitingSelection(torrent.status)) {
@@ -215,7 +226,7 @@ async function _unrestrictLink(RD, torrent, fileIndex) {
   const targetFile = torrent.files.find(file => file.id === fileIndex + 1)
       || torrent.files.filter(file => file.selected).sort((a, b) => b.bytes - a.bytes)[0];
   if (!targetFile.selected) {
-    await _retryCreateTorrent(RD, torrent.hash.toLowerCase(), undefined, fileIndex);
+    await _retryCreateTorrent(RD, torrent.hash.toLowerCase(), fileIndex);
     return StaticResponse.DOWNLOADING;
   }
 
@@ -238,14 +249,12 @@ async function _unrestrictFileLink(RD, fileLink, torrent, fileIndex) {
         if (isArchive(unrestrictedLink)) {
           return StaticResponse.FAILED_RAR;
         }
-        // const transcodedLink = await RD.streaming.transcode(unrestrictedLink.id);
         console.log(`Unrestricted RealDebrid ${torrent.hash} [${fileIndex}] to ${unrestrictedLink}`);
         return unrestrictedLink;
       })
       .catch(error => {
         if (error.code === 19) {
-          return _retryCreateTorrent(RD, torrent.hash.toLowerCase(), undefined, fileIndex)
-              .then(() => StaticResponse.FAILED_DOWNLOAD);
+          return _retryCreateTorrent(RD, torrent.hash.toLowerCase(), fileIndex);
         }
         return Promise.reject(error);
       });
