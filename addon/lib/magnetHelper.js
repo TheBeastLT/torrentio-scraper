@@ -4,7 +4,7 @@ const { getRandomUserAgent } = require('../lib/requestHelper');
 const { getTorrent } = require('../lib/repository');
 const { Type } = require('../lib/types');
 
-const TRACKERS_URL = 'https://ngosang.github.io/trackerslist/trackers_best.txt';
+const TRACKERS_URL = 'https://raw.githubusercontent.com/ngosang/trackerslist/master/trackers_best.txt';
 const ANIME_TRACKERS = [
   "http://nyaa.tracker.wf:7777/announce",
   "http://anidex.moe:6969/announce",
