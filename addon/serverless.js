@@ -80,7 +80,7 @@ router.get('/:moch/:apiKey/:infoHash/:cachedEntryInfo/:fileIndex?', (req, res) =
   const parameters = {
     mochKey: req.params.moch,
     apiKey: req.params.apiKey,
-    infoHash: req.params.infoHash,
+    infoHash: req.params.infoHash.toLowerCase(),
     fileIndex: isNaN(req.params.fileIndex) ? undefined : parseInt(req.params.fileIndex),
     cachedEntryInfo: req.params.cachedEntryInfo,
     ip: requestIp.getClientIp(req)

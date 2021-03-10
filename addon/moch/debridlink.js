@@ -118,13 +118,13 @@ async function _unrestrictLink(DL, torrent, fileIndex) {
       : torrent.files.filter(file => file.downloadPercent === 100).sort((a, b) => b.size - a.size)[0];
 
   if (!targetFile && isArchive(targetFile.downloadUrl)) {
-    console.log(`Only DebridLink archive is available for [${torrent.hash}] ${fileIndex}`)
+    console.log(`Only DebridLink archive is available for [${torrent.hashString}] ${fileIndex}`)
     return StaticResponse.FAILED_RAR;
   }
   if (!targetFile || !targetFile.downloadUrl) {
     return Promise.reject(`No DebridLink links found for index ${fileIndex} in: ${JSON.stringify(torrent)}`);
   }
-  console.log(`Unrestricted DebridLink ${torrent.hash} [${fileIndex}] to ${targetFile.downloadUrl}`);
+  console.log(`Unrestricted DebridLink ${torrent.hashString} [${fileIndex}] to ${targetFile.downloadUrl}`);
   return targetFile.downloadUrl;
 }
 
