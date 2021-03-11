@@ -69,7 +69,7 @@ function parseResults(results) {
 function parseMovie(movie) {
   return movie.torrents.map(torrent => ({
     name: `${movie.title} ${movie.year} ${torrent.quality} ${formatType(torrent.type)} `,
-    torrentId: movie.id,
+    torrentId: `${movie.id}-${torrent.hash.trim().toLowerCase()}`,
     infoHash: torrent.hash.trim().toLowerCase(),
     torrentLink: torrent.url,
     seeders: torrent.seeds,
