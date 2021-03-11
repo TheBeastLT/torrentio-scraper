@@ -123,7 +123,6 @@ async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex }) {
           console.log(`Access denied to RealDebrid ${infoHash} [${fileIndex}]`);
           return StaticResponse.FAILED_ACCESS;
         }
-        console.log('RealDebrid resolve error: ', error);
         return Promise.reject(`Failed RealDebrid adding torrent ${JSON.stringify(error)}`);
       });
 }
@@ -139,6 +138,8 @@ async function _resolve(RD, infoHash, cachedEntryInfo, fileIndex) {
   } else if (torrent && statusMagnetError(torrent.status)) {
     console.log(`Failed RealDebrid opening torrent ${infoHash} [${fileIndex}] due to magnet error`);
     return StaticResponse.FAILED_OPENING;
+  } else if (torrent && statusError(torrent.status)) {
+    return _retryCreateTorrent(RD, infoHash, fileIndex);
   } else if (torrent && (statusWaitingSelection(torrent.status) || statusOpening(torrent.status))) {
     console.log(`Trying to select files on RealDebrid ${infoHash} [${fileIndex}]...`);
     return _selectTorrentFiles(RD, torrent)
@@ -198,17 +199,17 @@ async function _createTorrentId(RD, infoHash, cachedFileIds) {
 async function _retryCreateTorrent(RD, infoHash, fileIndex) {
   console.log(`Retry failed download in RealDebrid ${infoHash} [${fileIndex}]...`);
   const newTorrentId = await _createTorrentId(RD, infoHash);
-  await _selectTorrentFiles(RD, { id: newTorrentId });
+  await _selectTorrentFiles(RD, { id: newTorrentId }, fileIndex);
   const newTorrent = await _getTorrentInfo(RD, newTorrentId);
   return newTorrent && statusReady(newTorrent.status)
       ? _unrestrictLink(RD, newTorrent, fileIndex)
       : StaticResponse.FAILED_DOWNLOAD;
 }
 
-async function _selectTorrentFiles(RD, torrent) {
+async function _selectTorrentFiles(RD, torrent, fileIndex) {
   torrent = statusWaitingSelection(torrent.status) ? torrent : await _openTorrent(RD, torrent.id);
   if (torrent && torrent.files && statusWaitingSelection(torrent.status)) {
-    const videoFileIds = torrent.files
+    const videoFileIds = Number.isInteger(fileIndex) ? `${fileIndex + 1}` : torrent.files
         .filter(file => isVideo(file.path))
         .filter(file => file.bytes > MIN_SIZE)
         .map(file => file.id)
@@ -264,7 +265,7 @@ async function _unrestrictFileLink(RD, fileLink, torrent, fileIndex) {
 }
 
 function statusError(status) {
-  return ['error', 'magnet_error', 'dead'].includes(status);
+  return ['error', 'magnet_error'].includes(status);
 }
 
 function statusMagnetError(status) {
@@ -284,7 +285,7 @@ function statusDownloading(status) {
 }
 
 function statusReady(status) {
-  return ['downloaded'].includes(status);
+  return ['downloaded', 'dead'].includes(status);
 }
 
 function accessDeniedError(error) {
