@@ -52,7 +52,7 @@ const MOCHS = {
 
 const unrestrictQueue = new namedQueue((task, callback) => task.method()
     .then(result => callback(false, result))
-    .catch((error => callback(error))));
+    .catch((error => callback(error))), 5);
 
 async function applyMochs(streams, config) {
   if (!streams || !streams.length || !Object.keys(MOCHS).find(moch => config[moch])) {
@@ -92,7 +92,7 @@ async function resolve(parameters) {
         console.warn(error);
         return StaticResponse.FAILED_UNEXPECTED;
       });
-
+  console.log(`Starting [${parameters.infoHash}] link resolve with queue size: ${unrestrictQueue.length()}`);
   return new Promise(((resolve, reject) => {
     unrestrictQueue.push({ id, method }, (error, result) => result ? resolve(result) : reject(error));
   }));
