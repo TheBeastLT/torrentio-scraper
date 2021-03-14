@@ -7,8 +7,10 @@ const debridlink = require('./debridlink');
 const putio = require('./putio');
 const StaticResponse = require('./static');
 const { cacheWrapResolvedUrl } = require('../lib/cache');
+const { timeout } = require('../lib/promises');
 const { BadTokenError } = require('./mochHelper');
 
+const RESOLVE_TIMEOUT = 10 * 60 * 1000; // 10 minutes
 const MIN_API_KEY_SYMBOLS = 15;
 const TOKEN_BLACKLIST = [];
 const RESOLVER_HOST = process.env.RESOLVER_HOST || 'http://localhost:7050';
@@ -87,12 +89,11 @@ async function resolve(parameters) {
     return Promise.reject("No valid parameters passed");
   }
   const id = `${parameters.mochKey}_${parameters.apiKey}_${parameters.infoHash}_${parameters.fileIndex}`;
-  const method = () => cacheWrapResolvedUrl(id, () => moch.instance.resolve(parameters))
+  const method = () => timeout(RESOLVE_TIMEOUT, cacheWrapResolvedUrl(id, () => moch.instance.resolve(parameters)))
       .catch(error => {
         console.warn(error);
         return StaticResponse.FAILED_UNEXPECTED;
       });
-  console.log(`Starting [${parameters.infoHash}] link resolve with queue size: ${unrestrictQueue.length()}`);
   return new Promise(((resolve, reject) => {
     unrestrictQueue.push({ id, method }, (error, result) => result ? resolve(result) : reject(error));
   }));

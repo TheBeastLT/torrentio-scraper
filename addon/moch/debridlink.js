@@ -1,10 +1,10 @@
 const DebridLinkClient = require('debrid-link-api');
 const { Type } = require('../lib/types');
 const { isVideo, isArchive } = require('../lib/extension');
+const { delay } = require('../lib/promises');
 const StaticResponse = require('./static');
 const { getMagnetLink } = require('../lib/magnetHelper');
 const { chunkArray, BadTokenError } = require('./mochHelper');
-const delay = require('./delay');
 
 const KEY = 'debridlink';
 

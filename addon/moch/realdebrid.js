@@ -1,7 +1,7 @@
 const RealDebridClient = require('real-debrid-api');
 const { Type } = require('../lib/types');
 const { isVideo, isArchive } = require('../lib/extension');
-const delay = require('./delay');
+const { delay } = require('../lib/promises');
 const StaticResponse = require('./static');
 const { getMagnetLink } = require('../lib/magnetHelper');
 const { chunkArray, BadTokenError } = require('./mochHelper');

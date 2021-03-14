@@ -1,6 +1,6 @@
 const PutioAPI = require('@putdotio/api-client').default
 const { isVideo } = require('../lib/extension');
-const delay = require('./delay');
+const { delay } = require('../lib/promises');
 const StaticResponse = require('./static');
 const { getMagnetLink } = require('../lib/magnetHelper');
 
