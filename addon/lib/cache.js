@@ -7,7 +7,7 @@ const RESOLVED_URL_KEY_PREFIX = `${GLOBAL_KEY_PREFIX}|resolved`;
 
 const STREAM_TTL = process.env.STREAM_TTL || 4 * 60 * 60; // 4 hours
 const STREAM_EMPTY_TTL = process.env.STREAM_EMPTY_TTL || 30 * 60; // 30 minutes
-const RESOLVED_URL_TTL = 60; // 2 minutes
+const RESOLVED_URL_TTL = 60; // 1 minutes
 // When the streams are empty we want to cache it for less time in case of timeouts or failures
 
 const MONGO_URI = process.env.MONGODB_URI;

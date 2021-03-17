@@ -196,10 +196,15 @@ async function _createTorrentId(RD, infoHash, cachedFileIds) {
   return addedMagnet.id;
 }
 
-async function _retryCreateTorrent(RD, infoHash, fileIndex) {
-  console.log(`Retry failed download in RealDebrid ${infoHash} [${fileIndex}]...`);
+async function _recreateTorrentId(RD, infoHash, fileIndex) {
   const newTorrentId = await _createTorrentId(RD, infoHash);
   await _selectTorrentFiles(RD, { id: newTorrentId }, fileIndex);
+  return newTorrentId;
+}
+
+async function _retryCreateTorrent(RD, infoHash, fileIndex) {
+  console.log(`Retry failed download in RealDebrid ${infoHash} [${fileIndex}]...`);
+  const newTorrentId = await _recreateTorrentId(RD, infoHash, fileIndex);
   const newTorrent = await _getTorrentInfo(RD, newTorrentId);
   return newTorrent && statusReady(newTorrent.status)
       ? _unrestrictLink(RD, newTorrent, fileIndex)
@@ -230,7 +235,8 @@ async function _unrestrictLink(RD, torrent, fileIndex) {
   const targetFile = torrent.files.find(file => file.id === fileIndex + 1)
       || torrent.files.filter(file => file.selected).sort((a, b) => b.bytes - a.bytes)[0];
   if (!targetFile.selected) {
-    await _retryCreateTorrent(RD, torrent.hash.toLowerCase(), fileIndex);
+    console.log(`Target RealDebrid file is not downloaded: ${JSON.stringify(torrent)}`);
+    await _recreateTorrentId(RD, torrent.hash.toLowerCase(), fileIndex);
     return StaticResponse.DOWNLOADING;
   }
 
