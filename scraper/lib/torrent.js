@@ -5,6 +5,7 @@ const BTClient = require('bittorrent-tracker')
 const async = require('async');
 const decode = require('magnet-uri');
 const { Type } = require('./types');
+const { delay } = require('./promises')
 const { isVideo, isSubtitle } = require('./extension');
 const { cacheTrackers } = require('./cache');
 
@@ -190,10 +191,11 @@ async function getTorrentTrackers(torrent) {
   return Array.from(new Set([].concat(magnetTrackers).concat(torrentTrackers).concat(defaultTrackers)));
 }
 
-async function getDefaultTrackers(torrent) {
+async function getDefaultTrackers(torrent, retry = 3) {
   return cacheTrackers(() => needle('get', TRACKERS_URL, { open_timeout: SEEDS_CHECK_TIMEOUT })
       .then(response => response.body && response.body.trim())
       .then(body => body && body.split('\n\n') || []))
+      .catch(() => retry > 0 ? delay(5000).then(() => getDefaultTrackers(torrent, retry - 1)) : [])
       .then(trackers => trackers.concat(ADDITIONAL_TRACKERS))
       .then(trackers => torrent.type === Type.ANIME ? trackers.concat(ANIME_TRACKERS) : trackers);
 }
