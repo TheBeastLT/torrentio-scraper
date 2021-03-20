@@ -6,7 +6,7 @@ const { createTorrentEntry, checkAndUpdateTorrent } = require('../../lib/torrent
 
 const NAME = 'RARBG';
 
-const limiter = new Bottleneck({ maxConcurrent: 1, minTime: 2500 });
+const limiter = new Bottleneck({ maxConcurrent: 1, minTime: 3000 });
 const entryLimiter = new Bottleneck({ maxConcurrent: 20 });
 const allowedCategories = [
   rarbg.Options.category.MOVIES_XVID,
@@ -27,8 +27,8 @@ const allowedCategories = [
 
 async function scrape() {
   console.log(`[${moment()}] starting ${NAME} dump scrape...`);
-  // const movieImdbIds = require('./rargb_movie_imdb_ids_2020-04-22.json');
-  const seriesImdbIds = require('./rargb_series_imdb_ids_2020-04-22.json');
+  // const movieImdbIds = require('./rargb_movie_imdb_ids_2021-02-27.json');
+  const seriesImdbIds = require('./rargb_series_imdb_ids_2021-02-27.json');
   //const allImdbIds = [].concat(movieImdbIds).concat(seriesImdbIds);
 
   return Promise.all(
