@@ -12,21 +12,21 @@ function parseSeriesVideos(torrent, videos) {
 
 function parseSeriesVideo(video, parsedTorrentName) {
   const videoInfo = parse(video.name);
-  const hasSeason = Number.isInteger(videoInfo.season);
   // the episode may be in a folder containing season number
-  if (!hasSeason && video.path.includes('/')) {
+  if (!Number.isInteger(videoInfo.season) && video.path.includes('/')) {
     const folders = video.path.split('/');
     const pathInfo = parse(folders[folders.length - 2]);
     videoInfo.season = pathInfo.season;
   }
-  if (!hasSeason && parsedTorrentName.season) {
+  if (!Number.isInteger(videoInfo.season) && parsedTorrentName.season) {
     videoInfo.season = parsedTorrentName.season;
   }
-  if (!hasSeason && videoInfo.seasons && videoInfo.seasons.length > 1) {
+  if (!Number.isInteger(videoInfo.season) && videoInfo.seasons && videoInfo.seasons.length > 1) {
     // in case single file was interpreted as having multiple seasons
     videoInfo.season = videoInfo.seasons[0];
   }
-  if (!hasSeason && video.path.includes('/') && parsedTorrentName.seasons && parsedTorrentName.seasons.length > 1) {
+  if (!Number.isInteger(videoInfo.season) && video.path.includes('/') && parsedTorrentName.seasons
+      && parsedTorrentName.seasons.length > 1) {
     // russian season are usually named with 'series name-2` i.e. Улицы разбитых фонарей-6/22. Одиночный выстрел.mkv
     const folderPathSeasonMatch = video.path.match(/[\u0400-\u04ff]-(\d{1,2})(?=.*\/)/);
     videoInfo.season = folderPathSeasonMatch && parseInt(folderPathSeasonMatch[1], 10) || undefined;
