@@ -10,7 +10,7 @@ const { isPackTorrent } = require('./parseHelper')
 async function createTorrentEntry(torrent, overwrite = false) {
   const titleInfo = parse(torrent.title);
 
-  if (titleInfo.seasons && torrent.type === Type.MOVIE) {
+  if ((titleInfo.seasons || torrent.title.match(/\[\d+-\d+/)) && torrent.type === Type.MOVIE) {
     // sometimes series torrent might be put into movies category
     torrent.type = Type.SERIES;
   }

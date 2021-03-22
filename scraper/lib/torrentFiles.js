@@ -21,9 +21,9 @@ async function parseTorrentFiles(torrent) {
   // if (metadata && metadata.type !== torrent.type && torrent.type !== Type.ANIME) {
   //   throw new Error(`Mismatching entry type for ${torrent.name}: ${torrent.type}!=${metadata.type}`);
   // }
-  if (torrent.type === Type.SERIES && metadata && metadata.type === Type.MOVIE) {
-    // it's actually a movie
-    torrent.type = Type.MOVIE;
+  if (torrent.type !== Type.ANIME && metadata && metadata.type !== torrent.type) {
+    // it's actually a movie/series
+    torrent.type = metadata.type;
   }
 
   if (torrent.type === Type.MOVIE && (!parsedTorrentName.seasons ||
