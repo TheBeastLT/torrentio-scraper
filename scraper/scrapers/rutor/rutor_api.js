@@ -29,6 +29,16 @@ function torrent(torrentId, config = {}, retries = 2, error = null) {
       .catch((err) => torrent(torrentId, config, retries - 1, err));
 }
 
+function search(query, retries = 2, error = null) {
+  if (retries === 0) {
+    return Promise.reject(error || new Error(`Failed browse request`));
+  }
+
+  return singleRequest(`${baseUrl}/search/0/0/0/0/${encodeURIComponent(query)}`)
+      .then((body) => parseTableBody(body))
+      .catch((err) => search(query, retries - 1, err));
+}
+
 function browse(config = {}, retries = 2, error = null) {
   if (retries === 0) {
     return Promise.reject(error || new Error(`Failed browse request`));
@@ -193,4 +203,4 @@ function parseLanguages(details) {
   return languages.length > 4 ? 'multi-audio' : languages.join(',');
 }
 
-module.exports = { torrent, browse, Categories };
+module.exports = { torrent, browse, search, Categories };
