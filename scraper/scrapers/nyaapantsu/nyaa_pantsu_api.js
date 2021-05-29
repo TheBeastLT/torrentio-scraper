@@ -24,17 +24,13 @@ function torrent(torrentId) {
 
   return pantsu.infoRequest(torrentId)
       .then(result => parseTorrent(result))
-      .catch(error => {
-        if (error.statusCode && error.statusCode >= 400) {
-          return Promise.reject(new Error(`${error.statusCode}: [${torrentId}] failed retrieval on NyaaPantsu`));
-        }
-        return Promise.reject(error);
-      });
+      .catch(error => handleError(error, torrentId));
 }
 
 function search(query) {
   return pantsu.search(query)
-      .then(results => results.map(torrent => parseTorrent(torrent)));
+      .then(results => results.map(torrent => parseTorrent(torrent)))
+      .catch(error => handleError(error, query));
 }
 
 function browse(config = {}) {
@@ -42,7 +38,15 @@ function browse(config = {}) {
   const category = config.category || Categories.ANIME.ENGLISH;
 
   return pantsu.list(category, page)
-      .then(results => results.map(torrent => parseTorrent(torrent)));
+      .then(results => results.map(torrent => parseTorrent(torrent)))
+      .catch(error => handleError(error, category));
+}
+
+function handleError(error, identifier) {
+  if (error.statusCode && error.statusCode >= 400) {
+    return Promise.reject(new Error(`${error.statusCode}: [${identifier}] failed retrieval on NyaaPantsu`));
+  }
+  return Promise.reject(error);
 }
 
 function parseTorrent(torrent) {
