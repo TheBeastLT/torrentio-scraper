@@ -227,7 +227,7 @@ function createFile(file) {
   if (file.subtitles && file.subtitles.length) {
     file.subtitles = file.subtitles.map(subtitle => ({ infoHash: file.infoHash, title: subtitle.path, ...subtitle }));
   }
-  return File.create(file, { include: [Subtitle] });
+  return File.create(file, { include: [Subtitle], ignoreDuplicates: true });
 }
 
 function getFiles(torrent) {
