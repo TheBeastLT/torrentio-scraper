@@ -3,6 +3,7 @@ const mangodbStore = require('cache-manager-mongodb');
 
 const GLOBAL_KEY_PREFIX = 'torrentio-addon';
 const STREAM_KEY_PREFIX = `${GLOBAL_KEY_PREFIX}|stream`;
+const AVAILABILITY_KEY_PREFIX = `${GLOBAL_KEY_PREFIX}|availability`;
 const RESOLVED_URL_KEY_PREFIX = `${GLOBAL_KEY_PREFIX}|resolved`;
 
 const STREAM_TTL = process.env.STREAM_TTL || 4 * 60 * 60; // 4 hours
@@ -43,7 +44,8 @@ function initiateRemoteCache() {
 function initiateMemoryCache() {
   return cacheManager.caching({
     store: 'memory',
-    ttl: RESOLVED_URL_TTL
+    ttl: RESOLVED_URL_TTL,
+    max: Infinity// infinite LRU cache size
   });
 }
 
@@ -64,5 +66,36 @@ function cacheWrapResolvedUrl(id, method) {
   return cacheWrap(memoryCache, `${RESOLVED_URL_KEY_PREFIX}:${id}`, method, { ttl: RESOLVED_URL_TTL });
 }
 
-module.exports = { cacheWrapStream, cacheWrapResolvedUrl };
+function cacheAvailabilityResults(results) {
+  const flatResults = Object.keys(results)
+      .map(infoHash => [`${AVAILABILITY_KEY_PREFIX}:${infoHash}`, results[infoHash]])
+      .reduce((a, b) => a.concat(b), []);
+  memoryCache.mset(...flatResults, { ttl: STREAM_TTL }, (error) => {
+    if (error) {
+      console.log('Failed storing availability cache', error);
+    }
+  });
+  return results;
+}
+
+function getCachedAvailabilityResults(infoHashes) {
+  const keys = infoHashes.map(infoHash => `${AVAILABILITY_KEY_PREFIX}:${infoHash}`)
+  return new Promise(resolve => {
+    memoryCache.mget(...keys, (error, result) => {
+      if (error) {
+        console.log('Failed retrieve availability cache', error)
+        return resolve({});
+      }
+      const availabilityResults = {};
+      infoHashes.forEach((infoHash, index) => {
+        if (result[index]) {
+          availabilityResults[infoHash] = result[index];
+        }
+      });
+      resolve(availabilityResults);
+    })
+  });
+}
+
+module.exports = { cacheWrapStream, cacheWrapResolvedUrl, cacheAvailabilityResults, getCachedAvailabilityResults };
 

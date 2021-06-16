@@ -2,6 +2,7 @@ const RealDebridClient = require('real-debrid-api');
 const { Type } = require('../lib/types');
 const { isVideo, isArchive } = require('../lib/extension');
 const { delay } = require('../lib/promises');
+const { cacheAvailabilityResults, getCachedAvailabilityResults } = require('../lib/cache');
 const StaticResponse = require('./static');
 const { getMagnetLink } = require('../lib/magnetHelper');
 const { chunkArray, BadTokenError } = require('./mochHelper');
@@ -29,17 +30,24 @@ async function getCachedStreams(streams, apiKey) {
 }
 
 async function _getInstantAvailable(hashes, apiKey, retries = 3) {
-  const options = await getDefaultOptions();
-  const RD = new RealDebridClient(apiKey, options);
-  const hashBatches = chunkArray(hashes, 150)
+  const cachedResults = await getCachedAvailabilityResults(hashes);
+  const missingHashes = hashes.filter(infoHash => !cachedResults[infoHash]);
+  if (!missingHashes.length) {
+    return cachedResults
+  }
+
+  const RD = new RealDebridClient(apiKey, getDefaultOptions());
+  const hashBatches = chunkArray(missingHashes, 150)
   return Promise.all(hashBatches.map(batch => RD.torrents.instantAvailability(batch)
       .then(response => {
         if (typeof response !== 'object') {
           return Promise.reject(new Error('RD returned non JSON response: ' + response));
         }
-        return response;
+        return processAvailabilityResults(response);
       })))
       .then(results => results.reduce((all, result) => Object.assign(all, result), {}))
+      .then(results => cacheAvailabilityResults(results))
+      .then(results => Object.assign(cachedResults, results))
       .catch(error => {
         if (error && error.code === 8) {
           return Promise.reject(BadTokenError);
@@ -52,18 +60,35 @@ async function _getInstantAvailable(hashes, apiKey, retries = 3) {
       });
 }
 
-function _getCachedFileIds(fileIndex, hosterResults) {
+function processAvailabilityResults(availabilityResults) {
+  const processedResults = {};
+  Object.entries(availabilityResults)
+      .forEach(([infoHash, hosterResults]) => processedResults[infoHash] = getCachedIds(hosterResults));
+  return processedResults;
+}
+
+function getCachedIds(hosterResults) {
   if (!hosterResults || Array.isArray(hosterResults)) {
     return [];
   }
   // if not all cached files are videos, then the torrent will be zipped to a rar
-  const cachedTorrents = Object.values(hosterResults)
+  return Object.values(hosterResults)
       .reduce((a, b) => a.concat(b), [])
-      .filter(cached => !Number.isInteger(fileIndex) && Object.keys(cached).length || cached[fileIndex + 1])
-      .filter(cached => Object.values(cached).every(file => isVideo(file.filename)))
+      .filter(cached => Object.keys(cached).length && Object.values(cached).every(file => isVideo(file.filename)))
       .map(cached => Object.keys(cached))
-      .sort((a, b) => b.length - a.length);
-  return cachedTorrents.length && cachedTorrents[0] || [];
+      .sort((a, b) => b.length - a.length)
+      .filter((cached, index, array) => index === 0 || cached.some(id => !array[0].includes(id)));
+}
+
+function _getCachedFileIds(fileIndex, cachedResults) {
+  if (!cachedResults || !Array.isArray(cachedResults)) {
+    return [];
+  }
+
+  const cachedIds = Number.isInteger(fileIndex)
+      ? cachedResults.find(ids => ids.includes(`${fileIndex + 1}`))
+      : cachedResults[0];
+  return cachedIds || [];
 }
 
 async function getCatalog(apiKey, offset, ip) {
