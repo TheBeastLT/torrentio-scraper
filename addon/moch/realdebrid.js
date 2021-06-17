@@ -29,7 +29,7 @@ async function getCachedStreams(streams, apiKey) {
       }, {})
 }
 
-async function _getInstantAvailable(hashes, apiKey, retries = 3) {
+async function _getInstantAvailable(hashes, apiKey, retries = 3, maxChunkSize = 150) {
   const cachedResults = await getCachedAvailabilityResults(hashes);
   const missingHashes = hashes.filter(infoHash => !cachedResults[infoHash]);
   if (!missingHashes.length) {
@@ -37,7 +37,7 @@ async function _getInstantAvailable(hashes, apiKey, retries = 3) {
   }
 
   const RD = new RealDebridClient(apiKey, getDefaultOptions());
-  const hashBatches = chunkArray(missingHashes, 150)
+  const hashBatches = chunkArray(missingHashes, maxChunkSize)
   return Promise.all(hashBatches.map(batch => RD.torrents.instantAvailability(batch)
       .then(response => {
         if (typeof response !== 'object') {
@@ -52,7 +52,12 @@ async function _getInstantAvailable(hashes, apiKey, retries = 3) {
         if (error && error.code === 8) {
           return Promise.reject(BadTokenError);
         }
-        if (retries > 0 && NON_BLACKLIST_ERRORS.some(v => error.message && error.message.includes(v))) {
+        if (!error && maxChunkSize !== 1) {
+          // sometimes RD dues to large response size respond with empty body. Reduce chunk size to reduce body
+          console.log(`Reducing chunk size for availability request: ${hashes[0]}`);
+          return _getInstantAvailable(hashes, apiKey, retries - 1, Math.ceil(maxChunkSize / 10));
+        }
+        if (retries > 0 && NON_BLACKLIST_ERRORS.some(v => error && error.message && error.message.includes(v))) {
           return _getInstantAvailable(hashes, apiKey, retries - 1);
         }
         console.warn(`Failed RealDebrid cached [${hashes[0]}] torrent availability request:`, error.message);
