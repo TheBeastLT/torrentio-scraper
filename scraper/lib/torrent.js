@@ -65,8 +65,10 @@ async function updateCurrentSeeders(torrentsInput) {
     torrents.forEach(torrent => {
       const results = perTorrentResults[torrent.infoHash];
       const newSeeders = Math.max(...Object.values(results).map(values => values[0]).concat(0));
-      console.log(`Updating seeders for [${torrent.infoHash}] ${torrent.title} - ${torrent.seeders} -> ${newSeeders}`)
-      torrent.seeders = newSeeders;
+      if (torrent.seeders !== newSeeders) {
+        console.log(`Updating seeders for [${torrent.infoHash}] ${torrent.title} - ${torrent.seeders} -> ${newSeeders}`)
+        torrent.seeders = newSeeders;
+      }
     })
     return torrentsInput;
   });
