@@ -169,7 +169,8 @@ function populateDownloadLinks(streams, mochResults) {
               streams.push({
                 name: `[${mochResult.moch.shortName} download] ${stream.name}`,
                 title: stream.title,
-                url: `${RESOLVER_HOST}/${mochResult.moch.key}/${cachedEntry.url}`
+                url: `${RESOLVER_HOST}/${mochResult.moch.key}/${cachedEntry.url}`,
+                behaviorHints: stream.behaviorHints
               })
             }
           }));
