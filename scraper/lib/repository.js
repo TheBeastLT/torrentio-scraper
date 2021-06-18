@@ -170,7 +170,11 @@ function getTorrent(torrent) {
 }
 
 function getTorrentsBasedOnTitle(titleQuery, type) {
-  return Torrent.findAll({ where: { title: { [Op.regexp]: `${titleQuery}` }, type: type } });
+  return getTorrentsBasedOnQuery({ title: { [Op.regexp]: `${titleQuery}` }, type: type });
+}
+
+function getTorrentsBasedOnQuery(where) {
+  return Torrent.findAll({ where: where });
 }
 
 function getTorrentsWithoutSize() {
@@ -217,6 +221,10 @@ function setTorrentSeeders(torrent, seeders) {
       { seeders: seeders },
       { where: where }
   );
+}
+
+function deleteTorrent(torrent) {
+  return Torrent.destroy({ where: { infoHash: torrent.infoHash } })
 }
 
 function createFile(file) {
@@ -304,6 +312,8 @@ module.exports = {
   setTorrentSeeders,
   getTorrent,
   getTorrentsBasedOnTitle,
+  getTorrentsBasedOnQuery,
+  deleteTorrent,
   getUpdateSeedersTorrents,
   getNoContentsTorrents,
   createFile,
