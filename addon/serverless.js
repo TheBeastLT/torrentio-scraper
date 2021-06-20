@@ -76,7 +76,7 @@ router.get('/:configuration/:resource/:type/:id/:extra?.json', (req, res, next) 
       });
 });
 
-router.get('/:moch/:apiKey/:infoHash/:cachedEntryInfo/:fileIndex?', (req, res) => {
+router.get('/:moch/:apiKey/:infoHash/:cachedEntryInfo/:fileIndex/:filename?', (req, res) => {
   const parameters = {
     mochKey: req.params.moch,
     apiKey: req.params.apiKey,

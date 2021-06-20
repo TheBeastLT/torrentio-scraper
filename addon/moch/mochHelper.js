@@ -6,4 +6,13 @@ function chunkArray(arr, size) {
       : [arr];
 }
 
-module.exports = { chunkArray, BadTokenError }
+function streamFilename(stream) {
+  const titleParts = stream.title.replace(/\n👤.*/s, '').split('\n');
+  const filePath = titleParts.pop();
+  const filename = titleParts.length
+      ? filePath.split('/').pop()
+      : filePath;
+  return encodeURIComponent(filename)
+}
+
+module.exports = { chunkArray, BadTokenError, streamFilename }

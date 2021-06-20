@@ -8,7 +8,7 @@ const putio = require('./putio');
 const StaticResponse = require('./static');
 const { cacheWrapResolvedUrl } = require('../lib/cache');
 const { timeout } = require('../lib/promises');
-const { BadTokenError } = require('./mochHelper');
+const { BadTokenError, streamFilename } = require('./mochHelper');
 
 const RESOLVE_TIMEOUT = 10 * 60 * 1000; // 10 minutes
 const MIN_API_KEY_SYMBOLS = 15;
@@ -151,7 +151,7 @@ function populateCachedLinks(streams, mochResult) {
       return {
         name: `[${mochResult.moch.shortName}+] ${stream.name}`,
         title: stream.title,
-        url: `${RESOLVER_HOST}/${mochResult.moch.key}/${cachedEntry.url}`,
+        url: `${RESOLVER_HOST}/${mochResult.moch.key}/${cachedEntry.url}/${streamFilename(stream)}`,
         behaviorHints: stream.behaviorHints
       };
     }
@@ -169,7 +169,7 @@ function populateDownloadLinks(streams, mochResults) {
               streams.push({
                 name: `[${mochResult.moch.shortName} download] ${stream.name}`,
                 title: stream.title,
-                url: `${RESOLVER_HOST}/${mochResult.moch.key}/${cachedEntry.url}`,
+                url: `${RESOLVER_HOST}/${mochResult.moch.key}/${cachedEntry.url}/${streamFilename(stream)}`,
                 behaviorHints: stream.behaviorHints
               })
             }
