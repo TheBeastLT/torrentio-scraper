@@ -47,7 +47,7 @@ function initiateMemoryCache() {
   return cacheManager.caching({
     store: 'memory',
     ttl: RESOLVED_URL_TTL,
-    max: Infinity// infinite LRU cache size
+    max: Infinity // infinite LRU cache size
   });
 }
 
@@ -74,7 +74,7 @@ function cacheAvailabilityResults(results) {
         const key = `${AVAILABILITY_KEY_PREFIX}:${infoHash}`;
         const value = results[infoHash];
         const ttl = value && value.length ? AVAILABILITY_TTL : AVAILABILITY_EMPTY_TTL;
-        memoryCache.set(key, value, ttl)
+        memoryCache.set(key, value, { ttl })
       });
   return results;
 }
