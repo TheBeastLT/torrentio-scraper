@@ -6,6 +6,7 @@ const { getAllTrackers } = require('./magnetHelper');
 const ADDON_NAME = 'Torrentio';
 const SIZE_DELTA = 0.02;
 const UNKNOWN_SIZE = 300000000;
+const CAM_SOURCES = ['CAM', 'TeleSync', 'TeleCine'];
 const ANIME_PROVIDERS = [
   'HorribleSubs',
   'NyaaSi',
@@ -58,11 +59,14 @@ function toStreamInfo(record) {
 }
 
 function getQuality(record, torrentInfo, fileInfo) {
+  if (CAM_SOURCES.includes(fileInfo.source)) {
+    return fileInfo.source;
+  }
+  if (CAM_SOURCES.includes(torrentInfo.source)) {
+    return torrentInfo.source;
+  }
   const resolution = fileInfo.resolution || torrentInfo.resolution || record.torrent.resolution;
   const source = fileInfo.source || torrentInfo.source;
-  if (['CAM', 'TeleSync', 'TeleCine'].includes(source)) {
-    return source;
-  }
   return resolution || source;
 }
 
