@@ -18,7 +18,7 @@ module.exports = [
   { scraper: rarbgScraper, name: rarbgScraper.NAME, cron: '0 0 */1 ? * *' },
   { scraper: rutorScraper, name: rutorScraper.NAME, cron: '0 0 */4 ? * *' },
   { scraper: thepiratebayScraper, name: thepiratebayScraper.NAME, cron: '0 0 */2 ? * *' },
-  { scraper: thepiratebayFakeRemoval, name: thepiratebayFakeRemoval.NAME, cron: '0 30 1 ? * * *' },
+  { scraper: thepiratebayFakeRemoval, name: thepiratebayFakeRemoval.NAME, cron: '0 0 */12 ? * *' },
   { scraper: torrentGalaxyScraper, name: torrentGalaxyScraper.NAME, cron: '0 0 */4 ? * *' },
   { scraper: leetxScraper, name: leetxScraper.NAME, cron: '0 0 */4 ? * *' },
   // { scraper: kickassScraper, name: kickassScraper.NAME, cron: '0 0 */4 ? * *' },
