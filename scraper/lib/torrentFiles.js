@@ -338,6 +338,7 @@ function decomposeEpisodeTitleFiles(torrent, files, metadata) {
 
 function getTimeZoneOffset(country) {
   switch (country) {
+    case 'United States':
     case 'USA':
       return '-08:00';
     default:
