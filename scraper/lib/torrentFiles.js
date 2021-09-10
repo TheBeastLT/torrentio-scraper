@@ -78,6 +78,7 @@ async function parseSeriesFiles(torrent, parsedName, metadata) {
       .then(videos => videos
           .reduce((a, b) => a.concat(b), [])
           .map(video => isFeaturette(video) ? clearInfoFields(video) : video))
+
   return { contents, videos: parsedVideos, subtitles };
 }
 
