@@ -100,6 +100,9 @@ function joinDetailParts(parts, prefix = '', delimiter = ' ') {
 }
 
 function formatSize(size) {
+  if (!size) {
+    return undefined;
+  }
   if (size === UNKNOWN_SIZE) {
     return undefined;
   }

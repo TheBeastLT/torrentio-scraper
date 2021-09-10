@@ -48,6 +48,37 @@ const Providers = {
       key: 'nyaapantsu',
       label: 'NyaaPantsu',
       anime: true
+    },
+    {
+      key: 'animestorrent',
+      label: 'AnimesTorrent',
+      anime: true
+      foreign: true
+    },
+    {
+      key: 'comando',
+      label: 'Comando',
+      foreign: true
+    },
+    {
+      key: 'comoeubaixo',
+      label: 'ComoEuBaixo',
+      foreign: true
+    },
+    {
+      key: 'darkmahou',
+      label: 'DarkMahou',
+      foreign: true
+    },
+    {
+      key: 'lapumia',
+      label: 'Lapumia',
+      foreign: true
+    },
+    {
+      key: 'ondebaixa',
+      label: 'OndeBaixa',
+      foreign: true
     }
   ]
 };
