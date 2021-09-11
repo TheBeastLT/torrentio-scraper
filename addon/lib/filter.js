@@ -52,7 +52,7 @@ const Providers = {
     {
       key: 'animestorrent',
       label: 'AnimesTorrent',
-      anime: true
+      anime: true,
       foreign: true
     },
     {
