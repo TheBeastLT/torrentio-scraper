@@ -131,17 +131,15 @@ function parseTorrentPage(body) {
     });
     const details = $('div.infox')
     const torrent = magnets.map((magnetLink) => {
-      if (magnetLink.includes("magnet")) {
-        return {
-          title: decode(magnetLink).name,
-          original_name: details.find('h1.entry-title').text(),
-          year: details.find('b:contains(\'Lançado:\')')[0].nextSibling.nodeValue,          
-          infoHash: decode(magnetLink).infoHash,
-          magnetLink: magnetLink,
-          category: details.find('b:contains(\'Tipo:\')').next().attr('href').split('/')[4],
-          uploadDate: new Date($("time[itemprop=dateModified]").attr("datetime")),
-        };
-      }
+      return {
+        title: decode(magnetLink).name,
+        original_name: details.find('h1.entry-title').text(),
+        year: details.find('b:contains(\'Lançado:\')')[0].nextSibling.nodeValue || '',          
+        infoHash: decode(magnetLink).infoHash,
+        magnetLink: magnetLink,
+        category: details.find('b:contains(\'Tipo:\')').next().attr('href').split('/')[4],
+        uploadDate: new Date($("time[itemprop=dateModified]").attr("datetime")),
+      };
     })
     resolve(torrent.filter((x) => x));
   });

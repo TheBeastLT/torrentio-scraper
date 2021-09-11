@@ -46,7 +46,7 @@ async function scrapeLatestTorrents() {
 }
 
 async function scrapeLatestTorrentsForCategory(category, page = 1) {
-  console.log(`Scrapping ${NAME} ${category} category page ${page}`);
+  console.log({Scraper: `Scrapping ${NAME} ${category} category page ${page}`});
   return leetx
     .browse({ category, page })
     .catch((error) => {

@@ -35,7 +35,7 @@ module.exports = [
   // { scraper: require('../scrapers/thepiratebay/thepiratebay_dump_scraper') }
   // { scraper: require('../scrapers/thepiratebay/thepiratebay_unofficial_dump_scraper') }
   // { scraper: require('../scrapers/thepiratebay/thepiratebay_update_size_scraper') }
-  { scraper: AnimesTorrent, name: AnimesTorrent.NAME, cron: '0 0 */4 ? * *' },
+  //  { scraper: AnimesTorrent, name: AnimesTorrent.NAME, cron: '0 0 */4 ? * *' },
   { scraper: Comando, name: Comando.NAME, cron: '0 0 */4 ? * *' },
   { scraper: ComoEuBaixo, name: ComoEuBaixo.NAME, cron: '0 0 */4 ? * *' },
   { scraper: DarkMahou, name: DarkMahou.NAME, cron: '0 0 */4 ? * *' },
