@@ -1,6 +1,7 @@
 const needle = require('needle');
 const nameToImdb = require('name-to-imdb');
 const googleIt = require('google-it');
+const googleSr = require('google-sr');
 const bing = require('nodejs-bing');
 const he = require('he');
 const { cacheWrapImdbId, cacheWrapKitsuId, cacheWrapMetadata } = require('./cache');
@@ -110,8 +111,10 @@ async function getImdbId(info, type) {
             reject(err || new Error('failed imdbId search'));
           }
         });
-      }).catch(() => googleIt({ query, userAgent: getRandomUserAgent(), disableConsole: true })
-          .then(results => results.length ? results : Promise.reject('No results'))
+        // }).catch(() => googleIt({ query, userAgent: getRandomUserAgent(), disableConsole: true })
+        //   .then(results => results.length ? results : Promise.reject('No results'))
+      }).catch(() => googleSr(query)
+          .then(response => response.searchResults.length ? response.searchResults : Promise.reject('No results'))
           // .catch(() => bing.web(query))
           .then(results => results
               .map(result => result.link)
