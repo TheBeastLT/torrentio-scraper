@@ -3,7 +3,8 @@ const cheerio = require("cheerio");
 const decode = require('magnet-uri');
 const Promises = require('../../lib/promises');
 const { escapeHTML } = require('../../lib/metadata');
-const { getRandomUserAgent } = require("../../lib/requestHelper");
+const { getRandomUserAgent } = require('../../lib/requestHelper');
+const { isPtDubbed, sanitizePtName, sanitizePtLanguages } = require('../scraperHelper')
 
 const defaultTimeout = 10000;
 const maxSearchPage = 50
@@ -26,7 +27,7 @@ function torrent(torrentId, config = {}, retries = 2) {
   const proxyList = config.proxyList || defaultProxies;
   const slug = torrentId.split("/")[3];
   return Promises.first(proxyList
-      .map((proxyUrl) => singleRequest(`${proxyUrl}/${slug}/`, config)))
+          .map((proxyUrl) => singleRequest(`${proxyUrl}/${slug}/`, config)))
       .then((body) => parseTorrentPage(body))
       .then((torrent) => torrent.map(el => ({ torrentId: slug, ...el })))
       .catch((err) => torrent(slug, config, retries - 1));
@@ -42,7 +43,7 @@ function search(keyword, config = {}, retries = 2) {
   const requestUrl = proxyUrl => `${proxyUrl}/${keyword}/${page}/`
 
   return Promises.first(proxyList
-      .map(proxyUrl => singleRequest(requestUrl(proxyUrl), config)))
+          .map(proxyUrl => singleRequest(requestUrl(proxyUrl), config)))
       .then(body => parseTableBody(body))
       .then(torrents => torrents.length === 40 && page < extendToPage
           ? search(keyword, { ...config, page: page + 1 }).catch(() => [])
@@ -61,7 +62,7 @@ function browse(config = {}, retries = 2) {
   const requestUrl = proxyUrl => category ? `${proxyUrl}/${category}/${page}/` : `${proxyUrl}/${page}/`;
 
   return Promises.first(proxyList
-      .map((proxyUrl) => singleRequest(requestUrl(proxyUrl), config)))
+          .map((proxyUrl) => singleRequest(requestUrl(proxyUrl), config)))
       .then((body) => parseTableBody(body))
       .catch((err) => browse(config, retries - 1));
 }
@@ -97,12 +98,13 @@ function parseTableBody(body) {
       const row = $(element);
       torrents.push({
         name: row.find("a").text(),
-        torrentId: row.find("a").attr("href")
+        torrentId: row.find("a").attr("href"),
+        isTorrent: !!row.find("p:contains(\'Torrent\')")[0]
       });
     });
     resolve(torrents);
   });
-} 
+}
 
 function parseTorrentPage(body) {
   return new Promise((resolve, reject) => {
@@ -121,54 +123,24 @@ function parseTorrentPage(body) {
     const isAnime = category === Categories.ANIME
     const torrent = magnets.map(magnetLink => {
       const name = escapeHTML(decode(magnetLink).name.replace(/\+/g, ' '))
-      if(isDubled(name) || isAnime) {
+      const sanitizedTitle = sanitizePtName(name);
+      const originalTitle = details.find('strong:contains(\'Baixar\')')[0].nextSibling.nodeValue.split('-')[0];
+      const year = details.find('strong:contains(\'Data de Lançamento: \')').next().text().trim();
+      const fallBackTitle = `${originalTitle.trim()} ${year.trim()} ${sanitizedTitle.trim()}`;
+      if (isPtDubbed(name) || isAnime) {
         return {
-          name: parseText(name),
-          original_name: parseName(details.find('strong:contains(\'Baixar\')')[0].nextSibling.nodeValue.split('-')[0]),
-          year: details.find('strong:contains(\'Data de Lançamento: \')').next().text().trim(),
+          title: sanitizedTitle.length > 4 ? sanitizedTitle : fallBackTitle,
           infoHash: decode(magnetLink).infoHash,
           magnetLink: magnetLink,
           category: category,
           uploadDate: new Date($('time').attr('datetime')),
           imdbId: details.find('a[href*="imdb.com"]').attr('href').split('/')[4],
+          languages: sanitizePtLanguages(details.find('strong:contains(\'Idioma\')')[0].nextSibling.nodeValue)
         };
       }
     })
     resolve(torrent.filter((x) => x));
   });
-}
-
-function parseName(name) {
-  return name
-  .replace(/S01|S02|S03|S04|S05|S06|S07|S08|S09/g, '')
-  .trim()
-}
-
-function isDubled(name){
-  name = name.toLowerCase()
-  if(name.includes('dublado')){
-    return true
-  }
-  if(name.includes('dual')){
-    return true
-  }
-  if(name.includes('nacional')){
-    return true
-  }
-  return false
-}
-
-function parseText(text) {
-  return text
-  .replace(/\n|\t/g, "")
-  .replace(/1A|2A|3A|4A|5A|6A|7A|8A|9A/g, '')
-  .replace(/COMOEUBAIXO.COM|COMANDO.TO|TEMPORADA|COMPLETA/g, '')
-  .replace(/MKV|MP4/g, '')
-  .replace(/[-]/g, '')
-  .replace(/[.]/g, ' ')
-  .trim()
-  .replace(/ /g, '.')
-  .trim()
 }
 
 module.exports = { torrent, search, browse, Categories };
