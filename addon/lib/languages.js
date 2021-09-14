@@ -6,14 +6,14 @@ const languageMapping = {
   'english': '🇬🇧',
   'japanese': '🇯🇵',
   'russian': '🇷🇺',
+  'portuguese': '🇵🇹',
+  'spanish': '🇪🇸',
+  'italian': '🇮🇹',
   'korean': '🇰🇷',
   'chinese': '🇨🇳',
   'french': '🇫🇷',
   'german': '🇩🇪',
   'dutch': '🇳🇱',
-  'portuguese': '🇵🇹',
-  'spanish': '🇪🇸',
-  'italian': '🇮🇹',
   'hindi': '🇮🇳',
   'telugu': '🇮🇳',
   'tamil': '🇮🇳',
@@ -32,11 +32,13 @@ const languageMapping = {
   'norwegian': '🇳🇴',
   'turkish': '🇹🇷',
   'arabic': '🇸🇦',
+  'persian': '🇮🇷',
   'hebrew': '🇮🇱',
   'vietnamese': '🇻🇳',
   'indonesian': '🇮🇩',
   'thai': '🇹🇭'
 }
+const languages = Object.keys(languageMapping).slice(4);
 
 function mapLanguages(languages) {
   const mapped = languages
@@ -49,4 +51,8 @@ function mapLanguages(languages) {
   return [...new Set([].concat(mapped).concat(unmapped))];
 }
 
-module.exports = { mapLanguages }
+function containsLanguage(stream, language) {
+  return stream.title.includes(languageMapping[language]);
+}
+
+module.exports = { mapLanguages, containsLanguage, languages }

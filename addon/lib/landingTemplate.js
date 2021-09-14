@@ -167,7 +167,7 @@ button:active {
 }
 
 .input, .btn {
-  height: 3.5vh;
+  height: 3.8vh;
   width: 100%;
   margin: auto;
   margin-bottom: 10px;
@@ -182,6 +182,7 @@ button:active {
 `;
 const { Providers } = require('./filter');
 const { SortOptions } = require('./sort');
+const { LanguageOptions } = require('./sort');
 const { QualityFilter } = require('./filter');
 const { DebridOptions } = require('../moch/options');
 const { MochOptions } = require('../moch/moch');
@@ -190,6 +191,7 @@ const { PreConfigurations } = require('../lib/configuration');
 function landingTemplate(manifest, config = {}) {
   const providers = config.providers || [];
   const sort = config[SortOptions.key] || SortOptions.options.qualitySeeders.key;
+  const language = config[LanguageOptions.key];
   const qualityFilters = config[QualityFilter.key] || [];
   const limit = config.limit || '';
 
@@ -215,6 +217,9 @@ function landingTemplate(manifest, config = {}) {
       .join('\n');
   const sortOptionsHTML = Object.values(SortOptions.options)
       .map((option, i) => `<option value="${option.key}" ${i === 0 ? 'selected' : ''}>${option.description}</option>`)
+      .join('\n');
+  const languageOptionsHTML = LanguageOptions.options
+      .map((option, i) => `<option value="${option.key}">${option.label}</option>`)
       .join('\n');
   const qualityFiltersHTML = Object.values(QualityFilter.options)
       .map(option => `<option value="${option.key}">${option.label}</option>`)
@@ -275,6 +280,12 @@ function landingTemplate(manifest, config = {}) {
          <label class="label" for="iSort">Sorting:</label>
          <select id="iSort" class="input" onchange="sortModeChange()">
            ${sortOptionsHTML}
+         </select>
+         
+         <label class="label" for="iLanguage">Priority language:</label>
+         <select id="iLanguage" class="input" onchange="generateInstallLink()" title="Streams with the selected dubs/subs language will be shown on the top">
+           <option value="none" selected>None</option>
+           ${languageOptionsHTML}
          </select>
          
          <label class="label" for="iQualityFilter">Exclude qualities/resolutions:</label>
@@ -356,6 +367,7 @@ function landingTemplate(manifest, config = {}) {
               $('#iPutioClientId').val("${putioClientId}");
               $('#iPutioToken').val("${putioToken}");
               $('#iSort').val("${sort}");
+              $('#iLanguage').val("${language || 'none'}");
               $('#iLimit').val("${limit}");
               generateInstallLink();
               debridProvidersChange();
@@ -384,6 +396,7 @@ function landingTemplate(manifest, config = {}) {
               const providersValue = $('#iProviders').val().join(',') || '';
               const qualityFilterValue = $('#iQualityFilter').val().join(',') || '';
               const sortValue = $('#iSort').val() || '';
+              const languageValue = $('#iLanguage').val() || '';
               const limitValue = $('#iLimit').val() || '';
               
               const debridOptionsValue = $('#iDebridOptions').val().join(',') || '';
@@ -398,6 +411,7 @@ function landingTemplate(manifest, config = {}) {
               const providers = providersValue.length && providersValue;
               const qualityFilters = qualityFilterValue.length && qualityFilterValue;
               const sort = sortValue !== '${SortOptions.options.qualitySeeders.key}' && sortValue;
+              const language = languageValue.length && languageValue !== 'none' && languageValue;
               const limit = /^[1-9][0-9]*$/.test(limitValue) && limitValue;
               
               const debridOptions = debridOptionsValue.length && debridOptionsValue.trim();
@@ -413,6 +427,7 @@ function landingTemplate(manifest, config = {}) {
               let configurationValue = [
                     ['${Providers.key}', providers],
                     ['${SortOptions.key}', sort],
+                    ['${LanguageOptions.key}', language],
                     ['${QualityFilter.key}', qualityFilters],
                     ['limit', limit],
                     ['${DebridOptions.key}', debridOptions], 
