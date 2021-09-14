@@ -1,5 +1,6 @@
 const { DebridOptions } = require('../moch/options');
 const { QualityFilter, Providers } = require('./filter');
+const { LanguageOptions } = require('./sort');
 
 const PRE_CONFIGURATIONS = {
   lite: {
@@ -54,7 +55,8 @@ function liteConfig() {
 
 function brazucaConfig() {
   const config = {};
-  config[Providers.key] = ['nyaasi', 'comando', 'comoeubaixo', 'lapumia', 'ondebaixa'];
+  config[Providers.key] = Providers.options.map(provider => provider.key).filter(key => key !== 'rutor');
+  config[LanguageOptions.key] = 'portuguese';
   return config;
 }
 

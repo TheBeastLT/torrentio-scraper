@@ -1,4 +1,5 @@
 const { QualityFilter } = require('./filter');
+const { languages, containsLanguage } = require('./languages');
 
 const OTHER_QUALITIES = QualityFilter.options.find(option => option.key === 'other');
 const CAM_QUALITIES = QualityFilter.options.find(option => option.key === 'cam');
@@ -28,8 +29,25 @@ const SortOptions = {
     },
   }
 }
+const LanguageOptions = {
+  key: 'language',
+  options: languages.map(lang => ({
+    key: lang,
+    label: lang.charAt(0).toUpperCase() + lang.substr(1)
+  }))
+}
 
 function sortStreams(streams, config) {
+  const language = config[LanguageOptions.key];
+  if (language) {
+    const streamsWithLanguage = streams.filter(stream => containsLanguage(stream, language));
+    const streamsNoLanguage = streams.filter(stream => !streamsWithLanguage.includes(stream));
+    return _sortStreams(streamsWithLanguage, config).concat(_sortStreams(streamsNoLanguage, config));
+  }
+  return _sortStreams(streams, config);
+}
+
+function _sortStreams(streams, config) {
   const sort = config.sort && config.sort.toLowerCase() || undefined;
   const limit = /^[1-9][0-9]*$/.test(config.limit) && parseInt(config.limit) || undefined;
   if (sort === SortOptions.options.seeders.key) {
@@ -138,3 +156,4 @@ function parseSize(sizeText) {
 
 module.exports = sortStreams;
 module.exports.SortOptions = SortOptions;
+module.exports.LanguageOptions = LanguageOptions;
