@@ -4,7 +4,7 @@ const requestIp = require('request-ip');
 const addonInterface = require('./addon');
 const qs = require('querystring')
 const { manifest } = require('./lib/manifest');
-const parseConfiguration = require('./lib/configuration');
+const { parseConfiguration, PreConfigurations } = require('./lib/configuration');
 const landingTemplate = require('./lib/landingTemplate');
 const moch = require('./moch/moch');
 
@@ -22,8 +22,8 @@ router.get('/', (_, res) => {
   res.end();
 });
 
-router.get('/lite', (_, res) => {
-  res.redirect('/lite/configure')
+router.get(`/:preconfiguration(${Object.keys(PreConfigurations).join('|')})`, (req, res) => {
+  res.redirect(`/${req.params.preconfiguration}/configure`)
   res.end();
 });
 

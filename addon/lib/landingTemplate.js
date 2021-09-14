@@ -185,7 +185,7 @@ const { SortOptions } = require('./sort');
 const { QualityFilter } = require('./filter');
 const { DebridOptions } = require('../moch/options');
 const { MochOptions } = require('../moch/moch');
-const { LiteConfigValue } = require('../lib/configuration');
+const { PreConfigurations } = require('../lib/configuration');
 
 function landingTemplate(manifest, config = {}) {
   const providers = config.providers || [];
@@ -227,6 +227,9 @@ function landingTemplate(manifest, config = {}) {
       .join('\n');
   const stylizedTypes = manifest.types
       .map(t => t[0].toUpperCase() + t.slice(1) + (t !== 'series' ? 's' : ''));
+  const preConfigurationObject = Object.entries(PreConfigurations)
+      .map(([key, config]) => `${key}: '${config.serialized}'`)
+      .join(',');
 
   return `
    <!DOCTYPE html>
@@ -403,7 +406,10 @@ function landingTemplate(manifest, config = {}) {
               const allDebrid = allDebridValue.length && allDebridValue.trim();
               const debridLink = debridLinkValue.length && debridLinkValue.trim();
               const putio = putioClientIdValue.length && putioTokenValue.length && putioClientIdValue.trim() + '@' + putioTokenValue.trim();
-              
+
+              const preConfigurations = { 
+                ${preConfigurationObject}
+              };
               let configurationValue = [
                     ['${Providers.key}', providers],
                     ['${SortOptions.key}', sort],
@@ -416,7 +422,9 @@ function landingTemplate(manifest, config = {}) {
                     ['${MochOptions.debridlink.key}', debridLink],
                     ['${MochOptions.putio.key}', putio]
                   ].filter(([_, value]) => value.length).map(([key, value]) => key + '=' + value).join('|');
-              configurationValue = '${LiteConfigValue}' === configurationValue ? 'lite' : configurationValue;
+              configurationValue = Object.entries(preConfigurations)
+                  .filter(([key, value]) => value === configurationValue)
+                  .map(([key, value]) => key)[0] || configurationValue;
               const configuration = configurationValue && configurationValue.length ? '/' + configurationValue : '';
               installLink.href = 'stremio://' + window.location.host + configuration + '/manifest.json';
           }

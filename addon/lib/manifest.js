@@ -1,16 +1,17 @@
 const { MochOptions } = require('../moch/moch');
 const { Providers } = require('./filter');
 const { showDebridCatalog } = require('../moch/options');
+const { getManifestOverride } = require('./configuration');
 const { Type } = require('./types');
 
 const DefaultProviders = Providers.options.map(provider => provider.key);
 const CatalogMochs = Object.values(MochOptions).filter(moch => moch.catalog);
 
 function manifest(config = {}) {
-  return {
-    id: `com.stremio.torrentio${config.lite ? '.lite' : ''}.addon`,
+  const defaultManifest = {
+    id: 'com.stremio.torrentio.addon',
     version: '0.0.11',
-    name: `Torrentio${config.lite ? ' Lite' : ''}`,
+    name: 'Torrentio',
     description: getDescription(config),
     catalogs: getCatalogs(config),
     resources: getResources(config),
@@ -22,6 +23,8 @@ function manifest(config = {}) {
       configurationRequired: false
     }
   }
+  const overrideManifest = getManifestOverride(config);
+  return Object.assign(defaultManifest, overrideManifest);
 }
 
 function dummyManifest() {
@@ -32,10 +35,6 @@ function dummyManifest() {
 }
 
 function getDescription(config) {
-  if (config.lite) {
-    return 'Preconfigured Lite version of Torrentio addon.'
-        + ' To configure advanced options visit https://torrentio.strem.fun/lite';
-  }
   const providersList = config.providers || DefaultProviders;
   const enabledProvidersDesc = Providers.options
       .map(provider => `${provider.label}${providersList.includes(provider.key) ? '(+)' : '(-)'}`)
