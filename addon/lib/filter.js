@@ -50,12 +50,6 @@ const Providers = {
       anime: true
     },
     {
-      key: 'animestorrent',
-      label: 'AnimesTorrent',
-      anime: true,
-      foreign: true
-    },
-    {
       key: 'comando',
       label: 'Comando',
       foreign: true
@@ -63,11 +57,6 @@ const Providers = {
     {
       key: 'comoeubaixo',
       label: 'ComoEuBaixo',
-      foreign: true
-    },
-    {
-      key: 'darkmahou',
-      label: 'DarkMahou',
       foreign: true
     },
     {
