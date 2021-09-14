@@ -33,7 +33,7 @@ async function updateSeeders(torrent) {
 
 async function scrapeLatestTorrents() {
   const allowedCategories = [
-    // comando.Categories.MOVIE,
+    comando.Categories.MOVIE,
     comando.Categories.TV
   ];
 
