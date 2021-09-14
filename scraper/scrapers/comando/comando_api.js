@@ -4,10 +4,10 @@ const cheerio = require("cheerio");
 const decode = require('magnet-uri');
 const Promises = require('../../lib/promises');
 const { escapeHTML } = require('../../lib/metadata');
-const { getRandomUserAgent } = require("../../lib/requestHelper");
-moment.locale("pt-br"); 
+const { getRandomUserAgent } = require('../../lib/requestHelper');
+const { isPtDubbed, sanitizePtName, sanitizePtLanguages } = require('../scraperHelper')
 
-const defaultTimeout = 10000;
+const defaultTimeout = 30000;
 const maxSearchPage = 50
 
 const defaultProxies = [
@@ -28,7 +28,7 @@ function torrent(torrentId, config = {}, retries = 2) {
   const proxyList = config.proxyList || defaultProxies;
   const slug = torrentId.split("/")[3];
   return Promises.first(proxyList
-      .map((proxyUrl) => singleRequest(`${proxyUrl}/${slug}`, config)))
+          .map((proxyUrl) => singleRequest(`${proxyUrl}/${slug}`, config)))
       .then((body) => parseTorrentPage(body))
       .then((torrent) => torrent.map(el => ({ torrentId: slug, ...el })))
       .catch((err) => torrent(slug, config, retries - 1));
@@ -44,7 +44,7 @@ function search(keyword, config = {}, retries = 2) {
   const requestUrl = proxyUrl => `${proxyUrl}/page/${page}/?s=${keyword}`
 
   return Promises.first(proxyList
-      .map(proxyUrl => singleRequest(requestUrl(proxyUrl), config)))
+          .map(proxyUrl => singleRequest(requestUrl(proxyUrl), config)))
       .then(body => parseTableBody(body))
       .then(torrents => torrents.length === 40 && page < extendToPage
           ? search(keyword, { ...config, page: page + 1 }).catch(() => [])
@@ -63,7 +63,7 @@ function browse(config = {}, retries = 2) {
   const requestUrl = proxyUrl => `${proxyUrl}/category/${category}/page/${page}/`
 
   return Promises.first(proxyList
-      .map((proxyUrl) => singleRequest(requestUrl(proxyUrl), config)))
+          .map((proxyUrl) => singleRequest(requestUrl(proxyUrl), config)))
       .then((body) => parseTableBody(body))
       .catch((err) => browse(config, retries - 1));
 }
@@ -104,7 +104,7 @@ function parseTableBody(body) {
     });
     resolve(torrents);
   });
-} 
+}
 
 function parseTorrentPage(body) {
   return new Promise((resolve, reject) => {
@@ -123,16 +123,18 @@ function parseTorrentPage(body) {
     const imdbIdMatch = details.find('a[href*="imdb.com"]').attr('href')
     const torrent = magnets.map(magnetLink => {
       const name = escapeHTML(decode(magnetLink).name.replace(/\+/g, ' '))
-      if(isDubled(name) || isAnime) {
+      if (isPtDubbed(name) || isAnime) {
         return {
-          name: name.replace(/ /g, '.'),
-          original_name: parseName(details.find('b:contains(\'Original\')')[0].nextSibling.nodeValue.replace(':', '')),
+          title: sanitizePtName(name),
+          originalName: details.find('b:contains(\'Original\')')[0].nextSibling.nodeValue.replace(/: ?/, ''),
           year: details.find('a[href*="comando.to/category/"]').text(),
           infoHash: decode(magnetLink).infoHash,
           magnetLink: magnetLink,
           category: parseCategory($('div.entry-categories').html()),
-          uploadDate: new Date(moment($('a.updated').text(), 'LL', true).format()),
-          imdbId: imdbIdMatch ? imdbIdMatch.split('/')[4] : null
+          uploadDate: new Date(moment($('a.updated').text(), 'LL', 'pt-br').format()),
+          imdbId: imdbIdMatch ? imdbIdMatch.split('/')[4] : null,
+          languages: sanitizePtLanguages(details.find(
+              'b:contains(\'Idioma\'), b:contains(\'Audio\'), b:contains(\'Áudio\')')[0].nextSibling.nodeValue)
         };
       }
     })
@@ -140,41 +142,15 @@ function parseTorrentPage(body) {
   });
 }
 
-function parseName(name) {
-  return name
-  .replace(/S01|S02|S03|S04|S05|S06|S07|S08|S09/g, '')
-  .trim()
-}
-
-function isDubled(name){
-  name = name.toLowerCase()
-  if(name.includes('dublado')){
-    return true
-  }
-  if(name.includes('dual')){
-    return true
-  }
-  if(name.includes('nacional')){
-    return true
-  }
-  if(name.includes('multi')){
-    return true
-  }
-  return false
-}
-
 function parseCategory(categorys) {
   const $ = cheerio.load(categorys)
-  const isAnime = $('a:contains(\'animes\')').text()
-  const isMovie = $('a:contains(\'Filmes\')').text()
-  const isSerie = $('a:contains(\'Series\')').text()
-  if(isAnime) {
+  if ($('a:contains(\'animes\')').text()) {
     return Categories.ANIME
-  } 
-  if (isMovie) {
+  }
+  if ($('a:contains(\'Filmes\')').text()) {
     return Categories.MOVIE
-  } 
-  if(isSerie) {
+  }
+  if ($('a:contains(\'Series\')').text()) {
     return Categories.TV
   }
 }
