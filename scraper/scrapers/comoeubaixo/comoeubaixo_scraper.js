@@ -8,7 +8,7 @@ const { createTorrentEntry, checkAndUpdateTorrent } = require("../../lib/torrent
 const { updateCurrentSeeders, updateTorrentSize } = require("../../lib/torrent");
 
 const NAME = "ComoEuBaixo";
-const UNTIL_PAGE = 3;
+const UNTIL_PAGE = 5;
 const TYPE_MAPPING = typeMapping();
 
 const limiter = new Bottleneck({ maxConcurrent: 5 });
@@ -42,7 +42,7 @@ async function scrapeLatestTorrents() {
       .then((entries) => entries.reduce((a, b) => a.concat(b), []));
 }
 
-async function scrapeLatestTorrentsForCategory(category, page = 180) {
+async function scrapeLatestTorrentsForCategory(category, page = 1) {
   console.log(`Scrapping ${NAME} ${category} category page ${page}`);
   return comoeubaixo
       .browse({ category, page })
