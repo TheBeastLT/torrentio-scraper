@@ -4,8 +4,8 @@ const cheerio = require("cheerio");
 const decode = require('magnet-uri');
 const Promises = require('../../lib/promises');
 const { escapeHTML } = require('../../lib/metadata');
-const { getRandomUserAgent } = require("../../lib/requestHelper");
-moment.locale("pt-br"); 
+const { getRandomUserAgent } = require('../../lib/requestHelper');
+const { isPtDubbed, sanitizePtName, sanitizePtOriginalName, sanitizePtLanguages } = require('../scraperHelper')
 
 const defaultTimeout = 10000;
 const maxSearchPage = 50
@@ -27,7 +27,7 @@ function torrent(torrentId, config = {}, retries = 2) {
   const proxyList = config.proxyList || defaultProxies;
   const slug = torrentId.split('?p=')[1];
   return Promises.first(proxyList
-      .map((proxyUrl) => singleRequest(`${proxyUrl}/?p=${slug}`, config)))
+          .map((proxyUrl) => singleRequest(`${proxyUrl}/?p=${slug}`, config)))
       .then((body) => parseTorrentPage(body))
       .then((torrent) => torrent.map(el => ({ torrentId: slug, ...el })))
       .catch((err) => torrent(slug, config, retries - 1));
@@ -43,7 +43,7 @@ function search(keyword, config = {}, retries = 2) {
   const requestUrl = proxyUrl => `${proxyUrl}/page/${page}/?s=${keyword}`
 
   return Promises.first(proxyList
-      .map(proxyUrl => singleRequest(requestUrl(proxyUrl), config)))
+          .map(proxyUrl => singleRequest(requestUrl(proxyUrl), config)))
       .then(body => parseTableBody(body))
       .then(torrents => torrents.length === 10 && page < extendToPage
           ? search(keyword, { ...config, page: page + 1 }).catch(() => [])
@@ -62,7 +62,7 @@ function browse(config = {}, retries = 2) {
   const requestUrl = proxyUrl => category ? `${proxyUrl}/${category}/page/${page}/` : `${proxyUrl}/page/${page}/`
 
   return Promises.first(proxyList
-      .map((proxyUrl) => singleRequest(requestUrl(proxyUrl), config)))
+          .map((proxyUrl) => singleRequest(requestUrl(proxyUrl), config)))
       .then((body) => parseTableBody(body))
       .catch((err) => browse(config, retries - 1));
 }
@@ -103,7 +103,7 @@ function parseTableBody(body) {
     });
     resolve(torrents);
   });
-} 
+}
 
 function parseTorrentPage(body) {
   return new Promise((resolve, reject) => {
@@ -117,58 +117,36 @@ function parseTorrentPage(body) {
       let magnet = $(section).attr("href");
       magnets.push(magnet);
     });
-    const categorys = $('div.category').html();
+    const category = parseCategory($('div.category').html());
     const details = $('div.content')
-    const isAnime = parseCategory(categorys) === Categories.ANIME
+    const isAnime = category === Categories.ANIME
     const torrent = magnets.map(magnetLink => {
       const name = escapeHTML(decode(magnetLink).name.replace(/\+/g, ' '))
-      if(isDubled(name) || isAnime) {
+      if (isPtDubbed(name) || isAnime) {
         return {
-          name: escapeHTML(decode(magnetLink).name.replace(/\+/g, ' ')),
-          original_name: parseName(details.find('b:contains(\'Titulo Original:\')')[0].nextSibling.nodeValue),
+          title: sanitizePtName(name),
+          originalName: sanitizePtOriginalName(
+              details.find('b:contains(\'Titulo Original:\')')[0].nextSibling.nodeValue),
           year: details.find('b:contains(\'Ano de Lançamento:\')')[0].nextSibling.nodeValue.trim(),
           infoHash: decode(magnetLink).infoHash,
           magnetLink: magnetLink,
-          category: parseCategory(categorys),
-          uploadDate: new Date(moment($('div.infos').text().split('•')[0].trim(), 'LL', true).format()),
-          imdbId: $('.imdbRatingPlugin').attr('data-title') || null
+          category: category,
+          uploadDate: new Date(moment($('div.infos').text().split('•')[0].trim(), 'LL', 'pt-br').format()),
+          imdbId: $('.imdbRatingPlugin').attr('data-title') || null,
+          languages: sanitizePtLanguages(details.find('b:contains(\'Idioma\')')[0].nextSibling.nodeValue)
         };
-      };
+      }
     })
     resolve(torrent.filter((x) => x));
   });
 }
 
-function parseName(name) {
-  return name
-  .replace(/S01|S02|S03|S04|S05|S06|S07|S08|S09/g, '')
-}
-
-function isDubled(name){
-  name = name.toLowerCase()
-  if(name.includes('dublado')){
-    return true
-  }
-  if(name.includes('dual')){
-    return true
-  }
-  if(name.includes('nacional')){
-    return true
-  }
-  if(name.includes('multi')){
-    return true
-  }
-  return false
-}
-
 function parseCategory(categorys) {
   const $ = cheerio.load(categorys)
-  const isAnime = $('a:contains(\'Animes\')').text()
-  const isSerie = $('a:contains(\'Series\')').text()
-  if(isAnime) {
+  if ($('a:contains(\'Animes\')').text()) {
     return Categories.ANIME
-  } 
-  if(isSerie) {
+  }
+  if ($('a:contains(\'Series\')').text()) {
     return Categories.TV
   }
   return Categories.MOVIE
