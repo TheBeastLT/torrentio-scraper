@@ -1,14 +1,34 @@
 const { DebridOptions } = require('../moch/options');
 const { QualityFilter, Providers } = require('./filter');
 
-const LITE_CONFIG = liteConfig();
-const LITE_CONFIG_VALUE = liteConfigValue();
+const PRE_CONFIGURATIONS = {
+  lite: {
+    config: liteConfig(),
+    serialized: configValue(liteConfig()),
+    manifest: {
+      id: 'com.stremio.torrentio.lite.addon',
+      name: 'Torrentio Lite',
+      description: 'Preconfigured Lite version of Torrentio addon.'
+          + ' To configure advanced options visit https://torrentio.strem.fun/lite'
+    }
+  },
+  brazuca: {
+    config: brazucaConfig(),
+    serialized: configValue(brazucaConfig()),
+    manifest: {
+      id: 'com.stremio.torrentio.brazuca.addon',
+      name: 'Torrentio Brazuca',
+      description: 'Preconfigured version of Torrentio addon for Brazilian content.'
+          + ' To configure advanced options visit https://torrentio.strem.fun/brazuca'
+    }
+  }
+}
 
 const keysToSplit = [Providers.key, QualityFilter.key, DebridOptions.key];
 
 function parseConfiguration(configuration) {
-  if (configuration === 'lite') {
-    return LITE_CONFIG;
+  if (PRE_CONFIGURATIONS[configuration]) {
+    return PRE_CONFIGURATIONS[configuration].config;
   }
   const configValues = configuration.split('|')
       .reduce((map, next) => {
@@ -29,16 +49,26 @@ function liteConfig() {
   config[Providers.key] = Providers.options.filter(provider => !provider.foreign).map(provider => provider.key);
   config[QualityFilter.key] = ['scr', 'cam']
   config['limit'] = 1;
-  config['lite'] = true;
   return config;
 }
 
-function liteConfigValue() {
-  return Object.entries(LITE_CONFIG)
-      .filter(([key]) => key !== 'lite')
+function brazucaConfig() {
+  const config = {};
+  config[Providers.key] = ['nyaasi', 'comando', 'comoeubaixo', 'lapumia', 'ondebaixa'];
+  return config;
+}
+
+function configValue(config) {
+  return Object.entries(config)
       .map(([key, value]) => `${key}=${Array.isArray(value) ? value.join(',') : value}`)
       .join('|');
 }
 
-module.exports = parseConfiguration;
-module.exports.LiteConfigValue = LITE_CONFIG_VALUE;
+function getManifestOverride(config) {
+  const preConfig = Object.values(PRE_CONFIGURATIONS).find(pre => pre.config === config);
+  return preConfig ? preConfig.manifest : {};
+}
+
+module.exports.PreConfigurations = PRE_CONFIGURATIONS;
+module.exports.parseConfiguration = parseConfiguration;
+module.exports.getManifestOverride = getManifestOverride;
