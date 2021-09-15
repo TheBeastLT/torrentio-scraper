@@ -10,9 +10,7 @@ const { isPtDubbed, sanitizePtName, sanitizePtLanguages } = require('../scraperH
 const defaultTimeout = 30000;
 const maxSearchPage = 50
 
-const defaultProxies = [
-  'https://comando.to'
-];
+const baseUrl = 'https://comando.to';
 
 const Categories = {
   MOVIE: 'filmes',
@@ -25,10 +23,8 @@ function torrent(torrentId, config = {}, retries = 2) {
   if (!torrentId || retries === 0) {
     return Promise.reject(new Error(`Failed ${torrentId} query`));
   }
-  const proxyList = config.proxyList || defaultProxies;
   const slug = torrentId.split("/")[3];
-  return Promises.first(proxyList
-          .map((proxyUrl) => singleRequest(`${proxyUrl}/${slug}`, config)))
+  return singleRequest(`${baseUrl}/${slug}`, config)
       .then((body) => parseTorrentPage(body))
       .then((torrent) => torrent.map(el => ({ torrentId: slug, ...el })))
       .catch((err) => {
@@ -41,13 +37,10 @@ function search(keyword, config = {}, retries = 2) {
   if (!keyword || retries === 0) {
     return Promise.reject(new Error(`Failed ${keyword} search`));
   }
-  const proxyList = config.proxyList || defaultProxies;
   const page = config.page || 1;
   const extendToPage = Math.min(maxSearchPage, (config.extendToPage || 1))
-  const requestUrl = proxyUrl => `${proxyUrl}/page/${page}/?s=${keyword}`
 
-  return Promises.first(proxyList
-          .map(proxyUrl => singleRequest(requestUrl(proxyUrl), config)))
+  return singleRequest(`${baseUrl}/page/${page}/?s=${keyword}`, config)
       .then(body => parseTableBody(body))
       .then(torrents => torrents.length === 40 && page < extendToPage
           ? search(keyword, { ...config, page: page + 1 }).catch(() => [])
@@ -60,13 +53,10 @@ function browse(config = {}, retries = 2) {
   if (retries === 0) {
     return Promise.reject(new Error(`Failed browse request`));
   }
-  const proxyList = config.proxyList || defaultProxies;
   const page = config.page || 1;
   const category = config.category;
-  const requestUrl = proxyUrl => `${proxyUrl}/category/${category}/page/${page}/`
 
-  return Promises.first(proxyList
-          .map((proxyUrl) => singleRequest(requestUrl(proxyUrl), config)))
+  return singleRequest(`${baseUrl}/category/${category}/page/${page}/`, config)
       .then((body) => parseTableBody(body))
       .catch((err) => browse(config, retries - 1));
 }
