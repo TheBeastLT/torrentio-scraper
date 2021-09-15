@@ -175,7 +175,7 @@ function filterVideos(files) {
   const isExtra = video => video.path.match(/extras?\//i);
   const isAnimeExtra = video => video.path.match(/(?:\b|_)(?:NC)?(?:ED|OP|PV)(?:v?\d\d?)?(?:\b|_)/i)
       && maxSize / parseInt(video.size) > minAnimeExtraRatio;
-  const isWatermark = video => video.path.match(/^[A-Z-](?:\.[A-Z])?\.\w{3,4}$/)
+  const isWatermark = video => video.path.match(/^[A-Z-]+(?:\.[A-Z]+)?\.\w{3,4}$/)
       && maxSize / parseInt(video.size) > minAnimeExtraRatio
   return videos
       .filter(video => !isSample(video))
