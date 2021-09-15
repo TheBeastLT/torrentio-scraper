@@ -1,5 +1,4 @@
 const needle = require("needle");
-const Bottleneck = require("bottleneck");
 const cheerio = require("cheerio");
 const decode = require("magnet-uri");
 const Promises = require("../../lib/promises");
@@ -8,7 +7,7 @@ const { getRandomUserAgent } = require("../../lib/requestHelper");
 const defaultTimeout = 10000;
 const maxSearchPage = 50;
 
-const defaultProxies = ['https://darkmahou.com'];
+const baseUrl = 'https://darkmahou.com';
 
 const Categories = {
   MOVIE: 'movie',
@@ -20,11 +19,8 @@ function torrent(torrentId, config = {}, retries = 2) {
   if (!torrentId || retries === 0) {
     return Promise.reject(new Error(`Failed ${torrentId} query`));
   }
-  const proxyList = config.proxyList || defaultProxies;
   const slug = torrentId.split("/")[3];
-  return Promises.first(
-          proxyList.map((proxyUrl) => singleRequest(`${proxyUrl}/${slug}`, config))
-      )
+  return singleRequest(`${baseUrl}/${slug}`, config)
       .then((body) => parseTorrentPage(body))
       .then((torrent) => torrent.map((el) => ({ torrentId: slug, ...el })))
       .catch((err) => torrent(slug, config, retries - 1));
@@ -34,14 +30,10 @@ function search(keyword, config = {}, retries = 2) {
   if (!keyword || retries === 0) {
     return Promise.reject(new Error(`Failed ${keyword} search`));
   }
-  const proxyList = config.proxyList || defaultProxies;
   const page = config.page || 1;
   const extendToPage = Math.min(maxSearchPage, config.extendToPage || 1);
-  const requestUrl = (proxyUrl) => `${proxyUrl}/page/${page}/?s=${keyword}`;
 
-  return Promises.first(
-          proxyList.map((proxyUrl) => singleRequest(requestUrl(proxyUrl), config))
-      )
+  return singleRequest(`${baseUrl}/page/${page}/?s=${keyword}`, config)
       .then((body) => parseTableBody(body))
       .then((torrents) =>
           torrents.length === 40 && page < extendToPage
@@ -57,17 +49,11 @@ function browse(config = {}, retries = 2) {
   if (retries === 0) {
     return Promise.reject(new Error(`Failed browse request`));
   }
-  const proxyList = config.proxyList || defaultProxies;
   const page = config.page || 1;
   const category = config.category;
-  const requestUrl = (proxyUrl) =>
-      category
-          ? `${proxyUrl}/category/${category}/page/${page}/`
-          : `${proxyUrl}/page/${page}/`;
+  const requestUrl = category ? `${baseUrl}/category/${category}/page/${page}/` : `${baseUrl}/page/${page}/`;
 
-  return Promises.first(
-          proxyList.map((proxyUrl) => singleRequest(requestUrl(proxyUrl), config))
-      )
+  return singleRequest(requestUrl, config)
       .then((body) => parseTableBody(body))
       .catch((err) => browse(config, retries - 1));
 }
