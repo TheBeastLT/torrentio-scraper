@@ -5,7 +5,7 @@ const decode = require('magnet-uri');
 const Promises = require('../../lib/promises');
 const { escapeHTML } = require('../../lib/metadata');
 const { getRandomUserAgent } = require('../../lib/requestHelper');
-const { isPtDubbed, sanitizePtName, sanitizePtLanguages } = require('../scraperHelper')
+const { isPtDubbed, sanitizePtName, sanitizePtLanguages, sanitizePtOriginalName } = require('../scraperHelper')
 
 const defaultTimeout = 30000;
 const maxSearchPage = 50
@@ -111,22 +111,24 @@ function parseTorrentPage(body) {
         .map((i, elem) => $(elem).nextUntil('h2, hr'))
         .map((i, elem) => $(elem).find('a[href^="magnet"]'))
         .map((i, section) => $(section).attr("href")).get();
-    const details = $('b:contains(\'Original\'), strong:contains(\'Original\')').parent()
+    const details = $('b:contains(\'Servidor\'), b:contains(\'Original\')').parent()
     const imdbIdMatch = details.find('a[href*="imdb.com"]').attr('href')
     const torrents = magnets.map(magnetLink => {
-      const originalName = details.find('strong:contains(\'Original\')').next().text().trim() ||
-          details.find('b:contains(\'Original\'), strong:contains(\'Original\')')[0].nextSibling.nodeValue;
+      const originalNameElem = details.find('strong, b')
+          .filter((i, elem) => $(elem).text().match(/Baixar|Orig(?:\.|inal)/));
+      const languagesElem = details.find('strong, b')
+          .filter((i, elem) => $(elem).text().match(/^\s*(Idioma|[AÁ]udio)/));
+      const originalName = originalNameElem.next().text().trim() || originalNameElem[0].nextSibling.nodeValue;
       return {
         title: sanitizePtName(escapeHTML(decode(magnetLink).name.replace(/\+/g, ' '))),
-        originalName: originalName.replace(/: ?/, '').trim(),
+        originalName: sanitizePtOriginalName(originalName.replace(/: ?/, '')),
         year: details.find('a[href*="comando.to/category/"]').text(),
         infoHash: decode(magnetLink).infoHash,
         magnetLink: magnetLink,
         category: parseCategory($('div.entry-categories').html()),
         uploadDate: new Date(moment($('a.updated').text(), 'LL', 'pt-br').format()),
         imdbId: imdbIdMatch ? imdbIdMatch.split('/')[4] : null,
-        languages: sanitizePtLanguages(details.find(
-            'b:contains(\'Idioma\'), b:contains(\'Audio\'), b:contains(\'Áudio\')')[0].nextSibling.nodeValue)
+        languages: sanitizePtLanguages(languagesElem[0].nextSibling.nodeValue)
       }
     });
     resolve(torrents.filter((x) => x));

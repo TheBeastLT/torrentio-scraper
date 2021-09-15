@@ -11,7 +11,7 @@ function sanitizePtName(name) {
 }
 
 function sanitizePtOriginalName(name) {
-  return name.trim().replace(/S\d+$/, '');
+  return name.trim().replace(/S\d+$|\d.\s?[Tt]emporada/, '');
 }
 
 function sanitizePtLanguages(languages) {

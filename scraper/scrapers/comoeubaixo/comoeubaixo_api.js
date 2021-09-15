@@ -1,7 +1,6 @@
 const needle = require("needle")
 const cheerio = require("cheerio");
 const decode = require('magnet-uri');
-const Promises = require('../../lib/promises');
 const { escapeHTML } = require('../../lib/metadata');
 const { getRandomUserAgent } = require('../../lib/requestHelper');
 const { isPtDubbed, sanitizePtName, sanitizePtLanguages } = require('../scraperHelper')
