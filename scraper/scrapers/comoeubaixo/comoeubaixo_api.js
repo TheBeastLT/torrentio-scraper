@@ -113,33 +113,28 @@ function parseTorrentPage(body) {
     if (!$) {
       reject(new Error('Failed loading body'));
     }
-    let magnets = [];
-    $(`a[href^="magnet"]`).each((i, section) => {
-      let magnet = $(section).attr("href");
-      magnets.push(magnet);
-    });
+    const magnets = $(`a[href^="magnet"]`)
+        .filter((i, elem) => isPtDubbed($(elem).attr('title')))
+        .map((i, elem) => $(elem).attr("href")).get();
     const details = $('div#informacoes')
     const category = details.find('strong:contains(\'Gêneros: \')').next().attr('href').split('/')[0]
-    const isAnime = category === Categories.ANIME
-    const torrent = magnets.map(magnetLink => {
+    const torrents = magnets.map(magnetLink => {
       const name = escapeHTML(decode(magnetLink).name.replace(/\+/g, ' '))
       const sanitizedTitle = sanitizePtName(name);
       const originalTitle = details.find('strong:contains(\'Baixar\')')[0].nextSibling.nodeValue.split('-')[0];
       const year = details.find('strong:contains(\'Data de Lançamento: \')').next().text().trim();
       const fallBackTitle = `${originalTitle.trim()} ${year.trim()} ${sanitizedTitle.trim()}`;
-      if (isPtDubbed(name) || isAnime) {
-        return {
-          title: sanitizedTitle.length > 4 ? sanitizedTitle : fallBackTitle,
-          infoHash: decode(magnetLink).infoHash,
-          magnetLink: magnetLink,
-          category: category,
-          uploadDate: new Date($('time').attr('datetime')),
-          imdbId: details.find('a[href*="imdb.com"]').attr('href').split('/')[4],
-          languages: sanitizePtLanguages(details.find('strong:contains(\'Idioma\')')[0].nextSibling.nodeValue)
-        };
-      }
+      return {
+        title: sanitizedTitle.length > 4 ? sanitizedTitle : fallBackTitle,
+        infoHash: decode(magnetLink).infoHash,
+        magnetLink: magnetLink,
+        category: category,
+        uploadDate: new Date($('time').attr('datetime')),
+        imdbId: details.find('a[href*="imdb.com"]').attr('href').split('/')[4],
+        languages: sanitizePtLanguages(details.find('strong:contains(\'Idioma\')')[0].nextSibling.nodeValue)
+      };
     })
-    resolve(torrent.filter((x) => x));
+    resolve(torrents.filter((x) => x));
   });
 }
 

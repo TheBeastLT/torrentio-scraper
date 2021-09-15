@@ -112,30 +112,22 @@ function parseTorrentPage(body) {
     if (!$) {
       reject(new Error('Failed loading body'));
     }
-    let magnets = [];
-    $(`a[href^="magnet"]`).each((i, section) => {
-      let magnet = $(section).attr("href");
-      magnets.push(magnet);
-    });
+    const magnets = $(`a[href^="magnet"]`)
+        .filter((i, elem) => isPtDubbed($(elem).attr('title')))
+        .map((i, elem) => $(elem).attr("href")).get();
     const details = $('div#informacoes')
     const category = details.find('span:contains(\'Gêneros: \')').next().html()
-    const isAnime = parseCategory(category) === Categories.ANIME
-    const torrent = magnets.map(magnetLink => {
-      const name = escapeHTML(decode(magnetLink).name.replace(/\+/g, ' '))
-      if (isPtDubbed(name) || isAnime) {
-        return {
-          title: sanitizePtName(name),
-          originalName: sanitizePtOriginalName(details.find('span:contains(\'Título Original: \')').next().text()),
-          year: details.find('span:contains(\'Ano de Lançamento: \')').next().text().trim(),
-          infoHash: decode(magnetLink).infoHash,
-          magnetLink: magnetLink,
-          category: parseCategory(category),
-          uploadDate: new Date($('time').attr('datetime')),
-          languages: sanitizePtLanguages(details.find('span:contains(\'Idioma\')')[0].nextSibling.nodeValue)
-        };
-      }
-    })
-    resolve(torrent.filter((x) => x));
+    const torrents = magnets.map(magnetLink => ({
+      title: sanitizePtName(escapeHTML(decode(magnetLink).name.replace(/\+/g, ' '))),
+      originalName: sanitizePtOriginalName(details.find('span:contains(\'Título Original: \')').next().text()),
+      year: details.find('span:contains(\'Ano de Lançamento: \')').next().text().trim(),
+      infoHash: decode(magnetLink).infoHash,
+      magnetLink: magnetLink,
+      category: parseCategory(category),
+      uploadDate: new Date($('time').attr('datetime')),
+      languages: sanitizePtLanguages(details.find('span:contains(\'Idioma\')')[0].nextSibling.nodeValue)
+    }));
+    resolve(torrents.filter((x) => x));
   });
 }
 
