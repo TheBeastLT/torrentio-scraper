@@ -104,6 +104,11 @@ async function checkAndUpdateTorrent(torrent) {
     storedTorrent.provider = torrent.provider;
     storedTorrent.torrentId = torrent.torrentId;
   }
+  if (!storedTorrent.languages && torrent.languages) {
+    storedTorrent.languages = torrent.languages;
+    storedTorrent.save();
+    console.log(`Updated [${torrent.infoHash}] ${torrent.title} language to ${torrent.languages}`);
+  }
   return createTorrentContents({ ...storedTorrent.get(), torrentLink: torrent.torrentLink })
       .then(() => updateTorrentSeeders(torrent));
 }
