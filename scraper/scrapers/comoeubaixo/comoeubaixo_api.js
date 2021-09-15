@@ -25,7 +25,10 @@ function torrent(torrentId, config = {}, retries = 2) {
   return singleRequest(`${baseUrl}/${slug}/`, config)
       .then((body) => parseTorrentPage(body))
       .then((torrent) => torrent.map(el => ({ torrentId: slug, ...el })))
-      .catch((err) => torrent(slug, config, retries - 1));
+      .catch((err) => {
+        console.warn(`Failed ComoEuBaixo ${slug} request: `, err);
+        return torrent(slug, config, retries - 1)
+      });
 }
 
 function search(keyword, config = {}, retries = 2) {

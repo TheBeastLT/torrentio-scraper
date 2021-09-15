@@ -28,7 +28,7 @@ function torrent(torrentId, config = {}, retries = 2) {
       .then((body) => parseTorrentPage(body))
       .then((torrent) => torrent.map(el => ({ torrentId: slug, ...el })))
       .catch((err) => {
-        console.warn(`Failed ${slug} request: `, err);
+        console.warn(`Failed Comando ${slug} request: `, err);
         return torrent(slug, config, retries - 1)
       });
 }

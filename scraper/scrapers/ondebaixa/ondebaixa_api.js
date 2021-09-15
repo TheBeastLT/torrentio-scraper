@@ -1,7 +1,6 @@
 const needle = require("needle")
 const cheerio = require("cheerio");
 const decode = require('magnet-uri');
-const Promises = require('../../lib/promises');
 const { escapeHTML } = require('../../lib/metadata');
 const { getRandomUserAgent } = require('../../lib/requestHelper');
 const { isPtDubbed, sanitizePtName, sanitizePtOriginalName, sanitizePtLanguages } = require('../scraperHelper')
@@ -26,7 +25,10 @@ function torrent(torrentId, config = {}, retries = 2) {
   return singleRequest(`${baseUrl}/${slug}/`, config)
       .then((body) => parseTorrentPage(body))
       .then((torrent) => torrent.map(el => ({ torrentId: slug, ...el })))
-      .catch((err) => torrent(slug, config, retries - 1));
+      .catch((err) => {
+        console.warn(`Failed OndeBaixo ${slug} request: `, err);
+        return torrent(slug, config, retries - 1)
+      });
 }
 
 function search(keyword, config = {}, retries = 2) {
