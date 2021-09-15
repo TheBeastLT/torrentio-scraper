@@ -31,7 +31,10 @@ function torrent(torrentId, config = {}, retries = 2) {
           .map((proxyUrl) => singleRequest(`${proxyUrl}/${slug}`, config)))
       .then((body) => parseTorrentPage(body))
       .then((torrent) => torrent.map(el => ({ torrentId: slug, ...el })))
-      .catch((err) => torrent(slug, config, retries - 1));
+      .catch((err) => {
+        console.warn(`Failed ${slug} request: `, err);
+        return torrent(slug, config, retries - 1)
+      });
 }
 
 function search(keyword, config = {}, retries = 2) {
@@ -113,32 +116,30 @@ function parseTorrentPage(body) {
     if (!$) {
       reject(new Error('Failed loading body'));
     }
-    let magnets = [];
-    $(`a[href^="magnet"]`).each((i, section) => {
-      let magnet = $(section).attr("href");
-      magnets.push(magnet);
-    });
-    const details = $('b:contains(\'Original\')').parent()
-    const isAnime = parseCategory($('div.entry-categories').html()) === Categories.ANIME
+    const magnets = $('h2 > strong')
+        .filter((i, elem) => isPtDubbed($(elem).text())).parent()
+        .map((i, elem) => $(elem).nextUntil('h2, hr'))
+        .map((i, elem) => $(elem).find('a[href^="magnet"]'))
+        .map((i, section) => $(section).attr("href")).get();
+    const details = $('b:contains(\'Original\'), strong:contains(\'Original\')').parent()
     const imdbIdMatch = details.find('a[href*="imdb.com"]').attr('href')
-    const torrent = magnets.map(magnetLink => {
-      const name = escapeHTML(decode(magnetLink).name.replace(/\+/g, ' '))
-      if (isPtDubbed(name) || isAnime) {
-        return {
-          title: sanitizePtName(name),
-          originalName: details.find('b:contains(\'Original\')')[0].nextSibling.nodeValue.replace(/: ?/, ''),
-          year: details.find('a[href*="comando.to/category/"]').text(),
-          infoHash: decode(magnetLink).infoHash,
-          magnetLink: magnetLink,
-          category: parseCategory($('div.entry-categories').html()),
-          uploadDate: new Date(moment($('a.updated').text(), 'LL', 'pt-br').format()),
-          imdbId: imdbIdMatch ? imdbIdMatch.split('/')[4] : null,
-          languages: sanitizePtLanguages(details.find(
-              'b:contains(\'Idioma\'), b:contains(\'Audio\'), b:contains(\'Áudio\')')[0].nextSibling.nodeValue)
-        };
+    const torrents = magnets.map(magnetLink => {
+      const originalName = details.find('strong:contains(\'Original\')').next().text().trim() ||
+          details.find('b:contains(\'Original\'), strong:contains(\'Original\')')[0].nextSibling.nodeValue;
+      return {
+        title: sanitizePtName(escapeHTML(decode(magnetLink).name.replace(/\+/g, ' '))),
+        originalName: originalName.replace(/: ?/, '').trim(),
+        year: details.find('a[href*="comando.to/category/"]').text(),
+        infoHash: decode(magnetLink).infoHash,
+        magnetLink: magnetLink,
+        category: parseCategory($('div.entry-categories').html()),
+        uploadDate: new Date(moment($('a.updated').text(), 'LL', 'pt-br').format()),
+        imdbId: imdbIdMatch ? imdbIdMatch.split('/')[4] : null,
+        languages: sanitizePtLanguages(details.find(
+            'b:contains(\'Idioma\'), b:contains(\'Audio\'), b:contains(\'Áudio\')')[0].nextSibling.nodeValue)
       }
-    })
-    resolve(torrent.filter((x) => x));
+    });
+    resolve(torrents.filter((x) => x));
   });
 }
 

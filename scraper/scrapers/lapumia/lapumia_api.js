@@ -112,32 +112,25 @@ function parseTorrentPage(body) {
     if (!$) {
       reject(new Error('Failed loading body'));
     }
-    let magnets = [];
-    $(`a[href^="magnet"]`).each((i, section) => {
-      let magnet = $(section).attr("href");
-      magnets.push(magnet);
-    });
+    const magnets = $('h2 > span')
+        .filter((i, elem) => isPtDubbed($(elem).text())).parent()
+        .map((i, elem) => $(elem).nextUntil('h2, hr'))
+        .map((i, elem) => $(elem).find('a[href^="magnet"]'))
+        .map((i, section) => $(section).attr("href")).get();
     const category = parseCategory($('div.category').html());
     const details = $('div.content')
-    const isAnime = category === Categories.ANIME
-    const torrent = magnets.map(magnetLink => {
-      const name = escapeHTML(decode(magnetLink).name.replace(/\+/g, ' '))
-      if (isPtDubbed(name) || isAnime) {
-        return {
-          title: sanitizePtName(name),
-          originalName: sanitizePtOriginalName(
-              details.find('b:contains(\'Titulo Original:\')')[0].nextSibling.nodeValue),
-          year: details.find('b:contains(\'Ano de Lançamento:\')')[0].nextSibling.nodeValue.trim(),
-          infoHash: decode(magnetLink).infoHash,
-          magnetLink: magnetLink,
-          category: category,
-          uploadDate: new Date(moment($('div.infos').text().split('•')[0].trim(), 'LL', 'pt-br').format()),
-          imdbId: $('.imdbRatingPlugin').attr('data-title') || null,
-          languages: sanitizePtLanguages(details.find('b:contains(\'Idioma\')')[0].nextSibling.nodeValue)
-        };
-      }
-    })
-    resolve(torrent.filter((x) => x));
+    const torrents = magnets.map(magnetLink => ({
+      title: sanitizePtName(escapeHTML(decode(magnetLink).name.replace(/\+/g, ' '))),
+      originalName: sanitizePtOriginalName(details.find('b:contains(\'Titulo Original:\')')[0].nextSibling.nodeValue),
+      year: details.find('b:contains(\'Ano de Lançamento:\')')[0].nextSibling.nodeValue.trim(),
+      infoHash: decode(magnetLink).infoHash,
+      magnetLink: magnetLink,
+      category: category,
+      uploadDate: new Date(moment($('div.infos').text().split('•')[0].trim(), 'LL', 'pt-br').format()),
+      imdbId: $('.imdbRatingPlugin').attr('data-title') || null,
+      languages: sanitizePtLanguages(details.find('b:contains(\'Idioma\')')[0].nextSibling.nodeValue)
+    }))
+    resolve(torrents.filter((x) => x));
   });
 }
 
