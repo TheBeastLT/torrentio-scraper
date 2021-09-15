@@ -51,8 +51,7 @@ async function parseMovieFiles(torrent, parsedName, metadata) {
     return { contents, videos: parsedVideos, subtitles };
   }
 
-  const parsedVideos = await Promises.sequence(filteredVideos
-      .map(video => () => isFeaturette(video)
+  const parsedVideos = await Promises.sequence(filteredVideos.map(video => () => isFeaturette(video)
           ? Promise.resolve(video)
           : findMovieImdbId(video.name).then(imdbId => ({ ...video, imdbId }))))
       .then(videos => videos.map(video => ({
@@ -78,7 +77,6 @@ async function parseSeriesFiles(torrent, parsedName, metadata) {
       .then(videos => videos
           .reduce((a, b) => a.concat(b), [])
           .map(video => isFeaturette(video) ? clearInfoFields(video) : video))
-
   return { contents, videos: parsedVideos, subtitles };
 }
 
@@ -286,7 +284,7 @@ function decomposeAbsoluteEpisodeFiles(torrent, files, metadata) {
       .filter(file => !file.season || (metadata.episodeCount[file.season - 1] || 0) < file.episodes[0])
       .forEach(file => {
         const seasonIdx = ([...metadata.episodeCount.keys()]
-            .find((i) => metadata.episodeCount.slice(0, i + 1).reduce((a, b) => a + b) >= file.episodes[0])
+                .find((i) => metadata.episodeCount.slice(0, i + 1).reduce((a, b) => a + b) >= file.episodes[0])
             + 1 || metadata.episodeCount.length) - 1;
 
         file.season = seasonIdx + 1;
