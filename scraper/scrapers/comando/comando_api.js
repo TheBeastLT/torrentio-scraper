@@ -114,16 +114,18 @@ function parseTorrentPage(body) {
     const details = $('b:contains(\'Servidor\'), b:contains(\'Original\')').parent()
     const imdbIdMatch = details.find('a[href*="imdb.com"]').attr('href')
     const torrents = magnets.map(magnetLink => {
+      const decodedMagnet = decode(magnetLink);
       const originalNameElem = details.find('strong, b')
           .filter((i, elem) => $(elem).text().match(/Baixar|Orig(?:\.|inal)/));
       const languagesElem = details.find('strong, b')
-          .filter((i, elem) => $(elem).text().match(/^\s*(Idioma|[AÁ]udio)/));
+          .filter((i, elem) => $(elem).text().match(/^\s*([IÍ]dioma|[AÁ]udio)/));
       const originalName = originalNameElem.next().text().trim() || originalNameElem[0].nextSibling.nodeValue;
+      const title = decodedMagnet.name && escapeHTML(decodedMagnet.name.replace(/\+/g, ' '));
       return {
-        title: sanitizePtName(escapeHTML(decode(magnetLink).name.replace(/\+/g, ' '))),
+        title: title ? sanitizePtName(title) : originalName.replace(/: ?/, ''),
         originalName: sanitizePtOriginalName(originalName.replace(/: ?/, '')),
         year: details.find('a[href*="comando.to/category/"]').text(),
-        infoHash: decode(magnetLink).infoHash,
+        infoHash: decodedMagnet.infoHash,
         magnetLink: magnetLink,
         category: parseCategory($('div.entry-categories').html()),
         uploadDate: new Date(moment($('a.updated').text(), 'LL', 'pt-br').format()),
