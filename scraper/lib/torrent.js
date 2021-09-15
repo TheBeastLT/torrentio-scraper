@@ -29,7 +29,7 @@ async function updateCurrentSeeders(torrentsInput) {
     const torrents = Array.isArray(torrentsInput) ? torrentsInput : [torrentsInput];
     const perTorrentResults = Object.fromEntries(new Map(torrents.map(torrent => [torrent.infoHash, {}])));
     const perTrackerInfoHashes = await Promise.all(torrents.map(torrent => getTorrentTrackers(torrent)
-        .then(torrentTrackers => ({ infoHash: torrent.infoHash, trackers: torrentTrackers }))))
+            .then(torrentTrackers => ({ infoHash: torrent.infoHash, trackers: torrentTrackers }))))
         .then(allTorrentTrackers => allTorrentTrackers
             .reduce((allTrackersMap, torrentTrackers) => {
               torrentTrackers.trackers.forEach(tracker =>
@@ -175,11 +175,14 @@ function filterVideos(files) {
   const isExtra = video => video.path.match(/extras?\//i);
   const isAnimeExtra = video => video.path.match(/(?:\b|_)(?:NC)?(?:ED|OP|PV)(?:v?\d\d?)?(?:\b|_)/i)
       && maxSize / parseInt(video.size) > minAnimeExtraRatio;
+  const isWatermark = video => video.path.match(/^[A-Z-](?:\.[A-Z])?\.\w{3,4}$/)
+      && maxSize / parseInt(video.size) > minAnimeExtraRatio
   return videos
       .filter(video => !isSample(video))
       .filter(video => !isExtra(video))
       .filter(video => !isAnimeExtra(video))
-      .filter(video => !isRedundant(video));
+      .filter(video => !isRedundant(video))
+      .filter(video => !isWatermark(video));
 }
 
 function filterSubtitles(files) {
