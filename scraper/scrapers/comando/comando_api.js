@@ -111,7 +111,7 @@ function parseTorrentPage(body) {
         .map((i, elem) => $(elem).nextUntil('h2, hr'))
         .map((i, elem) => $(elem).find('a[href^="magnet"]'))
         .map((i, section) => $(section).attr("href")).get();
-    const details = $('b:contains(\'Servidor\'), b:contains(\'Original\')').parent()
+    const details = $('strong, b').filter((i, elem) => $(elem).text().match(/Servidor|Orig(?:\.|inal)/)).parent();
     const imdbIdMatch = details.find('a[href*="imdb.com"]').attr('href')
     const torrents = magnets.map(magnetLink => {
       const decodedMagnet = decode(magnetLink);
