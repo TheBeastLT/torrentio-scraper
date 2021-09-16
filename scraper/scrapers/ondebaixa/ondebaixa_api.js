@@ -118,7 +118,7 @@ function parseTorrentPage(body) {
       magnetLink: magnetLink,
       category: parseCategory(category),
       uploadDate: new Date($('time').attr('datetime')),
-      languages: sanitizePtLanguages(details.find('span:contains(\'Idioma\')')[0].nextSibling.nodeValue)
+      languages: sanitizePtLanguages(details.find('span:contains(\'Idioma\')').next().text())
     }));
     resolve(torrents.filter((x) => x));
   });
