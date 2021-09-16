@@ -104,7 +104,7 @@ async function checkAndUpdateTorrent(torrent) {
     storedTorrent.provider = torrent.provider;
     storedTorrent.torrentId = torrent.torrentId;
   }
-  if (!storedTorrent.languages && torrent.languages) {
+  if (!storedTorrent.languages && torrent.languages && storedTorrent.provider !== 'RARBG') {
     storedTorrent.languages = torrent.languages;
     storedTorrent.save();
     console.log(`Updated [${torrent.infoHash}] ${torrent.title} language to ${torrent.languages}`);
