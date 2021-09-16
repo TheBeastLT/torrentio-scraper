@@ -21,7 +21,7 @@ function torrent(torrentId, config = {}, retries = 2) {
   if (!torrentId || retries === 0) {
     return Promise.reject(new Error(`Failed ${torrentId} query`));
   }
-  const slug = torrentId.split("/")[3];
+  const slug = encodeURIComponent(torrentId.split("/")[3]);
   return singleRequest(`${baseUrl}/${slug}/`, config)
       .then((body) => parseTorrentPage(body))
       .then((torrent) => torrent.map(el => ({ torrentId: slug, ...el })))
