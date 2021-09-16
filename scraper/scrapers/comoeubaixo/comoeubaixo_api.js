@@ -21,13 +21,13 @@ function torrent(torrentId, config = {}, retries = 2) {
   if (!torrentId || retries === 0) {
     return Promise.reject(new Error(`Failed ${torrentId} query`));
   }
-  const slug = torrentId.split("/")[3];
+  const slug = encodeURIComponent(torrentId.split("/")[3]);
   return singleRequest(`${baseUrl}/${slug}/`, config)
       .then((body) => parseTorrentPage(body))
       .then((torrent) => torrent.map(el => ({ torrentId: slug, ...el })))
       .catch((err) => {
-        console.warn(`Failed ComoEuBaixo ${slug} request: `, err);
-        return torrent(slug, config, retries - 1)
+        console.warn(`Failed ComoEuBaixo ${torrentId} request: `, err);
+        return torrent(torrentId, config, retries - 1)
       });
 }
 
@@ -67,7 +67,7 @@ function singleRequest(requestUrl, config = {}) {
   return needle('get', requestUrl, options)
       .then((response) => {
         const body = response.body;
-        if (!body) {
+        if (!body || (Buffer.isBuffer(body) && !body.size)) {
           throw new Error(`No body: ${requestUrl}`);
         } else if (body.includes('502: Bad gateway') ||
             body.includes('403 Forbidden')) {
@@ -118,7 +118,7 @@ function parseTorrentPage(body) {
       const year = details.find('strong:contains(\'Data de Lançamento: \')').next().text().trim();
       const fallBackTitle = `${originalTitle.trim()} ${year.trim()} ${sanitizedTitle.trim()}`;
       return {
-        title: sanitizedTitle.length > 4 ? sanitizedTitle : fallBackTitle,
+        title: sanitizedTitle.length > 5 ? sanitizedTitle : fallBackTitle,
         infoHash: decode(magnetLink).infoHash,
         magnetLink: magnetLink,
         category: category,
