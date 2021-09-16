@@ -29,7 +29,7 @@ function torrent(torrentId, config = {}, retries = 2) {
       .then((torrent) => torrent.map(el => ({ torrentId: slug, ...el })))
       .catch((err) => {
         console.warn(`Failed Comando ${slug} request: `, err);
-        return torrent(slug, config, retries - 1)
+        return torrent(torrentId, config, retries - 1)
       });
 }
 
@@ -116,14 +116,14 @@ function parseTorrentPage(body) {
     const torrents = magnets.map(magnetLink => {
       const decodedMagnet = decode(magnetLink);
       const originalNameElem = details.find('strong, b')
-          .filter((i, elem) => $(elem).text().match(/Baixar|Orig(?:\.|inal)/));
+          .filter((i, elem) => $(elem).text().match(/Baixar|Orig(?:\.|inal)|^Título:/));
       const languagesElem = details.find('strong, b')
           .filter((i, elem) => $(elem).text().match(/^\s*([IÍ]dioma|[AÁ]udio)/));
-      const originalName = originalNameElem.next().text().trim() || originalNameElem[0].nextSibling.nodeValue;
+      const originalName = parseOriginalName(originalNameElem);
       const title = decodedMagnet.name && escapeHTML(decodedMagnet.name.replace(/\+/g, ' '));
       return {
-        title: title ? sanitizePtName(title) : originalName.replace(/: ?/, ''),
-        originalName: sanitizePtOriginalName(originalName.replace(/: ?/, '')),
+        title: title ? sanitizePtName(title) : originalName,
+        originalName: sanitizePtOriginalName(originalName),
         year: details.find('a[href*="comando.to/category/"]').text(),
         infoHash: decodedMagnet.infoHash,
         magnetLink: magnetLink,
@@ -135,6 +135,14 @@ function parseTorrentPage(body) {
     });
     resolve(torrents.filter((x) => x));
   });
+}
+
+function parseOriginalName(originalNameElem) {
+  if (!originalNameElem[0]) {
+    return '';
+  }
+  const originalName = originalNameElem.next().text().trim() || originalNameElem[0].nextSibling.nodeValue;
+  return originalName.replace(/: ?/, '');
 }
 
 function parseCategory(categorys) {

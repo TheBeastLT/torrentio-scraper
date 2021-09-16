@@ -72,7 +72,7 @@ async function processTorrentRecord(foundTorrent) {
   if (!Number.isInteger(foundTorrent.seeders)) {
     await updateCurrentSeeders(foundTorrent);
   }
-  if (!foundTorrent.imdbId) {
+  if (!foundTorrent.imdbId && foundTorrent.originalName) {
     const info = { title: foundTorrent.originalName, year: foundTorrent.year };
     foundTorrent.imdbId = await getImdbId(info, TYPE_MAPPING[foundTorrent.category]).catch(() => undefined);
   }

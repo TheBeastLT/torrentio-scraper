@@ -27,7 +27,7 @@ function torrent(torrentId, config = {}, retries = 2) {
       .then((torrent) => torrent.map(el => ({ torrentId: slug, ...el })))
       .catch((err) => {
         console.warn(`Failed Lapumia ${slug} request: `, err);
-        return torrent(slug, config, retries - 1)
+        return torrent(torrentId, config, retries - 1)
       });
 }
 
