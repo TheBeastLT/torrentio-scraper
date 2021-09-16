@@ -112,14 +112,15 @@ function parseTorrentPage(body) {
     const details = $('div#informacoes')
     const category = details.find('strong:contains(\'Gêneros: \')').next().attr('href').split('/')[0]
     const torrents = magnets.map(magnetLink => {
-      const name = escapeHTML(decode(magnetLink).name.replace(/\+/g, ' '))
+      const decodedMagnet = decode(magnetLink);
+      const name = escapeHTML(decodedMagnet.name || '').replace(/\+/g, ' ');
       const sanitizedTitle = sanitizePtName(name);
       const originalTitle = details.find('strong:contains(\'Baixar\')')[0].nextSibling.nodeValue.split('-')[0];
       const year = details.find('strong:contains(\'Data de Lançamento: \')').next().text().trim();
       const fallBackTitle = `${originalTitle.trim()} ${year.trim()} ${sanitizedTitle.trim()}`;
       return {
         title: sanitizedTitle.length > 5 ? sanitizedTitle : fallBackTitle,
-        infoHash: decode(magnetLink).infoHash,
+        infoHash: decodedMagnet.infoHash,
         magnetLink: magnetLink,
         category: category,
         uploadDate: new Date($('time').attr('datetime')),
