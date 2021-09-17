@@ -187,13 +187,26 @@ function getTorrentsWithoutSize() {
   });
 }
 
-function getUpdateSeedersTorrents(limit = 100) {
+function getUpdateSeedersTorrents(limit = 50) {
   const until = moment().subtract(7, 'days').format('YYYY-MM-DD');
   return Torrent.findAll({
     where: literal(`torrent."updatedAt" < \'${until}\'`),
     limit: limit,
     order: [
       ['seeders', 'DESC'],
+      ['updatedAt', 'ASC']
+    ]
+  });
+}
+
+function getUpdateSeedersNewTorrents(limit = 50) {
+  const lastUpdate = moment().subtract(12, 'hours').format('YYYY-MM-DD');
+  const createdAfter = moment().subtract(4, 'days').format('YYYY-MM-DD');
+  return Torrent.findAll({
+    where: literal(`torrent."updatedAt" < \'${lastUpdate}\' AND torrent."createdAt" > \'${createdAfter}\'`),
+    limit: limit,
+    order: [
+      ['seeders', 'ASC'],
       ['updatedAt', 'ASC']
     ]
   });
@@ -315,6 +328,7 @@ module.exports = {
   getTorrentsBasedOnQuery,
   deleteTorrent,
   getUpdateSeedersTorrents,
+  getUpdateSeedersNewTorrents,
   getNoContentsTorrents,
   createFile,
   getFiles,

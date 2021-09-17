@@ -24,6 +24,7 @@ function initiateRemoteCache() {
       options: {
         collection: 'torrentio_scraper_collection',
         useUnifiedTopology: true,
+        poolSize: 1
       },
       ttl: GLOBAL_TTL,
       ignoreCacheErrors: true
