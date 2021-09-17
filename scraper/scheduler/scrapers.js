@@ -7,6 +7,7 @@ const kickassScraper = require('../scrapers/kickass/kickass_scraper');
 const rarbgScraper = require('../scrapers/rarbg/rarbg_scraper');
 const nyaaPantsuScraper = require('../scrapers/nyaapantsu/nyaa_pantsu_scraper');
 const nyaaSiScraper = require('../scrapers/nyaasi/nyaa_si_scraper');
+const erairawsScraper = require('../scrapers/erairaws/erairaws_scraper');
 const torrentGalaxyScraper = require('../scrapers/torrentgalaxy/torrentgalaxy_scraper');
 const rutorScraper = require('../scrapers/rutor/rutor_scraper');
 const Comando = require('../scrapers/comando/comando_scraper')
@@ -34,6 +35,7 @@ module.exports = [
   { scraper: OndeBaixa, name: OndeBaixa.NAME, cron: '0 0 */4 ? * *' },
   // { scraper: AnimesTorrent, name: AnimesTorrent.NAME, cron: '0 0 */4 ? * *' },
   // { scraper: DarkMahou, name: DarkMahou.NAME, cron: '0 0 */4 ? * *' },
+  { scraper: erairawsScraper, name: erairawsScraper.NAME, cron: '0 0 */24 ? * *' },
   // { scraper: require('../scrapers/rarbg/rarbg_dump_scraper') }
   // { scraper: require('../scrapers/1337x/1337x_search_scraper') }
   // { scraper: require('../scrapers/rarbg/rarbg_dump_scraper') }
