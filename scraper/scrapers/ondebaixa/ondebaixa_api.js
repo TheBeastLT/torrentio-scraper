@@ -110,16 +110,23 @@ function parseTorrentPage(body) {
         .map((i, elem) => $(elem).attr("href")).get();
     const details = $('div#informacoes')
     const category = details.find('span:contains(\'Gêneros: \')').next().html()
-    const torrents = magnets.map(magnetLink => ({
-      title: sanitizePtName(escapeHTML(decode(magnetLink).name.replace(/\+/g, ' '))),
-      originalName: sanitizePtOriginalName(details.find('span:contains(\'Título Original: \')').next().text()),
-      year: details.find('span:contains(\'Ano de Lançamento: \')').next().text().trim(),
-      infoHash: decode(magnetLink).infoHash,
-      magnetLink: magnetLink,
-      category: parseCategory(category),
-      uploadDate: new Date($('time').attr('datetime')),
-      languages: sanitizePtLanguages(details.find('span:contains(\'Idioma\')').next().text())
-    }));
+    const torrents = magnets.map(magnetLink => {
+      const decodedMagnet = decode(magnetLink);
+      const name = escapeHTML(decodedMagnet.name || '').replace(/\+/g, ' ');
+      const originalTitle = details.find('span:contains(\'Título Original: \')').next().text().trim();
+      const year = details.find('span:contains(\'Ano de Lançamento: \')').next().text().trim();
+      const fallbackTitle = `${originalTitle} ${year}`;
+      return {
+        title: name ? sanitizePtName(name) : fallbackTitle,
+        originalName: sanitizePtOriginalName(originalTitle),
+        year: year,
+        infoHash: decodedMagnet.infoHash,
+        magnetLink: magnetLink,
+        category: parseCategory(category),
+        uploadDate: new Date($('time').attr('datetime')),
+        languages: sanitizePtLanguages(details.find('span:contains(\'Idioma\')').next().text())
+      }
+    });
     resolve(torrents.filter((x) => x));
   });
 }
