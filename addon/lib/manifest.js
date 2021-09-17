@@ -10,7 +10,7 @@ const CatalogMochs = Object.values(MochOptions).filter(moch => moch.catalog);
 function manifest(config = {}) {
   const defaultManifest = {
     id: 'com.stremio.torrentio.addon',
-    version: '0.0.11',
+    version: '0.0.12',
     name: 'Torrentio',
     description: getDescription(config),
     catalogs: getCatalogs(config),
