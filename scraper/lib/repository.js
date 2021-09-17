@@ -29,7 +29,7 @@ const Torrent = database.define('torrent',
       uploadDate: { type: DataTypes.DATE, allowNull: false },
       seeders: { type: DataTypes.SMALLINT },
       trackers: { type: DataTypes.STRING(4096) },
-      languages: { type: DataTypes.STRING(256) },
+      languages: { type: DataTypes.STRING(4096) },
       resolution: { type: DataTypes.STRING(16) },
       reviewed: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
       opened: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false }

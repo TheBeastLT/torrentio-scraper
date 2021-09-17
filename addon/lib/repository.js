@@ -16,7 +16,7 @@ const Torrent = database.define('torrent',
       uploadDate: { type: Sequelize.DATE, allowNull: false },
       seeders: { type: Sequelize.SMALLINT },
       trackers: { type: Sequelize.STRING(4096) },
-      languages: { type: Sequelize.STRING(256) },
+      languages: { type: Sequelize.STRING(4096) },
       resolution: { type: Sequelize.STRING(16) }
     }
 );
