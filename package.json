@@ -13,6 +13,7 @@
   "license": "MIT",
   "dependencies": {
     "async": "0.9.2",
+    "axios": "^0.21.4",
     "bittorrent-tracker": "^9.18.2",
     "bottleneck": "^2.16.2",
     "cache-manager": "^2.9.0",
@@ -33,7 +34,7 @@
     "nodejs-bing": "^0.1.0",
     "nyaapi": "^2.3.3",
     "parse-torrent": "^6.1.2",
-    "parse-torrent-title": "git://github.com/TheBeastLT/parse-torrent-title.git#1ebaf887b6848c7648638ad1ab3c719e6cee47d2",
+    "parse-torrent-title": "git://github.com/TheBeastLT/parse-torrent-title.git#8fd87b3bfc7aa04143edcd4f0112868bb77dce0f",
     "pg": "^7.8.2",
     "pg-hstore": "^2.3.2",
     "real-debrid-api": "git://github.com/TheBeastLT/node-real-debrid.git#935a5c23ae809edbcd2a111526a7f74d6767c50d",
