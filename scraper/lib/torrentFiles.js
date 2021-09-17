@@ -244,7 +244,8 @@ function isAbsoluteEpisodeFiles(files, metadata) {
   const absoluteEpisodes = files
       .filter(file => file.season && file.episodes)
       .filter(file => file.episodes.every(ep => metadata.episodeCount[file.season - 1] < ep))
-  return nonMovieEpisodes.every(file => !file.season) || absoluteEpisodes.length >= threshold
+  return nonMovieEpisodes.every(file => !file.season || file.season > metadata.episodeCount.length)
+      || absoluteEpisodes.length >= threshold
   // && !isNewEpisodesNotInMetadata(files, metadata);
 }
 
