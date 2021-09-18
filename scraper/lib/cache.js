@@ -23,8 +23,7 @@ function initiateRemoteCache() {
       uri: MONGO_URI,
       options: {
         collection: 'torrentio_scraper_collection',
-        useUnifiedTopology: true,
-        poolSize: 1
+        useUnifiedTopology: true
       },
       ttl: GLOBAL_TTL,
       ignoreCacheErrors: true
