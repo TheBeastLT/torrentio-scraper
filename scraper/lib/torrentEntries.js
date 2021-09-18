@@ -107,7 +107,7 @@ async function checkAndUpdateTorrent(torrent) {
   if (!storedTorrent.languages && torrent.languages && storedTorrent.provider !== 'RARBG') {
     storedTorrent.languages = torrent.languages;
     storedTorrent.save();
-    console.log(`Updated [${torrent.infoHash}] ${torrent.title} language to ${torrent.languages}`);
+    console.log(`Updated [${storedTorrent.infoHash}] ${storedTorrent.title} language to ${torrent.languages}`);
   }
   return createTorrentContents({ ...storedTorrent.get(), torrentLink: torrent.torrentLink })
       .then(() => updateTorrentSeeders(torrent));

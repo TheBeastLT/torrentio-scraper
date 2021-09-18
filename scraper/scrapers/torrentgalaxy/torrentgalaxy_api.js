@@ -1,5 +1,5 @@
+const axios = require('axios');
 const cheerio = require('cheerio');
-const needle = require('needle');
 const moment = require('moment');
 const decode = require('magnet-uri');
 const Promises = require('../../lib/promises');
@@ -34,7 +34,7 @@ function torrent(torrentId, config = {}, retries = 2) {
   const proxyList = config.proxyList || defaultProxies;
 
   return Promises.first(proxyList
-      .map((proxyUrl) => singleRequest(`${proxyUrl}/torrent/${torrentId}`)))
+          .map((proxyUrl) => singleRequest(`${proxyUrl}/torrent/${torrentId}`)))
       .then((body) => parseTorrentPage(body))
       .then((torrent) => ({ torrentId, ...torrent }))
       .catch((err) => torrent(torrentId, config, retries - 1));
@@ -49,7 +49,7 @@ function search(keyword, config = {}, retries = 2) {
   const category = config.category;
 
   return Promises.first(proxyList
-      .map((proxyUrl) => singleRequest(`${proxyUrl}/torrents.php?cat=${category}&page=${page - 1}&search=${keyword}`)))
+          .map((proxyUrl) => singleRequest(`${proxyUrl}/torrents.php?cat=${category}&page=${page - 1}&search=${keyword}`)))
       .then((body) => parseTableBody(body))
       .catch(() => search(keyword, config, retries - 1));
 }
@@ -63,19 +63,19 @@ function browse(config = {}, retries = 2, error = null) {
   const category = config.category;
 
   return Promises.first(proxyList
-      .map((proxyUrl) => singleRequest(`${proxyUrl}/torrents.php?cat=${category}&page=${page - 1}`)))
+          .map((proxyUrl) => singleRequest(`${proxyUrl}/torrents.php?cat=${category}&page=${page - 1}`)))
       .then((body) => parseTableBody(body))
       .catch((err) => browse(config, retries - 1, err));
 }
 
 function singleRequest(requestUrl) {
-  const options = { userAgent: getRandomUserAgent(), open_timeout: defaultTimeout, follow: 2 };
+  const options = { headers: { 'User-Agent': getRandomUserAgent() }, timeout: defaultTimeout };
 
-  return needle('get', requestUrl, options)
+  return axios.get(requestUrl, options)
       .then((response) => {
-        const body = response.body;
+        const body = response.data;
         if (!body) {
-          throw new Error(`No body: ${requestUrl} with status ${response.statusCode}`);
+          throw new Error(`No body: ${requestUrl} with status ${response.status}`);
         } else if (body.includes('Access Denied')) {
           console.log(`Access Denied: ${requestUrl}`);
           throw new Error(`Access Denied: ${requestUrl}`);

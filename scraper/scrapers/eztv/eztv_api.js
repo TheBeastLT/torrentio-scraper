@@ -1,5 +1,5 @@
+const axios = require('axios');
 const cheerio = require('cheerio');
-const needle = require('needle');
 const moment = require('moment');
 const Promises = require('../../lib/promises');
 const { getRandomUserAgent } = require('./../../lib/requestHelper');
@@ -19,7 +19,7 @@ function torrent(torrentId, config = {}, retries = 1) {
   }
 
   return Promises.first(defaultProxies
-      .map(proxyUrl => singleRequest(`${proxyUrl}/ep/${torrentId}`, config)))
+          .map(proxyUrl => singleRequest(`${proxyUrl}/ep/${torrentId}`, config)))
       .then(body => parseTorrentPage(body))
       .then(torrent => ({ torrentId, ...torrent }))
       .catch(error => retries ? jitter().then(() => torrent(torrentId, config, retries - 1)) : Promise.reject(error));
@@ -33,7 +33,7 @@ function search(imdbId, config = {}, retries = 1) {
   const page = config.page || 1;
 
   return Promises.first(defaultProxies
-      .map(proxyUrl => singleRequest(`${proxyUrl}/api/get-torrents?limit=${limit}&page=${page}&imdb_id=${id}`, config)))
+          .map(proxyUrl => singleRequest(`${proxyUrl}/api/get-torrents?limit=${limit}&page=${page}&imdb_id=${id}`, config)))
       .then(results => parseResults(results))
       .then(torrents => torrents.length === limit && page < maxPage
           ? search(imdbId, { ...config, page: page + 1 }).catch(() => [])
@@ -46,27 +46,21 @@ function browse(config = {}, retries = 1) {
   const page = config.page || 1;
 
   return Promises.first(defaultProxies
-      .map(proxyUrl => singleRequest(`${proxyUrl}/api/get-torrents?limit=${limit}&page=${page}`, config)))
+          .map(proxyUrl => singleRequest(`${proxyUrl}/api/get-torrents?limit=${limit}&page=${page}`, config)))
       .then(results => parseResults(results))
       .catch(error => retries ? jitter().then(() => browse(config, retries - 1)) : Promise.reject(error));
 }
 
 function singleRequest(requestUrl, config = {}) {
   const timeout = config.timeout || defaultTimeout;
-  const options = {
-    userAgent: getRandomUserAgent(),
-    open_timeout: timeout,
-    response_timeout: timeout,
-    read_timeout: timeout,
-    follow: 2
-  };
+  const options = { headers: { 'User-Agent': getRandomUserAgent() }, timeout: timeout };
 
-  return needle('get', requestUrl, options)
+  return axios.get(requestUrl, options)
       .then(response => {
-        if (!response.body) {
+        if (!response.data) {
           return Promise.reject(`No body: ${requestUrl}`);
         }
-        return Promise.resolve(response.body);
+        return Promise.resolve(response.data);
       });
 }
 

@@ -1,5 +1,5 @@
+const axios = require('axios');
 const cheerio = require('cheerio');
-const needle = require('needle');
 const moment = require('moment');
 const Promises = require('../../lib/promises');
 
@@ -45,8 +45,8 @@ function _getContent(endpoint, config = {},) {
       ? endpoint.replace(/https?:\/\/[^/]+/, baseUrl)
       : `${baseUrl}${endpoint}`;
 
-  return needle('get', url, { open_timeout: timeout })
-      .then((response) => response.body)
+  return axios.get(url, { timeout: timeout })
+      .then((response) => response.data)
       .then((body) => cheerio.load(body));
 }
 

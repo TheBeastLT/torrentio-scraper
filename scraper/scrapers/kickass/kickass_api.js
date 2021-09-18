@@ -1,5 +1,5 @@
+const axios = require('axios');
 const cheerio = require('cheerio');
-const needle = require('needle');
 const moment = require('moment');
 const decode = require('magnet-uri');
 const Promises = require('../../lib/promises');
@@ -28,7 +28,7 @@ function torrent(torrentId, config = {}, retries = 2) {
   const proxyList = config.proxyList || defaultProxies;
 
   return Promises.first(proxyList
-      .map((proxyUrl) => singleRequest(`${proxyUrl}/torrent/${torrentId}`, config)))
+          .map((proxyUrl) => singleRequest(`${proxyUrl}/torrent/${torrentId}`, config)))
       .then((body) => parseTorrentPage(body))
       .then((torrent) => ({ torrentId, ...torrent }))
       .catch((err) => torrent(torrentId, config, retries - 1));
@@ -43,7 +43,7 @@ function search(keyword, config = {}, retries = 2) {
   const category = config.category;
 
   return Promises.first(proxyList
-      .map((proxyUrl) => singleRequest(`${proxyUrl}/search/${keyword}/${page}/99/${category}`, config)))
+          .map((proxyUrl) => singleRequest(`${proxyUrl}/search/${keyword}/${page}/99/${category}`, config)))
       .then((body) => parseTableBody(body))
       .catch((err) => search(keyword, config, retries - 1));
 }
@@ -57,18 +57,18 @@ function browse(config = {}, retries = 2) {
   const category = config.category;
 
   return Promises.first(proxyList
-      .map((proxyUrl) => singleRequest(`${proxyUrl}/category/${category}/page/${page}`, config)))
+          .map((proxyUrl) => singleRequest(`${proxyUrl}/category/${category}/page/${page}`, config)))
       .then((body) => parseTableBody(body))
       .catch((err) => browse(config, retries - 1));
 }
 
 function singleRequest(requestUrl, config = {}) {
   const timeout = config.timeout || defaultTimeout;
-  const options = { open_timeout: timeout, follow: 2 };
+  const options = { timeout: timeout };
 
-  return needle('get', requestUrl, options)
+  return axios.get(requestUrl, options)
       .then((response) => {
-        const body = response.body;
+        const body = response.data;
         if (!body) {
           throw new Error(`No body: ${requestUrl}`);
         } else if (body.includes('Access Denied')) {

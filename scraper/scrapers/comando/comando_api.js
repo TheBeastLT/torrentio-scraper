@@ -1,8 +1,7 @@
-const needle = require("needle")
+const axios = require('axios');
 const moment = require("moment")
 const cheerio = require("cheerio");
 const decode = require('magnet-uri');
-const Promises = require('../../lib/promises');
 const { escapeHTML } = require('../../lib/metadata');
 const { getRandomUserAgent } = require('../../lib/requestHelper');
 const { isPtDubbed, sanitizePtName, sanitizePtLanguages, sanitizePtOriginalName } = require('../scraperHelper')
@@ -63,11 +62,11 @@ function browse(config = {}, retries = 2) {
 
 function singleRequest(requestUrl, config = {}) {
   const timeout = config.timeout || defaultTimeout;
-  const options = { userAgent: getRandomUserAgent(), open_timeout: timeout, follow: 2 };
+  const options = { headers: { 'User-Agent': getRandomUserAgent() }, timeout: timeout };
 
-  return needle('get', requestUrl, options)
+  return axios.get(requestUrl, options)
       .then((response) => {
-        const body = response.body;
+        const body = response.data;
         if (!body) {
           throw new Error(`No body: ${requestUrl}`);
         } else if (body.includes('502: Bad gateway') ||

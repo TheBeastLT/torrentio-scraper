@@ -8,14 +8,17 @@ function getRandomUserAgent() {
 function defaultOptionsWithProxy() {
   if (process.env.PROXY_HOST && process.env.PROXY_TYPE) {
     return {
-      proxy: process.env.PROXY_HOST,
+      proxy: {
+        host: process.env.PROXY_HOST.match(/\/\/(.*):/)[1],
+        port: process.env.PROXY_HOST.match(/:(\d+)/)[1]
+      },
       headers: {
         'user-agent': getRandomUserAgent(),
         'proxy-type': process.env.PROXY_TYPE
       }
     }
   }
-  return { userAgent: getRandomUserAgent() };
+  return { headers: { 'user-agent': getRandomUserAgent() } };
 }
 
 module.exports = { getRandomUserAgent, defaultOptionsWithProxy };

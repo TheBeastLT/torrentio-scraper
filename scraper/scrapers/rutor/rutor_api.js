@@ -1,5 +1,5 @@
+const axios = require('axios');
 const cheerio = require('cheerio');
-const needle = require('needle');
 const moment = require('moment');
 const decode = require('magnet-uri');
 const { defaultOptionsWithProxy } = require('../../lib/requestHelper');
@@ -57,13 +57,13 @@ function files(torrentId) {
 }
 
 function singleRequest(requestUrl) {
-  const options = { ...defaultOptionsWithProxy(), open_timeout: defaultTimeout, follow: 2 };
+  const options = { ...defaultOptionsWithProxy(), timeout: defaultTimeout };
 
-  return needle('get', requestUrl, options)
+  return axios.get(requestUrl, options)
       .then((response) => {
-        const body = response.body;
+        const body = response.data;
         if (!body) {
-          throw new Error(`No body: ${requestUrl} with status ${response.statusCode}`);
+          throw new Error(`No body: ${requestUrl} with status ${response.status}`);
         } else if (body.includes('Access Denied')) {
           console.log(`Access Denied: ${requestUrl}`);
           throw new Error(`Access Denied: ${requestUrl}`);

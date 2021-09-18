@@ -1,5 +1,5 @@
+const axios = require('axios');
 const moment = require('moment');
-const needle = require('needle');
 const Bottleneck = require('bottleneck');
 const { ungzip } = require('node-gzip');
 const LineByLineReader = require('line-by-line');
@@ -60,7 +60,7 @@ async function scrape() {
       }
 
       limiter.schedule(() => processTorrentRecord(torrent)
-          .catch((error) => console.log(`failed ${torrent.title} due: ${error}`)))
+              .catch((error) => console.log(`failed ${torrent.title} due: ${error}`)))
           .then(() => limiter.empty())
           .then((empty) => empty && lr.resume())
           .then(() => entriesProcessed++);
@@ -160,8 +160,8 @@ function downloadDump(dump) {
   }
 
   console.log('downloading dump file...');
-  return needle('get', dump.url, { open_timeout: 2000, output: '/tmp/tpb_dump.gz' })
-      .then((response) => response.body)
+  return axios.get(dump.url, { timeout: 2000, responseType: 'stream' })
+      .then((response) => response.data)
       .then((body) => {
         console.log('unzipping dump file...');
         return ungzip(body);

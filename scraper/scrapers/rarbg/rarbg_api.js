@@ -1,6 +1,7 @@
-const needle = require('needle');
+const axios = require('axios');
 const decode = require('magnet-uri');
 const Promises = require('../../lib/promises');
+const { getRandomUserAgent } = require("../../lib/requestHelper");
 
 const baseUrl = 'https://torrentapi.org/pubapi_v2.php';
 const appId = 'torrentio-addon';
@@ -22,6 +23,7 @@ const Options = {
     MOVIES_X265_4K_HDR: [52],
     MOVIES_FULL_BD: [42],
     MOVIES_BD_REMUX: [46],
+    MOVIES_HIGH_RES: [47, 50, 51, 52, 46],
     TV_EPISODES: [18],
     TV_UHD_EPISODES: [49],
     TV_HD_EPISODES: [41],
@@ -84,33 +86,43 @@ function browse(params = {}) {
   return singleRequest(parameters).then(results => parseResults(results));
 }
 
-async function singleRequest(params = {}, config = {}, retries = 10) {
+async function singleRequest(params = {}, config = {}, retries = 15) {
   const timeout = config.timeout || defaultTimeout;
-  const options = { open_timeout: timeout, follow: 2 };
+  const headers = {
+    'user-agent': getRandomUserAgent(),
+    'accept-encoding': 'gzip, deflate',
+    'accept-language': 'en-GB,en;q=0.9,en-US;q=0.8,lt;q=0.7,ar;q=0.6,fr;q=0.5,de;q=0.4'
+  };
   params.token = await getToken();
   params.app_id = appId;
 
   Object.keys(params)
       .filter(key => params[key] === undefined || params[key] === null)
       .forEach(key => delete params[key]);
-
-  return needle('get', baseUrl, params, options)
+  const options = { headers, timeout, params };
+  return axios.get(baseUrl, options)
       .then(response => {
-        if (response.body && response.body.error_code === 4) {
+        if (response.data && response.data.error_code === 4) {
           // token expired
           token = undefined;
           return singleRequest(params, config);
         }
-        if ((!response.body || !response.body.length || [5, 20].includes(response.body.error_code)) && retries > 0) {
+        if ((!response.data || !response.data.length || [5, 20].includes(response.data.error_code)) && retries > 0) {
           // too many requests
           return Promises.delay(3000).then(() => singleRequest(params, config, retries - 1));
         }
-        if (response.statusCode !== 200 || (response.body && response.body.error)) {
+        if (response.status !== 200 || (response.data && response.data.error)) {
           // something went wrong
-          return Promise.reject(response.body || `Failed RARGB request with status=${response.statusCode}`);
+          return Promise.reject(response.data || `Failed RARGB request with status=${response.status}`);
         }
 
-        return response.body;
+        return response.data;
+      })
+      .catch(error => {
+        if (error.response && [429].includes(error.response.status) && retries > 0) {
+          return Promises.delay(3000).then(() => singleRequest(params, config, retries - 1));
+        }
+        return Promise.reject(error);
       });
 }
 
@@ -137,9 +149,10 @@ function parseResult(result) {
 
 async function getToken() {
   if (!token) {
-    const options = { open_timeout: defaultTimeout };
-    token = await needle('get', baseUrl, { get_token: 'get_token', app_id: appId }, options)
-        .then(response => response.body.token);
+    const params = { get_token: 'get_token', app_id: appId };
+    const options = { timeout: defaultTimeout, params };
+    token = await axios.get(baseUrl, options)
+        .then(response => response.data.token);
   }
   return token;
 }

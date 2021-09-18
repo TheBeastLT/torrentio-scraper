@@ -1,4 +1,4 @@
-const needle = require('needle');
+const axios = require('axios');
 const magnet = require('magnet-uri');
 const { getRandomUserAgent } = require('../lib/requestHelper');
 const { getTorrent } = require('../lib/repository');
@@ -48,8 +48,8 @@ async function initBestTrackers() {
 
 async function getBestTrackers(retry = 2) {
   const options = { timeout: 30000, headers: { 'User-Agent': getRandomUserAgent() } };
-  return needle('get', TRACKERS_URL, options)
-      .then(response => response.body && response.body.trim())
+  return axios.get(TRACKERS_URL, options)
+      .then(response => response.data && response.data.trim())
       .then(body => body && body.split('\n\n') || [])
       .catch(error => {
         if (retry === 0) {

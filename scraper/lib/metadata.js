@@ -1,12 +1,10 @@
-const needle = require('needle');
+const axios = require('axios');
 const nameToImdb = require('name-to-imdb');
 const googleIt = require('google-it');
 const googleSr = require('google-sr');
-const bing = require('nodejs-bing');
 const he = require('he');
 const { cacheWrapImdbId, cacheWrapKitsuId, cacheWrapMetadata } = require('./cache');
 const { Type } = require('./types');
-const { getRandomUserAgent } = require('./requestHelper');
 
 const CINEMETA_URL = 'https://v3-cinemeta.strem.io';
 const KITSU_URL = 'https://anime-kitsu.strem.fun';
@@ -32,9 +30,9 @@ function getMetadata(id, type = Type.SERIES) {
 }
 
 function _requestMetadata(url) {
-  return needle('get', url, { open_timeout: TIMEOUT })
+  return axios.get(url, { timeout: TIMEOUT })
       .then((response) => {
-        const body = response.body;
+        const body = response.data;
         if (body && body.meta && (body.meta.imdb_id || body.meta.kitsu_id)) {
           return {
             kitsuId: body.meta.kitsu_id,
@@ -115,7 +113,6 @@ async function getImdbId(info, type) {
         //   .then(results => results.length ? results : Promise.reject('No results'))
       }).catch(() => googleSr(query)
           .then(response => response.searchResults.length ? response.searchResults : Promise.reject('No results'))
-          // .catch(() => bing.web(query))
           .then(results => results
               .map(result => result.link)
               .find(result => result.includes('imdb.com/title/')))
@@ -132,9 +129,9 @@ async function getKitsuId(info) {
   const query = encodeURIComponent(key);
 
   return cacheWrapKitsuId(key,
-      () => needle('get', `${KITSU_URL}/catalog/series/kitsu-anime-list/search=${query}.json`, { open_timeout: 60000 })
+      () => axios.get(`${KITSU_URL}/catalog/series/kitsu-anime-list/search=${query}.json`, { timeout: 60000 })
           .then((response) => {
-            const body = response.body;
+            const body = response.data;
             if (body && body.metas && body.metas.length) {
               return body.metas[0].id.replace('kitsu:', '');
             } else {
@@ -147,8 +144,8 @@ async function isEpisodeImdbId(imdbId) {
   if (!imdbId) {
     return false;
   }
-  return needle('get', `https://www.imdb.com/title/${imdbId}/`, { open_timeout: 10000, follow: 2 })
-      .then(response => !!(response.body && response.body.includes('video.episode')))
+  return axios.get(`https://www.imdb.com/title/${imdbId}/`, { timeout: 10000 })
+      .then(response => !!(response.data && response.data.includes('video.episode')))
       .catch((err) => false);
 }
 
