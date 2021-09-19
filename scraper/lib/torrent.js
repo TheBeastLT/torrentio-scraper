@@ -113,12 +113,12 @@ async function filesFromTorrentFile(torrent) {
     return Promise.reject(new Error("no torrentLink"));
   }
 
-  return axios.get(torrent.torrentLink, { timeout: 10000 })
+  return axios.get(torrent.torrentLink, { timeout: 10000, responseType: 'arraybuffer' })
       .then((response) => {
         if (!response.data || response.status !== 200) {
           throw new Error('torrent not found')
         }
-        return response.body
+        return response.data
       })
       .then((body) => parseTorrent(body))
       .then((info) => info.files.map((file, fileId) => ({
