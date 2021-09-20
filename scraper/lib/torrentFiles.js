@@ -106,7 +106,7 @@ async function getSeriesTorrentContent(torrent) {
 
 async function mapSeriesEpisode(file, torrent, files) {
   if (!file.episodes && !file.kitsuEpisodes) {
-    if (files.some(otherFile => otherFile.episodes || otherFile.kitsuEpisodes) || parse(torrent.title).seasons) {
+    if (files.length === 1 || files.some(f => f.episodes || f.kitsuEpisodes) || parse(torrent.title).seasons) {
       return Promise.resolve({
         infoHash: torrent.infoHash,
         fileIndex: file.fileIndex,
