@@ -5,7 +5,7 @@ const { escapeHTML } = require('../../lib/metadata');
 const { getRandomUserAgent } = require('../../lib/requestHelper');
 const { isPtDubbed, sanitizePtName, sanitizePtOriginalName, sanitizePtLanguages } = require('../scraperHelper')
 
-const defaultTimeout = 10000;
+const defaultTimeout = 30000;
 const maxSearchPage = 50
 
 const baseUrl = 'https://ondebaixa.com';
@@ -74,7 +74,8 @@ function singleRequest(requestUrl, config = {}) {
           throw new Error(`Invalid body contents: ${requestUrl}`);
         }
         return body;
-      });
+      })
+      .catch(error => Promise.reject(error.message || error));
 }
 
 function parseTableBody(body) {

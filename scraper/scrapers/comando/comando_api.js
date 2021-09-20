@@ -74,7 +74,8 @@ function singleRequest(requestUrl, config = {}) {
           throw new Error(`Invalid body contents: ${requestUrl}`);
         }
         return body;
-      });
+      })
+      .catch(error => Promise.reject(error.message || error));
 }
 
 function parseTableBody(body) {

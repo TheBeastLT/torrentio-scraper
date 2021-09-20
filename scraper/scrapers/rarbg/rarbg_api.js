@@ -122,7 +122,7 @@ async function singleRequest(params = {}, config = {}, retries = 15) {
         if (error.response && [429].includes(error.response.status) && retries > 0) {
           return Promises.delay(3000).then(() => singleRequest(params, config, retries - 1));
         }
-        return Promise.reject(error);
+        return Promise.reject(error.message || error);
       });
 }
 
