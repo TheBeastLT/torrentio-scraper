@@ -5,6 +5,7 @@ const decode = require('magnet-uri');
 const Promises = require('../../lib/promises');
 const { escapeHTML } = require('../../lib/metadata');
 const { getRandomUserAgent } = require('../../lib/requestHelper');
+const { parseSize } = require("../scraperHelper");
 
 const defaultProxies = [
   'https://1337x.to'
@@ -162,21 +163,6 @@ function parseDate(dateString) {
     return Sugar.Date.create('10 years ago');
   }
   return Sugar.Date.create(dateString);
-}
-
-function parseSize(sizeText) {
-  if (!sizeText) {
-    return undefined;
-  }
-  let scale = 1;
-  if (sizeText.includes('GB')) {
-    scale = 1024 * 1024 * 1024
-  } else if (sizeText.includes('MB')) {
-    scale = 1024 * 1024;
-  } else if (sizeText.includes('KB')) {
-    scale = 1024;
-  }
-  return Math.floor(parseFloat(sizeText.replace(/,/g, '')) * scale);
 }
 
 module.exports = { torrent, search, browse, Categories };

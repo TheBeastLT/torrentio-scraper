@@ -1,7 +1,6 @@
 const moment = require('moment');
 const Promises = require('./promises')
-const { Sequelize, DataTypes, fn, col, literal } = require('sequelize');
-const Op = Sequelize.Op;
+const { Sequelize, Op, DataTypes, fn, col, literal } = require('sequelize');
 
 const DATABASE_URI = process.env.DATABASE_URI;
 

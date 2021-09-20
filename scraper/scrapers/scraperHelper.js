@@ -23,4 +23,19 @@ function sanitizePtLanguages(languages) {
       .trim();
 }
 
-module.exports = { isPtDubbed, sanitizePtName, sanitizePtOriginalName, sanitizePtLanguages }
+function parseSize(sizeText) {
+  if (!sizeText) {
+    return undefined;
+  }
+  let scale = 1;
+  if (/Gi?B|Go/.test(sizeText)) {
+    scale = 1024 * 1024 * 1024
+  } else if (/Mi?B|Mo/.test(sizeText)) {
+    scale = 1024 * 1024;
+  } else if (/[Kk]i?B|Ko/.test(sizeText)) {
+    scale = 1024;
+  }
+  return Math.floor(parseFloat(sizeText.replace(/[',]/g, '')) * scale);
+}
+
+module.exports = { parseSize, isPtDubbed, sanitizePtName, sanitizePtOriginalName, sanitizePtLanguages }

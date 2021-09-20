@@ -68,6 +68,11 @@ const Providers = {
       key: 'ondebaixa',
       label: 'OndeBaixa',
       foreign: true
+    },
+    {
+      key: 'torrent9',
+      label: 'Torrent9',
+      foreign: true
     }
   ]
 };

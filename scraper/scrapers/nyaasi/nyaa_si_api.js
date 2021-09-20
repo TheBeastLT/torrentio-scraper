@@ -1,4 +1,5 @@
 const { si } = require('nyaapi')
+const { parseSize } = require("../scraperHelper");
 
 const Categories = {
   ANIME: {
@@ -60,21 +61,6 @@ function parseTorrent(torrent) {
     uploadDate: new Date(torrent.date),
     category: torrent.sub_category,
   }
-}
-
-function parseSize(sizeText) {
-  if (!sizeText) {
-    return undefined;
-  }
-  let scale = 1;
-  if (sizeText.includes('GiB')) {
-    scale = 1024 * 1024 * 1024
-  } else if (sizeText.includes('MiB')) {
-    scale = 1024 * 1024;
-  } else if (sizeText.includes('KiB') || sizeText.includes('kB')) {
-    scale = 1024;
-  }
-  return Math.floor(parseFloat(sizeText.replace(/[',]/g, '')) * scale);
 }
 
 module.exports = { torrent, search, browse, Categories };

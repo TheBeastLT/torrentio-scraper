@@ -1,8 +1,10 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
 const moment = require('moment');
+const { decode } = require("magnet-uri");
 const Promises = require('../../lib/promises');
 const { getRandomUserAgent } = require('./../../lib/requestHelper');
+const { parseSize } = require("../scraperHelper");
 
 const defaultProxies = [
   'https://eztv.re'
@@ -93,10 +95,11 @@ function parseTorrentPage(body) {
       reject(new Error('Failed loading body'));
     }
     const content = $('table[class="forum_header_border_normal"]');
+    const magnetLink = content.find('a[title="Magnet Link"]').attr('href');
     const torrent = {
       name: content.find('h1 > span').text().replace(/EZTV$/, ''),
-      infoHash: content.find('b:contains(\'Torrent Hash:\')')[0].nextSibling.data.trim().toLowerCase(),
-      magnetLink: content.find('a[title="Magnet Link"]').attr('href'),
+      infoHash: decode(magnetLink).infoHash,
+      magnetLink: magnetLink,
       torrentLink: content.find('a[title="Download Torrent"]').attr('href'),
       seeders: parseInt(content.find('span[class="stat_red"]').first().text(), 10) || 0,
       size: parseSize(content.find('b:contains(\'Filesize:\')')[0].nextSibling.data),
@@ -105,21 +108,6 @@ function parseTorrentPage(body) {
     };
     resolve(torrent);
   });
-}
-
-function parseSize(sizeText) {
-  if (!sizeText) {
-    return undefined;
-  }
-  let scale = 1;
-  if (sizeText.includes('GB')) {
-    scale = 1024 * 1024 * 1024
-  } else if (sizeText.includes('MB')) {
-    scale = 1024 * 1024;
-  } else if (sizeText.includes('KB') || sizeText.includes('kB')) {
-    scale = 1024;
-  }
-  return Math.floor(parseFloat(sizeText.replace(/[',]/g, '')) * scale);
 }
 
 function jitter() {

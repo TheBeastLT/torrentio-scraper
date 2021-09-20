@@ -4,6 +4,7 @@ const moment = require('moment');
 const decode = require('magnet-uri');
 const Promises = require('../../lib/promises');
 const { getRandomUserAgent } = require('../../lib/requestHelper');
+const { parseSize } = require("../scraperHelper");
 
 const defaultProxies = [
   // 'https://torrentgalaxy.to',
@@ -155,21 +156,6 @@ function parseTorrentPage(body) {
     };
     resolve(torrent);
   });
-}
-
-function parseSize(sizeText) {
-  if (!sizeText) {
-    return undefined;
-  }
-  let scale = 1;
-  if (sizeText.includes('GB')) {
-    scale = 1024 * 1024 * 1024
-  } else if (sizeText.includes('MB')) {
-    scale = 1024 * 1024;
-  } else if (sizeText.includes('KB') || sizeText.includes('kB')) {
-    scale = 1024;
-  }
-  return Math.floor(parseFloat(sizeText.replace(/[',]/g, '')) * scale);
 }
 
 function parseDate(dateString) {
