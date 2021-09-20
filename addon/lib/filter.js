@@ -30,11 +30,6 @@ const Providers = {
       label: 'TorrentGalaxy'
     },
     {
-      key: 'rutor',
-      label: 'Rutor',
-      foreign: '🇷🇺'
-    },
-    {
       key: 'horriblesubs',
       label: 'HorribleSubs',
       anime: true
@@ -48,6 +43,11 @@ const Providers = {
       key: 'nyaapantsu',
       label: 'NyaaPantsu',
       anime: true
+    },
+    {
+      key: 'rutor',
+      label: 'Rutor',
+      foreign: '🇷🇺'
     },
     {
       key: 'comando',
