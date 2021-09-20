@@ -2,7 +2,7 @@ name: Deploy Addon
 
 on:
   push:
-    branches: disabled
+    branches: master
     paths:
       - 'addon/**'
 
