@@ -32,7 +32,7 @@ const Providers = {
     {
       key: 'rutor',
       label: 'Rutor',
-      foreign: true
+      foreign: '🇷🇺'
     },
     {
       key: 'horriblesubs',
@@ -52,27 +52,27 @@ const Providers = {
     {
       key: 'comando',
       label: 'Comando',
-      foreign: true
+      foreign: '🇵🇹'
     },
     {
       key: 'comoeubaixo',
       label: 'ComoEuBaixo',
-      foreign: true
+      foreign: '🇵🇹'
     },
     {
       key: 'lapumia',
       label: 'Lapumia',
-      foreign: true
+      foreign: '🇵🇹'
     },
     {
       key: 'ondebaixa',
       label: 'OndeBaixa',
-      foreign: true
+      foreign: '🇵🇹'
     },
     {
       key: 'torrent9',
       label: 'Torrent9',
-      foreign: true
+      foreign: '🇫🇷'
     }
   ]
 };

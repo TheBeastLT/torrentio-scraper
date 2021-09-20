@@ -213,7 +213,7 @@ function landingTemplate(manifest, config = {}) {
          <a href="mailto:${manifest.contactEmail}">${manifest.contactEmail}</a>
       </div>` : '';
   const providersHTML = Providers.options
-      .map(provider => `<option value="${provider.key}">${provider.label}</option>`)
+      .map(provider => `<option value="${provider.key}">${provider.foreign || ''}${provider.label}</option>`)
       .join('\n');
   const sortOptionsHTML = Object.values(SortOptions.options)
       .map((option, i) => `<option value="${option.key}" ${i === 0 ? 'selected' : ''}>${option.description}</option>`)
