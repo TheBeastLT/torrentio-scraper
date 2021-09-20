@@ -118,7 +118,8 @@ function getName(details) {
     return nameElement.contents().filter((_, elem) => elem.type === 'text').text()
   }
   const description = nameElement.parent().text();
-  const nameMatch = description.match(/(?:[A-Z]+|[0-9]+)[^A-Z ]*\.([\w-]+\.){3,}\w+(?:-\w+)?(?=[A-Z])/);
+  const nameMatch = description.match(
+      /(?:[A-Z]+[^A-Z0-9]*|[A-Z0-9-]+(?:[a-z]+\d+)?)\.([\w-]+\.){3,}\w+(?:-\w+)?(?=[A-Z])/);
   return nameMatch && nameMatch[0];
 }
 
