@@ -112,12 +112,12 @@ function parseTorrentPage(body) {
     const category = details.find('span:contains(\'Gêneros: \')').next().html()
     const torrents = magnets.map(magnetLink => {
       const decodedMagnet = decode(magnetLink);
-      const name = escapeHTML(decodedMagnet.name || '').replace(/\+/g, ' ');
+      const name = sanitizePtName(escapeHTML(decodedMagnet.name || '').replace(/\+/g, ' '));
       const originalTitle = details.find('span:contains(\'Título Original: \')').next().text().trim();
       const year = details.find('span:contains(\'Ano de Lançamento: \')').next().text().trim();
-      const fallbackTitle = `${originalTitle} ${year}`;
+      const fallBackTitle = `${originalTitle.trim()} ${year.trim()} ${name.trim()}`;
       return {
-        title: name ? sanitizePtName(name) : fallbackTitle,
+        title: name.length > 5 ? name : fallBackTitle,
         originalName: sanitizePtOriginalName(originalTitle),
         year: year,
         infoHash: decodedMagnet.infoHash,

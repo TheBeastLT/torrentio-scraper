@@ -113,13 +113,12 @@ function parseTorrentPage(body) {
     const category = details.find('strong:contains(\'Gêneros: \')').next().attr('href').split('/')[0]
     const torrents = magnets.map(magnetLink => {
       const decodedMagnet = decode(magnetLink);
-      const name = escapeHTML(decodedMagnet.name || '').replace(/\+/g, ' ');
-      const sanitizedTitle = sanitizePtName(name);
+      const name = sanitizePtName(escapeHTML(decodedMagnet.name || '').replace(/\+/g, ' '));
       const originalTitle = details.find('strong:contains(\'Baixar\')')[0].nextSibling.nodeValue.split('-')[0];
       const year = details.find('strong:contains(\'Data de Lançamento: \')').next().text().trim();
-      const fallBackTitle = `${originalTitle.trim()} ${year.trim()} ${sanitizedTitle.trim()}`;
+      const fallBackTitle = `${originalTitle.trim()} ${year.trim()} ${name.trim()}`;
       return {
-        title: sanitizedTitle.length > 5 ? sanitizedTitle : fallBackTitle,
+        title: name.length > 5 ? name : fallBackTitle,
         infoHash: decodedMagnet.infoHash,
         magnetLink: magnetLink,
         category: category,
