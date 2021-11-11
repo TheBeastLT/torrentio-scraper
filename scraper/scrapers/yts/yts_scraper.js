@@ -6,7 +6,7 @@ const repository = require('../../lib/repository');
 const { createTorrentEntry, checkAndUpdateTorrent } = require('../../lib/torrentEntries');
 
 const NAME = 'YTS';
-const UNTIL_PAGE = 2;
+const UNTIL_PAGE = 10;
 
 const limiter = new Bottleneck({ maxConcurrent: 10 });
 
