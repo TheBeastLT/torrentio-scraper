@@ -102,9 +102,6 @@ function typeMapping() {
 }
 
 function untilPage(category) {
-  if (lapumia.Categories.TV === category) {
-    return 5;
-  }
   if (lapumia.Categories.ANIME === category) {
     return 2;
   }

@@ -8,6 +8,7 @@ const baseUrl = 'http://www.rutor.info';
 const defaultTimeout = 10000;
 
 const Categories = {
+  ALL: '0',
   FOREIGN_FILMS: '1',
   RUSSIAN_FILMS: '5',
   SCIENCE_FILMS: '12',

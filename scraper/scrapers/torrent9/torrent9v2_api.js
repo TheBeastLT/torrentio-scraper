@@ -72,14 +72,12 @@ function parseTableBody(body) {
     $('tr').each((i, element) => {
       const row = $(element);
       const titleElement = row.find('td a');
-      try {
+      if (titleElement.length) {
         torrents.push({
           title: titleElement.attr('title').trim(),
           torrentId: titleElement.attr('href').match(/torrent\/(.*)/)[1],
           seeders: parseInt(row.find('span.seed_ok').first().text()),
         });
-      } catch (e) {
-        console.error('Failed parsing TorrentGalaxy row: ', e);
       }
     });
 

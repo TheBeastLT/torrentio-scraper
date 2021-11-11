@@ -141,8 +141,10 @@ function parseOriginalName(originalNameElem) {
   if (!originalNameElem[0]) {
     return '';
   }
-  const originalName = originalNameElem.next().text().trim() || originalNameElem[0].nextSibling.nodeValue;
-  return originalName.replace(/: ?/, '');
+  const originalName = originalNameElem.next().text()
+      || originalNameElem[0].nextSibling.nodeValue
+      || originalNameElem.text();
+  return originalName.replace(/[^:]*: ?/, '').trim();
 }
 
 function parseCategory(categorys) {

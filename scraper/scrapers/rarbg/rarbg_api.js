@@ -6,6 +6,7 @@ const { getRandomUserAgent } = require("../../lib/requestHelper");
 const baseUrl = 'https://torrentapi.org/pubapi_v2.php';
 const appId = 'torrentio-addon';
 const defaultTimeout = 30000;
+const retryDelay = 3000;
 
 let token;
 
@@ -109,7 +110,7 @@ async function singleRequest(params = {}, config = {}, retries = 15) {
         }
         if ((!response.data || !response.data.length || [5, 20].includes(response.data.error_code)) && retries > 0) {
           // too many requests
-          return Promises.delay(3000).then(() => singleRequest(params, config, retries - 1));
+          return Promises.delay(retryDelay).then(() => singleRequest(params, config, retries - 1));
         }
         if (response.status !== 200 || (response.data && response.data.error)) {
           // something went wrong
@@ -120,7 +121,7 @@ async function singleRequest(params = {}, config = {}, retries = 15) {
       })
       .catch(error => {
         if (error.response && [429].includes(error.response.status) && retries > 0) {
-          return Promises.delay(3000).then(() => singleRequest(params, config, retries - 1));
+          return Promises.delay(retryDelay).then(() => singleRequest(params, config, retries - 1));
         }
         return Promise.reject(error.message || error);
       });

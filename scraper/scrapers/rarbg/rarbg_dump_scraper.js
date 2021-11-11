@@ -12,14 +12,10 @@ const allowedCategories = [
   rarbg.Options.category.MOVIES_XVID,
   rarbg.Options.category.MOVIES_XVID_720P,
   rarbg.Options.category.MOVIES_X265_1080P,
-  rarbg.Options.category.MOVIES_X265_4K,
-  rarbg.Options.category.MOVIES_X265_4K_HDR,
   rarbg.Options.category.MOVIES_X264,
   rarbg.Options.category.MOVIES_X264_720P,
   rarbg.Options.category.MOVIES_X264_1080P,
-  rarbg.Options.category.MOVIES_X264_3D,
-  rarbg.Options.category.MOVIES_X264_4K,
-  rarbg.Options.category.MOVIES_BD_REMUX,
+  rarbg.Options.category.MOVIES_HIGH_RES,
   rarbg.Options.category.TV_EPISODES,
   rarbg.Options.category.TV_UHD_EPISODES,
   rarbg.Options.category.TV_HD_EPISODES
@@ -32,8 +28,8 @@ async function scrape() {
   //const allImdbIds = [].concat(movieImdbIds).concat(seriesImdbIds);
 
   return Promise.all(
-      seriesImdbIds.map(imdbId => limiter.schedule(() => getTorrentsForImdbId(imdbId))
-          .then(torrents => Promise.all(torrents.map(t => entryLimiter.schedule(() => processTorrentRecord(t)))))))
+          seriesImdbIds.map(imdbId => limiter.schedule(() => getTorrentsForImdbId(imdbId))
+              .then(torrents => Promise.all(torrents.map(t => entryLimiter.schedule(() => processTorrentRecord(t)))))))
       .then(() => console.log(`[${moment()}] finished ${NAME} dump scrape`));
 }
 
