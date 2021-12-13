@@ -39,12 +39,12 @@ async function _getInstantAvailable(hashes, apiKey, retries = 3, maxChunkSize = 
   const RD = new RealDebridClient(apiKey, getDefaultOptions());
   const hashBatches = chunkArray(missingHashes, maxChunkSize)
   return Promise.all(hashBatches.map(batch => RD.torrents.instantAvailability(batch)
-      .then(response => {
-        if (typeof response !== 'object') {
-          return Promise.reject(new Error('RD returned non JSON response: ' + response));
-        }
-        return processAvailabilityResults(response);
-      })))
+          .then(response => {
+            if (typeof response !== 'object') {
+              return Promise.reject(new Error('RD returned non JSON response: ' + response));
+            }
+            return processAvailabilityResults(response);
+          })))
       .then(results => results.reduce((all, result) => Object.assign(all, result), {}))
       .then(results => cacheAvailabilityResults(results))
       .then(results => Object.assign(cachedResults, results))
@@ -53,7 +53,7 @@ async function _getInstantAvailable(hashes, apiKey, retries = 3, maxChunkSize = 
           return Promise.reject(BadTokenError);
         }
         if (!error && maxChunkSize !== 1) {
-          // sometimes RD dues to large response size respond with empty body. Reduce chunk size to reduce body
+          // sometimes due to large response size RD responds with an empty body. Reduce chunk size to reduce body
           console.log(`Reducing chunk size for availability request: ${hashes[0]}`);
           return _getInstantAvailable(hashes, apiKey, retries - 1, Math.ceil(maxChunkSize / 10));
         }
