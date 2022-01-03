@@ -63,7 +63,7 @@ async function processTorrentRecord(client, record) {
   }
 
   const foundTorrent = await api_limiter.schedule(() => client.torrent(record.torrentId)).catch(() => undefined);
-  if (!foundTorrent) {
+  if (!foundTorrent || !foundTorrent.infoHash) {
     console.warn(`Failed retrieving torrent ${record.torrentId}`);
     return record;
   }

@@ -103,7 +103,7 @@ function parseTorrentPage(body) {
     const languages = parse(name).languages;
     const torrent = {
       title: name.trim(),
-      infoHash: decode(magnetLink).infoHash,
+      infoHash: magnetLink ? decode(magnetLink).infoHash : undefined,
       magnetLink: magnetLink,
       torrentLink: torrentLink ? `${baseUrl}${torrentLink}` : undefined,
       seeders: parseInt(details.find('.movie-information ul:nth-of-type(1) li:nth-of-type(3)').text(), 10),
