@@ -4,34 +4,40 @@ const { Type } = require('../lib/types');
 const { isVideo } = require('../lib/extension');
 const StaticResponse = require('./static');
 const { getMagnetLink } = require('../lib/magnetHelper');
-const { BadTokenError } = require('./mochHelper');
+const { BadTokenError, chunkArray } = require('./mochHelper');
 
 const KEY = 'premiumize';
 
 async function getCachedStreams(streams, apiKey) {
   const options = await getDefaultOptions();
   const PM = new PremiumizeClient(apiKey, options);
+  return Promise.all(chunkArray(streams, 100)
+          .map(chunkedStreams => _getCachedStreams(PM, apiKey, chunkedStreams)))
+      .then(results => results.reduce((all, result) => Object.assign(all, result), {}));
+}
+
+async function _getCachedStreams(PM, apiKey, streams) {
   const hashes = streams.map(stream => stream.infoHash);
-  const available = await PM.cache.check(hashes)
+  return PM.cache.check(hashes)
       .catch(error => {
         if (error && error.message === 'customer_id and pin parameter missing or not logged in ') {
           return Promise.reject(BadTokenError);
         }
         console.warn('Failed Premiumize cached torrent availability request:', error);
         return undefined;
-      });
-  return available && streams
-      .reduce((mochStreams, stream, index) => {
-        const streamTitleParts = stream.title.replace(/\n👤.*/s, '').split('\n');
-        const fileName = streamTitleParts[streamTitleParts.length - 1];
-        const fileIndex = streamTitleParts.length === 2 ? stream.fileIdx : null;
-        const encodedFileName = encodeURIComponent(fileName);
-        mochStreams[stream.infoHash] = {
-          url: `${apiKey}/${stream.infoHash}/${encodedFileName}/${fileIndex}`,
-          cached: available.response[index]
-        };
-        return mochStreams;
-      }, {})
+      })
+      .then(available => streams
+          .reduce((mochStreams, stream, index) => {
+            const streamTitleParts = stream.title.replace(/\n👤.*/s, '').split('\n');
+            const fileName = streamTitleParts[streamTitleParts.length - 1];
+            const fileIndex = streamTitleParts.length === 2 ? stream.fileIdx : null;
+            const encodedFileName = encodeURIComponent(fileName);
+            mochStreams[stream.infoHash] = {
+              url: `${apiKey}/${stream.infoHash}/${encodedFileName}/${fileIndex}`,
+              cached: available && available.response[index]
+            };
+            return mochStreams;
+          }, {}));
 }
 
 async function getCatalog(apiKey, offset = 0) {
@@ -74,8 +80,8 @@ async function getFolderContents(PM, itemId, ip, folderPrefix = '') {
   return PM.folder.list(itemId, null, ip)
       .then(response => response.content)
       .then(contents => Promise.all(contents
-          .filter(content => content.type === 'folder')
-          .map(content => getFolderContents(PM, content.id, ip, [folderPrefix, content.name].join('/'))))
+              .filter(content => content.type === 'folder')
+              .map(content => getFolderContents(PM, content.id, ip, [folderPrefix, content.name].join('/'))))
           .then(otherContents => otherContents.reduce((a, b) => a.concat(b), []))
           .then(otherContents => contents
               .filter(content => content.type === 'file' && isVideo(content.name))
