@@ -1,11 +1,7 @@
 {
-  "name": "stremio-torrention",
+  "name": "stremio-torrentio-scraper",
   "version": "1.0.0",
   "main": "scraper/index.js",
-  "engines": {
-    "npm": "6.x",
-    "node": "12.x"
-  },
   "scripts": {
     "start": "node scraper/index.js"
   },
@@ -36,7 +32,6 @@
     "parse-torrent-title": "git://github.com/TheBeastLT/parse-torrent-title.git#8fd87b3bfc7aa04143edcd4f0112868bb77dce0f",
     "pg": "^8.7.1",
     "pg-hstore": "^2.3.4",
-    "real-debrid-api": "git://github.com/TheBeastLT/node-real-debrid.git#935a5c23ae809edbcd2a111526a7f74d6767c50d",
     "rutracker-api-2": "^1.10.0",
     "sequelize": "^5.21.5",
     "sugar-date": "^2.0.6",
