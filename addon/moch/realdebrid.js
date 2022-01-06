@@ -142,12 +142,12 @@ async function getItemMeta(itemId, apiKey, ip) {
       }))
 }
 
-async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex }) {
+async function resolve({ ip, isBrowser, apiKey, infoHash, cachedEntryInfo, fileIndex }) {
   console.log(`Unrestricting RealDebrid ${infoHash} [${fileIndex}]`);
   const options = await getDefaultOptions(ip);
   const RD = new RealDebridClient(apiKey, options);
 
-  return _resolve(RD, infoHash, cachedEntryInfo, fileIndex)
+  return _resolve(RD, infoHash, cachedEntryInfo, fileIndex, isBrowser)
       .catch(error => {
         if (accessDeniedError(error)) {
           console.log(`Access denied to RealDebrid ${infoHash} [${fileIndex}]`);
@@ -157,11 +157,11 @@ async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex }) {
       });
 }
 
-async function _resolve(RD, infoHash, cachedEntryInfo, fileIndex) {
+async function _resolve(RD, infoHash, cachedEntryInfo, fileIndex, isBrowser) {
   const torrentId = await _createOrFindTorrentId(RD, infoHash, cachedEntryInfo, fileIndex);
   const torrent = await _getTorrentInfo(RD, torrentId);
   if (torrent && statusReady(torrent.status)) {
-    return _unrestrictLink(RD, torrent, fileIndex);
+    return _unrestrictLink(RD, torrent, fileIndex, isBrowser);
   } else if (torrent && statusDownloading(torrent.status)) {
     console.log(`Downloading to RealDebrid ${infoHash} [${fileIndex}]...`);
     return StaticResponse.DOWNLOADING;
@@ -261,7 +261,7 @@ async function _openTorrent(RD, torrentId, pollCounter = 0, pollRate = 2000, max
           : torrent);
 }
 
-async function _unrestrictLink(RD, torrent, fileIndex) {
+async function _unrestrictLink(RD, torrent, fileIndex, isBrowser) {
   const targetFile = torrent.files.find(file => file.id === fileIndex + 1)
       || torrent.files.filter(file => file.selected).sort((a, b) => b.bytes - a.bytes)[0];
   if (!targetFile.selected) {
@@ -279,16 +279,22 @@ async function _unrestrictLink(RD, torrent, fileIndex) {
     return Promise.reject(`No RealDebrid links found for ${torrent.hash} [${fileIndex}]`);
   }
 
-  return _unrestrictFileLink(RD, fileLink, torrent, fileIndex);
+  return _unrestrictFileLink(RD, fileLink, torrent, fileIndex, isBrowser);
 }
 
-async function _unrestrictFileLink(RD, fileLink, torrent, fileIndex) {
+async function _unrestrictFileLink(RD, fileLink, torrent, fileIndex, isBrowser) {
   return RD.unrestrict.link(fileLink)
-      .then(response => response.download)
-      .then(unrestrictedLink => {
-        if (isArchive(unrestrictedLink)) {
+      .then(response => {
+        if (isArchive(response.download)) {
           return StaticResponse.FAILED_RAR;
         }
+        if (isBrowser && response.streamable) {
+          return RD.streaming.transcode(response.id)
+              .then(streamResponse => streamResponse.apple.full)
+        }
+        return response.download;
+      })
+      .then(unrestrictedLink => {
         console.log(`Unrestricted RealDebrid ${torrent.hash} [${fileIndex}] to ${unrestrictedLink}`);
         return unrestrictedLink;
       })

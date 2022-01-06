@@ -1,6 +1,7 @@
 const rateLimit = require('express-rate-limit');
 const { getRouter } = require('stremio-addon-sdk');
 const requestIp = require('request-ip');
+const userAgentParser = require('ua-parser-js');
 const addonInterface = require('./addon');
 const qs = require('querystring')
 const { manifest } = require('./lib/manifest');
@@ -78,13 +79,15 @@ router.get('/:configuration/:resource/:type/:id/:extra?.json', (req, res, next) 
 });
 
 router.get('/:moch/:apiKey/:infoHash/:cachedEntryInfo/:fileIndex/:filename?', (req, res) => {
+  const userAgent = req.headers['user-agent'] || '';
   const parameters = {
     mochKey: req.params.moch,
     apiKey: req.params.apiKey,
     infoHash: req.params.infoHash.toLowerCase(),
     fileIndex: isNaN(req.params.fileIndex) ? undefined : parseInt(req.params.fileIndex),
     cachedEntryInfo: req.params.cachedEntryInfo,
-    ip: requestIp.getClientIp(req)
+    ip: requestIp.getClientIp(req),
+    isBrowser: !userAgent.includes('Stremio') && !!userAgentParser(userAgent).browser.name
   }
   moch.resolve(parameters)
       .then(url => {

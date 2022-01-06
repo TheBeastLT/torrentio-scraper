@@ -89,17 +89,12 @@ async function getFolderContents(PM, itemId, ip, folderPrefix = '') {
               .concat(otherContents)));
 }
 
-async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex }) {
+async function resolve({ ip, isBrowser, apiKey, infoHash, cachedEntryInfo, fileIndex }) {
   console.log(`Unrestricting Premiumize ${infoHash} [${fileIndex}] for IP ${ip}`);
   const options = await getDefaultOptions();
   const PM = new PremiumizeClient(apiKey, options);
-
-  const cachedLink = await _getCachedLink(PM, infoHash, cachedEntryInfo, fileIndex, ip).catch(() => undefined);
-  if (cachedLink) {
-    return cachedLink;
-  }
-
-  return _resolve(PM, infoHash, cachedEntryInfo, fileIndex, ip)
+  return _getCachedLink(PM, infoHash, cachedEntryInfo, fileIndex, ip, isBrowser)
+      .catch(() => _resolve(PM, infoHash, cachedEntryInfo, fileIndex, ip, isBrowser))
       .catch(error => {
         if (error && error.message && error.message.includes('purchase')) {
           console.log(`Access denied to Premiumize ${infoHash} [${fileIndex}]`);
@@ -109,10 +104,10 @@ async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex }) {
       });
 }
 
-async function _resolve(PM, infoHash, cachedEntryInfo, fileIndex, ip) {
+async function _resolve(PM, infoHash, cachedEntryInfo, fileIndex, ip, isBrowser) {
   const torrent = await _createOrFindTorrent(PM, infoHash);
   if (torrent && statusReady(torrent.status)) {
-    return _getCachedLink(PM, infoHash, cachedEntryInfo, fileIndex, ip);
+    return _getCachedLink(PM, infoHash, cachedEntryInfo, fileIndex, ip, isBrowser);
   } else if (torrent && statusDownloading(torrent.status)) {
     console.log(`Downloading to Premiumize ${infoHash} [${fileIndex}]...`);
     return StaticResponse.DOWNLOADING;
@@ -123,7 +118,7 @@ async function _resolve(PM, infoHash, cachedEntryInfo, fileIndex, ip) {
   return Promise.reject(`Failed Premiumize adding torrent ${JSON.stringify(torrent)}`);
 }
 
-async function _getCachedLink(PM, infoHash, encodedFileName, fileIndex, ip) {
+async function _getCachedLink(PM, infoHash, encodedFileName, fileIndex, ip, isBrowser) {
   const cachedTorrent = await PM.transfer.directDownload(magnet.encode({ infoHash }), ip);
   if (cachedTorrent && cachedTorrent.content && cachedTorrent.content.length) {
     const targetFileName = decodeURIComponent(encodedFileName);
@@ -131,7 +126,7 @@ async function _getCachedLink(PM, infoHash, encodedFileName, fileIndex, ip) {
     const targetVideo = Number.isInteger(fileIndex)
         ? videos.find(video => video.path.includes(targetFileName))
         : videos.sort((a, b) => b.size - a.size)[0];
-    const unrestrictedLink = targetVideo.link || targetVideo.stream_link;
+    const unrestrictedLink = isBrowser && targetVideo.stream_link || targetVideo.link;
     console.log(`Unrestricted Premiumize ${infoHash} [${fileIndex}] to ${unrestrictedLink}`);
     return unrestrictedLink;
   }
