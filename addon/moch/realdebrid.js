@@ -288,10 +288,10 @@ async function _unrestrictFileLink(RD, fileLink, torrent, fileIndex, isBrowser) 
         if (isArchive(response.download)) {
           return StaticResponse.FAILED_RAR;
         }
-        if (isBrowser && response.streamable) {
-          return RD.streaming.transcode(response.id)
-              .then(streamResponse => streamResponse.apple.full)
-        }
+        // if (isBrowser && response.streamable) {
+        //   return RD.streaming.transcode(response.id)
+        //       .then(streamResponse => streamResponse.apple.full)
+        // }
         return response.download;
       })
       .then(unrestrictedLink => {
