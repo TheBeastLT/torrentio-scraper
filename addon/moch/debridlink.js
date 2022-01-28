@@ -51,8 +51,8 @@ async function getCatalog(apiKey, offset = 0) {
           })));
 }
 
-async function getItemMeta(itemId, apiKey) {
-  const options = await getDefaultOptions();
+async function getItemMeta(itemId, apiKey, ip) {
+  const options = await getDefaultOptions(ip);
   const DL = new DebridLinkClient(apiKey, options);
   return DL.seedbox.list(itemId)
       .then(response => response.value[0])
@@ -132,7 +132,7 @@ async function _unrestrictLink(DL, torrent, fileIndex) {
 }
 
 async function getDefaultOptions(ip) {
-  return { timeout: 30000 };
+  return { ip, timeout: 30000 };
 }
 
 function statusDownloading(torrent) {

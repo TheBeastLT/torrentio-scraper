@@ -14,7 +14,7 @@
     "bottleneck": "^2.19.5",
     "cache-manager": "^3.4.4",
     "cache-manager-mongodb": "^0.3.0",
-    "debrid-link-api": "^1.0.0",
+    "debrid-link-api": "^1.0.1",
     "express-rate-limit": "^5.5.1",
     "https-proxy-agent": "^5.0.0",
     "magnet-uri": "^6.2.0",
