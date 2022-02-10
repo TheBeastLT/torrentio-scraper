@@ -187,7 +187,7 @@ async function decomposeEpisodes(torrent, files, metadata = { episodeCount: [] }
     decomposeConcatSeasonAndEpisodeFiles(torrent, files, metadata);
   } else if (isDateEpisodeFiles(files, metadata)) {
     decomposeDateEpisodeFiles(torrent, files, metadata);
-  } else if (isAbsoluteEpisodeFiles(files, metadata)) {
+  } else if (isAbsoluteEpisodeFiles(torrent, files, metadata)) {
     decomposeAbsoluteEpisodeFiles(torrent, files, metadata);
   }
   // decomposeEpisodeTitleFiles(torrent, files, metadata);
@@ -237,14 +237,16 @@ function isDateEpisodeFiles(files, metadata) {
   return files.every(file => (!file.season || !metadata.episodeCount[file.season - 1]) && file.date);
 }
 
-function isAbsoluteEpisodeFiles(files, metadata) {
+function isAbsoluteEpisodeFiles(torrent, files, metadata) {
   const threshold = Math.ceil(files.length / 5);
+  const isAnime = torrent.type === Type.ANIME && torrent.kitsuId;
   const nonMovieEpisodes = files
       .filter(file => !file.isMovie && file.episodes);
   const absoluteEpisodes = files
       .filter(file => file.season && file.episodes)
       .filter(file => file.episodes.every(ep => metadata.episodeCount[file.season - 1] < ep))
-  return nonMovieEpisodes.every(file => !file.season || file.season > metadata.episodeCount.length)
+  return nonMovieEpisodes.every(file => !file.season)
+      || (isAnime && nonMovieEpisodes.every(file => file.season > metadata.episodeCount.length))
       || absoluteEpisodes.length >= threshold
   // && !isNewEpisodesNotInMetadata(files, metadata);
 }
