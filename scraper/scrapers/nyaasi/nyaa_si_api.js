@@ -35,7 +35,7 @@ function torrent(torrentId) {
 }
 
 function search(query) {
-  return si.search(query)
+  return si.search(query, null, { category: Categories.ANIME.ENGLISH})
       .then(results => results.map(torrent => parseTorrent(torrent)));
 }
 

@@ -20,6 +20,10 @@ async function scrape() {
   // return Promise.all(ids.map(id => limiter.schedule(() => nyaasi.torrent(id)
   //     .then(torrent => processTorrentRecord(torrent)))))
   //     .then(() => console.log(`[${moment()}] finished ${NAME} scrape`));
+  // const queries = ['Sagrada Reset', 'Sakurada Reset'];
+  // return Promise.all(queries.map(query => limiter.schedule(() => nyaasi.search(query)
+  //     .then(torrents => Promise.all(torrents.map(torrent => limiter.schedule(() => processTorrentRecord(torrent))))))))
+  //     .then(() => console.log(`[${moment()}] finished ${NAME} scrape`));
   return scrapeLatestTorrents()
       .then(() => {
         lastScrape.lastScraped = scrapeStart;
