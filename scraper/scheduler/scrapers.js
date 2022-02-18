@@ -1,6 +1,7 @@
 const thepiratebayScraper = require('../scrapers/thepiratebay/thepiratebay_scraper');
 const thepiratebayFakeRemoval = require('../scrapers/thepiratebay/thepiratebay_fakes_removal');
 const ytsScraper = require('../scrapers/yts/yts_scraper');
+const ytsFullScraper = require('../scrapers/yts/yts_full_scraper');
 const eztvScraper = require('../scrapers/eztv/eztv_scraper');
 const leetxScraper = require('../scrapers/1337x/1337x_scraper');
 const rarbgScraper = require('../scrapers/rarbg/rarbg_scraper');
@@ -19,6 +20,7 @@ const torrent9Scraper = require('../scrapers/torrent9/torrent9_scraper');
 
 module.exports = [
   { scraper: ytsScraper, name: ytsScraper.NAME, cron: '0 0 */4 ? * *' },
+  { scraper: ytsFullScraper, name: ytsFullScraper.NAME, cron: '0 0 0 * * 0' },
   { scraper: eztvScraper, name: eztvScraper.NAME, cron: '0 0 */4 ? * *' },
   { scraper: nyaaSiScraper, name: nyaaSiScraper.NAME, cron: '0 0 */4 ? * *' },
   { scraper: nyaaPantsuScraper, name: nyaaPantsuScraper.NAME, cron: '0 0 */4 ? * *' },

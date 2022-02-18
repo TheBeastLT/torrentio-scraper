@@ -42,6 +42,12 @@ function browse(config = {}, retries = 2) {
       .catch(error => browse(config, retries - 1));
 }
 
+function maxPage() {
+  return Promises.first(defaultProxies
+          .map(proxyUrl => singleRequest(`${proxyUrl}/api/v2/list_movies.json?limit=${limit}`)))
+      .then(results => Math.round((results?.data?.movie_count || 0) / limit))
+}
+
 function singleRequest(requestUrl, config = {}) {
   const timeout = config.timeout || defaultTimeout;
   const options = { headers: { 'User-Agent': getRandomUserAgent() }, timeout: timeout };
@@ -89,4 +95,4 @@ function formatType(type) {
   return type.toUpperCase();
 }
 
-module.exports = { torrent, search, browse };
+module.exports = { torrent, search, browse, maxPage };
