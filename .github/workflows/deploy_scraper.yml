@@ -40,5 +40,5 @@ jobs:
             docker load -i /tmp/docker/torrentio_scraper_latest.tar
             docker stop torrentio-scraper
             docker rm torrentio-scraper
-            docker run -p 80:7000 -d --name torrentio-scraper --restart always -e MONGODB_URI=${{ secrets.SCRAPER_MONGODB_URI }} -e DATABASE_URI=${{ secrets.DATABASE_URI }} -e ENABLE_SCHEDULING=true -e PROXY_HOST=${{ secrets.SCRAPER_PROXY_HOST }} -e PROXY_TYPE=${{ secrets.SCRAPER_PROXY_TYPE }} torrentio-scraper:latest
+            docker run -p 80:7000 -d --name torrentio-scraper --restart always -e MONGODB_URI=${{ secrets.SCRAPER_MONGODB_URI }} -e DATABASE_URI=${{ secrets.DATABASE_URI }} -e ENABLE_SCHEDULING=true -e PROXY_HOST=${{ secrets.SCRAPER_PROXY_HOST }} -e PROXY_TYPE=${{ secrets.SCRAPER_PROXY_TYPE }} -e ERAI_RSS_KEY=${{ secrets.SCRAPER_ERAI_RSS_KEY }} torrentio-scraper:latest
             docker image prune -f

@@ -1,6 +1,6 @@
 const moment = require('moment');
 const Bottleneck = require('bottleneck');
-const erairaws = require('./erairaws_api');
+const erairaws = require('./erairaws_rss_api');
 const { checkAndUpdateTorrent } = require('../../lib/torrentEntries');
 
 const NAME = 'EraiRaws';
@@ -41,7 +41,7 @@ function untilPage(category) {
   if (category === erairaws.Categories.ANIMES) {
     return 45;
   }
-  return 3;
+  return 1;
 }
 
 module.exports = { scrape, NAME };

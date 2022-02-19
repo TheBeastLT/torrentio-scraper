@@ -211,7 +211,7 @@ function landingTemplate(manifest, config = {}) {
       `<div class="contact">
          <p>Contact ${manifest.name} creator:</p>
          <a href="mailto:${manifest.contactEmail}">${manifest.contactEmail}</a>
-      </div>` : '';
+      </div>` : '<div class="separator"></div>';
   const providersHTML = Providers.options
       .map(provider => `<option value="${provider.key}">${provider.foreign || ''}${provider.label}</option>`)
       .join('\n');

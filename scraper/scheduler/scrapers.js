@@ -37,7 +37,7 @@ module.exports = [
   { scraper: OndeBaixa, name: OndeBaixa.NAME, cron: '0 0 */4 ? * *' },
   // { scraper: AnimesTorrent, name: AnimesTorrent.NAME, cron: '0 0 */4 ? * *' },
   // { scraper: DarkMahou, name: DarkMahou.NAME, cron: '0 0 */4 ? * *' },
-  { scraper: erairawsScraper, name: erairawsScraper.NAME, cron: '0 0 */24 ? * *' },
+  { scraper: erairawsScraper, name: erairawsScraper.NAME, cron: '0 0 */4 ? * *' },
   // { scraper: require('../scrapers/rarbg/rarbg_dump_scraper') }
   // { scraper: require('../scrapers/1337x/1337x_search_scraper') }
   // { scraper: require('../scrapers/rarbg/rarbg_dump_scraper') }
