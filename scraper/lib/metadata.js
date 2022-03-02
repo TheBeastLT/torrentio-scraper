@@ -108,10 +108,10 @@ async function getImdbId(info, type) {
             reject(err || new Error('failed imdbId search'));
           }
         });
-      }).catch(() => googleSr(query)
-          .then(response => response.searchResults.length ? response.searchResults : Promise.reject('No results'))
+      }).catch(() => googleSr.search(query)
+          .then(response => response.length ? response : Promise.reject('No results'))
           .then(results => results
-              .map(result => result.link)
+              .map(result => result.Link)
               .find(result => result.includes('imdb.com/title/')))
           .then(result => result && result.match(/imdb\.com\/title\/(tt\d+)/))
           .then(match => match && match[1])))

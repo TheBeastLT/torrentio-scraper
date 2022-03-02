@@ -17,7 +17,7 @@
     "cheerio": "^0.22.0",
     "express": "^4.16.4",
     "google-it": "^1.6.2",
-    "google-sr": "^1.0.4",
+    "google-sr": "^2.0.0",
     "he": "^1.2.0",
     "jaro-winkler": "^0.2.8",
     "line-by-line": "^0.1.6",
