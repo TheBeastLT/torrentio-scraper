@@ -137,7 +137,7 @@ async function getItemMeta(itemId, apiKey, ip) {
               id: `${KEY}:${torrent.id}:${file.id}`,
               title: file.path,
               released: new Date(new Date(torrent.added).getTime() - index).toISOString(),
-              stream: { url: `${apiKey}/${torrent.hash.toLowerCase()}/null/${file.id - 1}` }
+              streams: [{ url: `${apiKey}/${torrent.hash.toLowerCase()}/null/${file.id - 1}` }]
             }))
       }))
 }
