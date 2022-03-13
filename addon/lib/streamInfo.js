@@ -42,10 +42,9 @@ function toStreamInfo(record) {
       '',
       '\n'
   );
+  const bingeGroupParts = getBingeGroupParts(record, sameInfo, quality, torrentInfo, fileInfo);
   const behaviorHints = {
-    bingeGroup: sameInfo
-        ? `torrentio|${quality}|${fileInfo.group}`
-        : `torrentio|${record.infoHash}`
+    bingeGroup: joinDetailParts(bingeGroupParts, "torrentio|", "|")
   };
 
   return cleanOutputObject({
@@ -53,7 +52,7 @@ function toStreamInfo(record) {
     title: title,
     infoHash: record.infoHash,
     fileIdx: record.fileIndex,
-    behaviorHints: record.torrent.type !== Type.MOVIE ? behaviorHints : null,
+    behaviorHints: behaviorHints,
     sources: getSources(record.torrent.trackers, record.infoHash)
   });
 }
@@ -133,7 +132,22 @@ function getSources(trackersInput, infoHash) {
     return null;
   }
   const trackers = Array.isArray(trackersInput) ? trackersInput : trackersInput.split(',');
-  return trackers.map(tracker => `tracker:${tracker}`).concat(`dht:${infoHash}`)
+  return trackers.map(tracker => `tracker:${tracker}`).concat(`dht:${infoHash}`);
+}
+
+function getBingeGroupParts(record, sameInfo, quality, torrentInfo, fileInfo) {
+  if (record.torrent.type === Type.MOVIE) {
+    const source = torrentInfo.source || fileInfo.source
+    return [
+        quality,
+        source !== quality ? source : undefined,
+        torrentInfo.codec || fileInfo.codec,
+        torrentInfo.bitDepth || fileInfo.bitDepth
+    ];
+  } else if (sameInfo) {
+    return [quality, fileInfo.group];
+  }
+  return [record.infoHash];
 }
 
 function cleanOutputObject(object) {

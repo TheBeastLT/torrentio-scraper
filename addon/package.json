@@ -19,7 +19,7 @@
     "https-proxy-agent": "^5.0.0",
     "magnet-uri": "^6.2.0",
     "named-queue": "^2.2.1",
-    "parse-torrent-title": "git://github.com/TheBeastLT/parse-torrent-title.git#8fd87b3bfc7aa04143edcd4f0112868bb77dce0f",
+    "parse-torrent-title": "git://github.com/TheBeastLT/parse-torrent-title.git#eb390fcfc257950e65ec1b0812bd331765a053c9",
     "pg": "^8.7.1",
     "pg-hstore": "^2.3.4",
     "premiumize-api": "^1.0.3",
