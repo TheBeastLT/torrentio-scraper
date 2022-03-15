@@ -70,7 +70,7 @@ async function getItemMeta(itemId, apiKey, ip) {
             .map((file, index) => ({
               id: `${KEY}:${file.id}:${index}`,
               title: file.name,
-              released: new Date(file.created_at * 1000 - index).toISOString(),
+              released: new Date(file.created_at * 1000 + index).toISOString(),
               streams: [{ url: file.link || file.stream_link }]
             }))
       }))
