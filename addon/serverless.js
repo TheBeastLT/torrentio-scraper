@@ -1,4 +1,3 @@
-const rateLimit = require('express-rate-limit');
 const { getRouter } = require('stremio-addon-sdk');
 const requestIp = require('request-ip');
 const userAgentParser = require('ua-parser-js');
@@ -10,14 +9,6 @@ const landingTemplate = require('./lib/landingTemplate');
 const moch = require('./moch/moch');
 
 const router = getRouter({ ...addonInterface, manifest: manifest() });
-const limiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hours
-  max: 300, // limit each IP to 300 requests per windowMs
-  headers: false,
-  keyGenerator: (req) => requestIp.getClientIp(req)
-});
-
-router.use(limiter);
 
 router.get('/', (_, res) => {
   res.redirect('/configure')
