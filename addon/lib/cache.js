@@ -1,5 +1,6 @@
 const cacheManager = require('cache-manager');
 const mangodbStore = require('cache-manager-mongodb');
+const { RESOLVER_HOST } = require('../moch/static')
 
 const GLOBAL_KEY_PREFIX = 'torrentio-addon';
 const STREAM_KEY_PREFIX = `${GLOBAL_KEY_PREFIX}|stream`;
@@ -10,7 +11,7 @@ const STREAM_TTL = process.env.STREAM_TTL || 4 * 60 * 60; // 4 hours
 const STREAM_EMPTY_TTL = process.env.STREAM_EMPTY_TTL || 30 * 60; // 30 minutes
 const AVAILABILITY_TTL = 8 * 60 * 60; // 8 hours
 const AVAILABILITY_EMPTY_TTL = 60 * 60; // 1 hours
-const RESOLVED_URL_TTL = 60; // 1 minutes
+const MESSAGE_VIDEO_URL_TTL = 60; // 1 minutes
 // When the streams are empty we want to cache it for less time in case of timeouts or failures
 
 const MONGO_URI = process.env.MONGODB_URI;
@@ -46,7 +47,7 @@ function initiateRemoteCache() {
 function initiateMemoryCache() {
   return cacheManager.caching({
     store: 'memory',
-    ttl: RESOLVED_URL_TTL,
+    ttl: MESSAGE_VIDEO_URL_TTL,
     max: Infinity // infinite LRU cache size
   });
 }
@@ -65,7 +66,9 @@ function cacheWrapStream(id, method) {
 }
 
 function cacheWrapResolvedUrl(id, method) {
-  return cacheWrap(memoryCache, `${RESOLVED_URL_KEY_PREFIX}:${id}`, method, { ttl: RESOLVED_URL_TTL });
+  return cacheWrap(memoryCache, `${RESOLVED_URL_KEY_PREFIX}:${id}`, method, {
+    ttl: (url) => url.startsWith(RESOLVER_HOST) ? MESSAGE_VIDEO_URL_TTL : STREAM_TTL
+  });
 }
 
 function cacheAvailabilityResults(results) {

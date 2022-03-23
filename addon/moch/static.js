@@ -1,6 +1,7 @@
 const RESOLVER_HOST = process.env.RESOLVER_HOST || 'http://localhost:7050';
 
 module.exports = {
+  RESOLVER_HOST: RESOLVER_HOST,
   DOWNLOADING: `${RESOLVER_HOST}/videos/downloading_v2.mp4`,
   FAILED_DOWNLOAD: `${RESOLVER_HOST}/videos/download_failed_v2.mp4`,
   FAILED_ACCESS: `${RESOLVER_HOST}/videos/failed_access_v2.mp4`,
