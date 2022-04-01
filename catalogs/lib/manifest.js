@@ -45,7 +45,8 @@ function createManifest() {
       }
     ],
     behaviorHints: {
-      configurable: false, // @TODO might enable configuration to configure providers
+      // @TODO might enable configuration to configure providers
+      configurable: false,
       configurationRequired: false
     }
   };
