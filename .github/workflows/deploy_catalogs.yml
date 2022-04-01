@@ -40,5 +40,5 @@ jobs:
             docker load -i /tmp/docker/torrentio_catalogs_latest.tar
             docker stop torrentio-catalogs
             docker rm torrentio-catalogs
-            docker run -p 80:7000 -d --name torrentio-catalogs--restart always -e MONGODB_URI=${{ secrets.SCRAPER_MONGODB_URI }} -e DATABASE_URI=${{ secrets.DATABASE_URI }} torrentio-catalogs:latest
+            docker run -p 80:7000 -d --name torrentio-catalogs --restart always -e MONGODB_URI=${{ secrets.SCRAPER_MONGODB_URI }} -e DATABASE_URI=${{ secrets.DATABASE_URI }} torrentio-catalogs:latest
             docker image prune -f
