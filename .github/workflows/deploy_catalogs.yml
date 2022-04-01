@@ -15,7 +15,7 @@ jobs:
 
       - name: Create Docker image
         run: |
-          docker build -t torrentio-catalogs:latest ./catalogs/
+          docker build -t torrentio-catalogs:latest . -f ./catalogs/Dockerfile
           docker save torrentio-catalogs:latest > torrentio_catalogs_latest.tar
 
       - name: Upload Docker image

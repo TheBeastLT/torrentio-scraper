@@ -3,7 +3,6 @@ const addonInterface = require('./addon');
 const qs = require('querystring')
 const { parseConfiguration } = require('../addon/lib/configuration');
 const { createManifest } = require('./lib/manifest');
-const landingTemplate = require('./lib/landingTemplate');
 
 const router = getRouter(addonInterface);
 
