@@ -1,10 +1,9 @@
-name: Deploy Scraper
+name: Deploy Catalogs
 
 on:
   push:
     branches: master
-    paths-ignore:
-      - 'addon/**'
+    paths:
       - 'catalogs/**'
 
 jobs:
@@ -16,8 +15,8 @@ jobs:
 
       - name: Create Docker image
         run: |
-          docker build -t torrentio-scraper:latest .
-          docker save torrentio-scraper:latest > torrentio_scraper_latest.tar
+          docker build -t torrentio-catalogs:latest ./catalogs/
+          docker save torrentio-catalogs:latest > torrentio_catalogs_latest.tar
 
       - name: Upload Docker image
         uses: appleboy/scp-action@master
@@ -26,7 +25,7 @@ jobs:
           username: ${{ secrets.SCRAPER_SSH_USERNAME }}
           port: ${{ secrets.SCRAPER_SSH_PORT }}
           key: ${{ secrets.SCRAPER_SSH_KEY }}
-          source: torrentio_scraper_latest.tar
+          source: torrentio_catalogs_latest.tar
           target: /tmp/docker
           overwrite: true
 
@@ -38,8 +37,8 @@ jobs:
           port: ${{ secrets.SCRAPER_SSH_PORT }}
           key: ${{ secrets.SCRAPER_SSH_KEY }}
           script: |
-            docker load -i /tmp/docker/torrentio_scraper_latest.tar
-            docker stop torrentio-scraper
-            docker rm torrentio-scraper
-            docker run -p 7000:7000 -d --name torrentio-scraper --restart always -e MONGODB_URI=${{ secrets.SCRAPER_MONGODB_URI }} -e DATABASE_URI=${{ secrets.DATABASE_URI }} -e ENABLE_SCHEDULING=true -e PROXY_HOST=${{ secrets.SCRAPER_PROXY_HOST }} -e PROXY_TYPE=${{ secrets.SCRAPER_PROXY_TYPE }} -e ERAI_RSS_KEY=${{ secrets.SCRAPER_ERAI_RSS_KEY }} torrentio-scraper:latest
+            docker load -i /tmp/docker/torrentio_catalogs_latest.tar
+            docker stop torrentio-catalogs
+            docker rm torrentio-catalogs
+            docker run -p 80:7000 -d --name torrentio-catalogs--restart always -e MONGODB_URI=${{ secrets.SCRAPER_MONGODB_URI }} -e DATABASE_URI=${{ secrets.DATABASE_URI }} torrentio-catalogs:latest
             docker image prune -f
