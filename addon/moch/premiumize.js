@@ -1,7 +1,7 @@
 const PremiumizeClient = require('premiumize-api');
 const magnet = require('magnet-uri');
 const { Type } = require('../lib/types');
-const { isVideo } = require('../lib/extension');
+const { isVideo, isArchive } = require('../lib/extension');
 const StaticResponse = require('./static');
 const { getMagnetLink } = require('../lib/magnetHelper');
 const { BadTokenError, chunkArray } = require('./mochHelper');
@@ -90,7 +90,7 @@ async function getFolderContents(PM, itemId, ip, folderPrefix = '') {
 }
 
 async function resolve({ ip, isBrowser, apiKey, infoHash, cachedEntryInfo, fileIndex }) {
-  console.log(`Unrestricting Premiumize ${infoHash} [${fileIndex}] for IP ${ip}`);
+  console.log(`Unrestricting Premiumize ${infoHash} [${fileIndex}] for IP ${ip} from browser=${isBrowser}`);
   const options = await getDefaultOptions();
   const PM = new PremiumizeClient(apiKey, options);
   return _getCachedLink(PM, infoHash, cachedEntryInfo, fileIndex, ip, isBrowser)
@@ -126,7 +126,12 @@ async function _getCachedLink(PM, infoHash, encodedFileName, fileIndex, ip, isBr
     const targetVideo = Number.isInteger(fileIndex)
         ? videos.find(video => video.path.includes(targetFileName))
         : videos.sort((a, b) => b.size - a.size)[0];
-    const unrestrictedLink = isBrowser && targetVideo.stream_link || targetVideo.link;
+    if (!targetVideo && videos.every(video => isArchive(video.path))) {
+      console.log(`Only Premiumize archive is available for [${infoHash}] ${fileIndex}`)
+      return StaticResponse.FAILED_RAR;
+    }
+    const streamLink = isBrowser && targetVideo.transcode_status === 'finished' && targetVideo.stream_link;
+    const unrestrictedLink = streamLink || targetVideo.link;
     console.log(`Unrestricted Premiumize ${infoHash} [${fileIndex}] to ${unrestrictedLink}`);
     return unrestrictedLink;
   }

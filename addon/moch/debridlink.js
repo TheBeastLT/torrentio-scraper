@@ -120,7 +120,7 @@ async function _unrestrictLink(DL, torrent, fileIndex) {
       ? torrent.files[fileIndex]
       : torrent.files.filter(file => file.downloadPercent === 100).sort((a, b) => b.size - a.size)[0];
 
-  if (!targetFile && isArchive(targetFile.downloadUrl)) {
+  if (!targetFile && torrent.files.every(file => isArchive(file.downloadUrl))) {
     console.log(`Only DebridLink archive is available for [${torrent.hashString}] ${fileIndex}`)
     return StaticResponse.FAILED_RAR;
   }

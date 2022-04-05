@@ -17,7 +17,7 @@ async function getCachedStreams(streams, apiKey) {
         if (error && error.code === 'AUTH_BAD_APIKEY') {
           return Promise.reject(BadTokenError);
         }
-        console.warn('Failed AllDebrid cached torrent availability request:', error);
+        console.warn(`Failed AllDebrid cached [${hashes[0]}] torrent availability request:`, error);
         return undefined;
       });
   return available && available.data && available.data.magnets && streams
