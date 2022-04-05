@@ -20,7 +20,7 @@ async function _getCachedStreams(PM, apiKey, streams) {
   const hashes = streams.map(stream => stream.infoHash);
   return PM.cache.check(hashes)
       .catch(error => {
-        if (error && error.message === 'customer_id and pin parameter missing or not logged in ') {
+        if (error && error.message === 'Not logged in.') {
           return Promise.reject(BadTokenError);
         }
         console.warn('Failed Premiumize cached torrent availability request:', error);
@@ -96,7 +96,7 @@ async function resolve({ ip, isBrowser, apiKey, infoHash, cachedEntryInfo, fileI
   return _getCachedLink(PM, infoHash, cachedEntryInfo, fileIndex, ip, isBrowser)
       .catch(() => _resolve(PM, infoHash, cachedEntryInfo, fileIndex, ip, isBrowser))
       .catch(error => {
-        if (error && error.message && error.message.includes('purchase')) {
+        if (error && error.message && error.message.includes('Account not premium.')) {
           console.log(`Access denied to Premiumize ${infoHash} [${fileIndex}]`);
           return StaticResponse.FAILED_ACCESS;
         }
