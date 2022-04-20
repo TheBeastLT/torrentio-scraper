@@ -22,7 +22,7 @@ const limiter = new Bottleneck({
 
 builder.defineCatalogHandler((args) => {
   const offset = parseInt(args.extra.skip || '0', 10);
-  const genre = args.extra.genre || genres[3];
+  const genre = args.extra.genre || genres[5];
   const catalog = manifest.catalogs.find(c => c.id === args.id);
   console.log(`Incoming catalog ${args.id} request with genre=${genre} and skip=${offset}`)
   if (!catalog) {
@@ -66,8 +66,10 @@ function getStartDate(genre) {
   switch (genre) {
     case genres[0]: return moment().utc().startOf('day');
     case genres[1]: return moment().utc().subtract(1, 'day').startOf('day');
-    case genres[2]: return moment().utc().subtract(7, 'day').startOf('isoWeek');
-    case genres[3]: return moment().utc().subtract(30, 'day').startOf('month');
+    case genres[2]: return moment().utc().startOf('isoWeek');
+    case genres[3]: return moment().utc().subtract(7, 'day').startOf('isoWeek');
+    case genres[4]: return moment().utc().startOf('month');
+    case genres[5]: return moment().utc().subtract(30, 'day').startOf('month');
     default: return undefined;
   }
 }
@@ -76,8 +78,10 @@ function getEndDate( genre) {
   switch (genre) {
     case genres[0]: return moment().utc();
     case genres[1]: return moment().utc().subtract(1, 'day').endOf('day');
-    case genres[2]: return moment().utc().subtract(7, 'day').endOf('isoWeek');
-    case genres[3]: return moment().utc().subtract(30, 'day').endOf('month');
+    case genres[2]: return moment().utc().endOf('isoWeek');
+    case genres[3]: return moment().utc().subtract(7, 'day').endOf('isoWeek');
+    case genres[4]: return moment().utc().endOf('month');
+    case genres[5]: return moment().utc().subtract(30, 'day').endOf('month');
     default: return undefined;
   }
 }

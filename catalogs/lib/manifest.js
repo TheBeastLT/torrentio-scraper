@@ -3,7 +3,9 @@ const { Type } = require('../../addon/lib/types');
 const genres = [
     'Today',
     'Yesterday',
+    'This Week',
     'Last Week',
+    'This Month',
     'Last Month',
     'All Time'
 ]
@@ -22,7 +24,7 @@ function createManifest() {
       {
         id: 'top-movies',
         type: Type.MOVIE,
-        name: "Top seeded movies",
+        name: "Top seeded",
         pageSize: 20,
         extra: [{ name: 'genre', options: genres }, { name: 'skip' }],
         genres: genres
@@ -30,7 +32,7 @@ function createManifest() {
       {
         id: 'top-series',
         type: Type.SERIES,
-        name: "Top seeded series",
+        name: "Top seeded",
         pageSize: 20,
         extra: [{ name: 'genre', options: genres }, { name: 'skip' }],
         genres: genres
@@ -38,7 +40,7 @@ function createManifest() {
       {
         id: 'top-anime',
         type: Type.ANIME,
-        name: "Top seeded anime",
+        name: "Top seeded",
         pageSize: 20,
         extra: [{ name: 'genre', options: genres }, { name: 'skip' }],
         genres: genres
