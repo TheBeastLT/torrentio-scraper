@@ -1,12 +1,10 @@
 const moment = require('moment');
 const Bottleneck = require('bottleneck');
 const torrent9 = require('./torrent9_api');
-const torrent9v2 = require('./torrent9v2_api');
 const { Type } = require('../../lib/types');
 const repository = require('../../lib/repository');
 const Promises = require('../../lib/promises');
 const { createTorrentEntry, checkAndUpdateTorrent } = require('../../lib/torrentEntries');
-const { Op } = require("sequelize");
 
 const NAME = 'Torrent9';
 const TYPE_MAPPING = typeMapping();
@@ -18,8 +16,7 @@ const allowedCategories = [
   torrent9.Categories.TV,
 ];
 const clients = [
-  torrent9,
-  torrent9v2
+  torrent9
 ];
 
 async function scrape() {
@@ -57,8 +54,7 @@ async function scrapeLatestTorrentsForCategory(client, category, page = 1) {
 }
 
 async function processTorrentRecord(client, record) {
-  if (await checkAndUpdateTorrent(
-      { provider: NAME, torrentId: { [Op.endsWith]: record.torrentId.replace(/^\d+/, '') } })) {
+  if (await checkAndUpdateTorrent({ provider: NAME, torrentId: record.torrentId })) {
     return record;
   }
 
