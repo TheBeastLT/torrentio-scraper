@@ -282,7 +282,7 @@ function landingTemplate(manifest, config = {}) {
            ${sortOptionsHTML}
          </select>
          
-         <label class="label" for="iLanguage">Priority language:</label>
+         <label class="label" for="iLanguage">Priority foreign language:</label>
          <select id="iLanguage" class="input" onchange="generateInstallLink()" title="Streams with the selected dubs/subs language will be shown on the top">
            <option value="none" selected>None</option>
            ${languageOptionsHTML}

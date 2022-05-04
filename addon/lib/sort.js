@@ -31,15 +31,16 @@ const SortOptions = {
 }
 const LanguageOptions = {
   key: 'language',
-  options: languages.map(lang => ({
+  options: languages.slice(1).map(lang => ({
     key: lang,
-    label: lang.charAt(0).toUpperCase() + lang.substr(1)
+    label: lang.charAt(0).toUpperCase() + lang.slice(1)
   }))
 }
 
 function sortStreams(streams, config) {
   const language = config[LanguageOptions.key];
-  if (language) {
+  if (language && language !== languages[0]) {
+    // No need to filter english since it's hard to predict which entries are english
     const streamsWithLanguage = streams.filter(stream => containsLanguage(stream, language));
     const streamsNoLanguage = streams.filter(stream => !streamsWithLanguage.includes(stream));
     return _sortStreams(streamsWithLanguage, config).concat(_sortStreams(streamsNoLanguage, config));
