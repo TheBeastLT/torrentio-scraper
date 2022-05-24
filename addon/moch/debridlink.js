@@ -65,7 +65,7 @@ async function getItemMeta(itemId, apiKey, ip) {
             .map((file, index) => ({
               id: `${KEY}:${torrent.id}:${index}`,
               title: file.name,
-              released: new Date(torrent.created * 1000 + index).toISOString(),
+              released: new Date(torrent.created * 1000 - index).toISOString(),
               streams: [{ url: file.downloadUrl }]
             }))
       }))
