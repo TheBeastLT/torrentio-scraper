@@ -21,12 +21,11 @@ function torrent(torrentId, config = {}, retries = 2) {
   if (!torrentId || retries === 0) {
     return Promise.reject(new Error(`Failed ${torrentId} query`));
   }
-  const slug = torrentId.split('?p=')[1];
-  return singleRequest(`${baseUrl}/?p=${slug}`, config)
+  return singleRequest(`${baseUrl}/${torrentId}`, config)
       .then((body) => parseTorrentPage(body))
-      .then((torrent) => torrent.map(el => ({ torrentId: slug, ...el })))
+      .then((torrent) => torrent.map(el => ({ torrentId, ...el })))
       .catch((err) => {
-        console.warn(`Failed Lapumia ${slug} request: `, err);
+        console.warn(`Failed Lapumia ${torrentId} request: `, err);
         return torrent(torrentId, config, retries - 1)
       });
 }
@@ -90,10 +89,14 @@ function parseTableBody(body) {
 
     $('div.post').each((i, element) => {
       const row = $(element);
-      torrents.push({
-        name: row.find("div > a").text(),
-        torrentId: row.find("div > a").attr("href")
-      });
+      try {
+        torrents.push({
+          name: row.find("div > a").text(),
+          torrentId: row.find("div > a").attr("href").split('/')[3]
+        });
+      } catch (e) {
+        console.log("Failed parsing Lupumia table entry")
+      }
     });
     resolve(torrents);
   });

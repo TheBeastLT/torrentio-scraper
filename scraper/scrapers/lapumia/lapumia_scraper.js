@@ -33,7 +33,8 @@ async function updateSeeders(torrent) {
 
 async function scrapeLatestTorrents() {
   const allowedCategories = [
-    lapumia.Categories.MOVIE
+    lapumia.Categories.MOVIE,
+    lapumia.Categories.TV
   ];
 
   return Promises.sequence(allowedCategories
