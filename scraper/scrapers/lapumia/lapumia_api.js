@@ -116,7 +116,7 @@ function parseTorrentPage(body) {
         .map((i, section) => $(section).attr("href")).get();
     const category = parseCategory($('div.category').html());
     const details = $('div.content')
-    const torrents = magnets.map(magnetLink => ({
+    const torrents = magnets.filter(magnetLink => decode(magnetLink).name).map(magnetLink => ({
       title: sanitizePtName(escapeHTML(decode(magnetLink).name.replace(/\+/g, ' '))),
       originalName: sanitizePtOriginalName(details.find('b:contains(\'Titulo Original:\')')[0].nextSibling.nodeValue),
       year: details.find('b:contains(\'Ano de Lançamento:\')')[0].nextSibling.nodeValue.trim(),

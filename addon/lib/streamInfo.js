@@ -20,6 +20,7 @@ function toStreamInfo(record) {
       || Math.abs(record.size / record.torrent.size - 1) < SIZE_DELTA
       || record.title.includes(record.torrent.title);
   const quality = getQuality(record, torrentInfo, fileInfo);
+  const hdrQuality = fileInfo.hdr || torrentInfo.hdr
   const title = joinDetailParts(
       [
         joinDetailParts([record.torrent.title.replace(/[, ]+/g, ' ')]),
@@ -37,7 +38,7 @@ function toStreamInfo(record) {
   const name = joinDetailParts(
       [
         joinDetailParts([ADDON_NAME]),
-        joinDetailParts([quality])
+        joinDetailParts([quality, hdrQuality])
       ],
       '',
       '\n'
