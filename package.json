@@ -10,7 +10,7 @@
   "dependencies": {
     "async": "2.6.4",
     "axios": "^0.21.4",
-    "bittorrent-tracker": "^9.18.2",
+    "bittorrent-tracker": "^9.18.6",
     "bottleneck": "^2.16.2",
     "cache-manager": "^3.4.4",
     "cache-manager-mongodb": "^0.3.0",
@@ -27,7 +27,7 @@
     "node-gzip": "^1.1.2",
     "node-schedule": "^1.3.2",
     "nodejs-bing": "^0.1.0",
-    "nyaapi": "^2.3.3",
+    "nyaapi": "^2.4.3",
     "parse-torrent": "^6.1.2",
     "parse-torrent-title": "git://github.com/TheBeastLT/parse-torrent-title.git#eb390fcfc257950e65ec1b0812bd331765a053c9",
     "pg": "^8.7.1",
