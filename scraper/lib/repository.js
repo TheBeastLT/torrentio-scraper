@@ -176,6 +176,10 @@ function getTorrentsBasedOnQuery(where) {
   return Torrent.findAll({ where: where });
 }
 
+function getFilesBasedOnQuery(where) {
+  return File.findAll({ where: where });
+}
+
 function getTorrentsWithoutSize() {
   return Torrent.findAll({
     where: literal(
@@ -325,6 +329,7 @@ module.exports = {
   getTorrent,
   getTorrentsBasedOnTitle,
   getTorrentsBasedOnQuery,
+  getFilesBasedOnQuery,
   deleteTorrent,
   getUpdateSeedersTorrents,
   getUpdateSeedersNewTorrents,
