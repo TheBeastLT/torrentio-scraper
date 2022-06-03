@@ -201,6 +201,7 @@ function landingTemplate(manifest, config = {}) {
   const premiumizeApiKey = config[MochOptions.premiumize.key] || '';
   const allDebridApiKey = config[MochOptions.alldebrid.key] || '';
   const debridLinkApiKey = config[MochOptions.debridlink.key] || '';
+  const offcloudApiKey = config[MochOptions.offcloud.key] || '';
   const putioKey = config[MochOptions.putio.key] || '';
   const putioClientId = putioKey.replace(/@.*/, '');
   const putioToken = putioKey.replace(/.*@/, '');
@@ -322,6 +323,11 @@ function landingTemplate(manifest, config = {}) {
            <input type="text" id="iDebridLink" onchange="generateInstallLink()" class="input">
          </div>
          
+         <div id="dOffcloud">
+           <label class="label" for="iOffcloud">Offcloud API Key (Find it <a href='https://offcloud.com/#/account' target="_blank">here</a>):</label>
+           <input type="text" id="iOffcloud" onchange="generateInstallLink()" class="input">
+         </div>
+         
          <div id="dPutio">
            <label class="label" for="iPutio">Put.io ClientId and Token (Create new OAuth App <a href='https://app.put.io/settings/account/oauth/apps' target="_blank">here</a>):</label>
            <input type="text" id="iPutioClientId" placeholder="ClientId" onchange="generateInstallLink()" class="input">
@@ -364,6 +370,7 @@ function landingTemplate(manifest, config = {}) {
               $('#iPremiumize').val("${premiumizeApiKey}");
               $('#iAllDebrid').val("${allDebridApiKey}");
               $('#iDebridLink').val("${debridLinkApiKey}");
+              $('#iOffcloud').val("${offcloudApiKey}");
               $('#iPutioClientId').val("${putioClientId}");
               $('#iPutioToken').val("${putioToken}");
               $('#iSort').val("${sort}");
@@ -389,6 +396,7 @@ function landingTemplate(manifest, config = {}) {
             $('#dPremiumize').toggle(provider === '${MochOptions.premiumize.key}');
             $('#dAllDebrid').toggle(provider === '${MochOptions.alldebrid.key}');
             $('#dDebridLink').toggle(provider === '${MochOptions.debridlink.key}');
+            $('#dOffcloud').toggle(provider === '${MochOptions.offcloud.key}');
             $('#dPutio').toggle(provider === '${MochOptions.putio.key}');
           }
           
@@ -404,6 +412,7 @@ function landingTemplate(manifest, config = {}) {
               const allDebridValue = $('#iAllDebrid').val() || '';
               const debridLinkValue = $('#iDebridLink').val() || ''
               const premiumizeValue = $('#iPremiumize').val() || '';
+              const offcloudValue = $('#iOffcloud').val() || ''
               const putioClientIdValue = $('#iPutioClientId').val() || '';
               const putioTokenValue = $('#iPutioToken').val() || '';
               
@@ -419,6 +428,7 @@ function landingTemplate(manifest, config = {}) {
               const premiumize = premiumizeValue.length && premiumizeValue.trim();
               const allDebrid = allDebridValue.length && allDebridValue.trim();
               const debridLink = debridLinkValue.length && debridLinkValue.trim();
+              const offcloud = offcloudValue.length && offcloudValue.trim();
               const putio = putioClientIdValue.length && putioTokenValue.length && putioClientIdValue.trim() + '@' + putioTokenValue.trim();
 
               const preConfigurations = { 
@@ -435,6 +445,7 @@ function landingTemplate(manifest, config = {}) {
                     ['${MochOptions.premiumize.key}', premiumize],
                     ['${MochOptions.alldebrid.key}', allDebrid],
                     ['${MochOptions.debridlink.key}', debridLink],
+                    ['${MochOptions.offcloud.key}', offcloud],
                     ['${MochOptions.putio.key}', putio]
                   ].filter(([_, value]) => value.length).map(([key, value]) => key + '=' + value).join('|');
               configurationValue = Object.entries(preConfigurations)

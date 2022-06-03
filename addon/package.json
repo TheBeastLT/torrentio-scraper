@@ -8,7 +8,7 @@
   "author": "TheBeastLT <pauliox@beyond.lt>",
   "license": "MIT",
   "dependencies": {
-    "@putdotio/api-client": "^8.16.0",
+    "@putdotio/api-client": "^8.32.0",
     "all-debrid-api": "^1.1.0",
     "axios": "^0.21.4",
     "bottleneck": "^2.19.5",
@@ -19,7 +19,8 @@
     "https-proxy-agent": "^5.0.0",
     "magnet-uri": "^6.2.0",
     "named-queue": "^2.2.1",
-    "parse-torrent-title": "git://github.com/TheBeastLT/parse-torrent-title.git#eb390fcfc257950e65ec1b0812bd331765a053c9",
+    "offcloud-api": "^1.0.0",
+    "parse-torrent-title": "git://github.com/TheBeastLT/parse-torrent-title.git#e94682462d748a9ecd256a37fab98a20f0306255",
     "pg": "^8.7.1",
     "pg-hstore": "^2.3.4",
     "premiumize-api": "^1.0.3",

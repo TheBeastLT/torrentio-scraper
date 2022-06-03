@@ -4,6 +4,7 @@ const realdebrid = require('./realdebrid');
 const premiumize = require('./premiumize');
 const alldebrid = require('./alldebrid');
 const debridlink = require('./debridlink');
+const offcloud = require('./offcloud');
 const putio = require('./putio');
 const StaticResponse = require('./static');
 const { cacheWrapResolvedUrl } = require('../lib/cache');
@@ -41,6 +42,13 @@ const MOCHS = {
     instance: debridlink,
     name: 'DebridLink',
     shortName: 'DL',
+    catalog: true
+  },
+  offcloud: {
+    key: 'offcloud',
+    instance: offcloud,
+    name: 'Offcloud',
+    shortName: 'OC',
     catalog: true
   },
   putio: {
