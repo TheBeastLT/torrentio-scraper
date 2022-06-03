@@ -116,8 +116,7 @@ async function _findTorrent(OC, infoHash) {
 
 async function _createTorrent(OC, infoHash) {
   const magnetLink = await getMagnetLink(infoHash);
-  const response = await OC.cloud.download(magnetLink);
-  return response
+  return await OC.cloud.download(magnetLink)
 }
 
 async function _unrestrictLink(OC, infoHash, torrent, cachedEntryInfo, fileIndex) {
@@ -139,7 +138,7 @@ async function getDefaultOptions(ip) {
 }
 
 function statusDownloading(torrent) {
-  return torrent.status === 'created'
+  return ['downloading', 'created'].includes(torrent.status);
 }
 
 function statusError(torrent) {
