@@ -6,7 +6,7 @@ const { parse } = require('parse-torrent-title');
 const { getRandomUserAgent } = require('../../lib/requestHelper');
 const { parseSize } = require("../scraperHelper");
 
-const baseUrl = 'https://torrent9.nl'
+const baseUrl = 'https://www.torrent9.re'
 const defaultTimeout = 10000;
 const pageSize = 50;
 
