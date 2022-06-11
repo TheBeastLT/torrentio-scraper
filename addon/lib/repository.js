@@ -54,7 +54,10 @@ function getImdbIdMovieEntries(imdbId) {
       imdbId: { [Op.eq]: imdbId }
     },
     include: [Torrent],
-    limit: 500
+    limit: 500,
+    order: [
+      [Torrent, 'seeders', 'DESC']
+    ]
   });
 }
 
@@ -66,7 +69,10 @@ function getImdbIdSeriesEntries(imdbId, season, episode) {
       imdbEpisode: { [Op.eq]: episode }
     },
     include: [Torrent],
-    limit: 500
+    limit: 500,
+    order: [
+      [Torrent, 'seeders', 'DESC']
+    ]
   });
 }
 
@@ -76,7 +82,10 @@ function getKitsuIdMovieEntries(kitsuId) {
       kitsuId: { [Op.eq]: kitsuId }
     },
     include: [Torrent],
-    limit: 500
+    limit: 500,
+    order: [
+      [Torrent, 'seeders', 'DESC']
+    ]
   });
 }
 
@@ -87,7 +96,10 @@ function getKitsuIdSeriesEntries(kitsuId, episode) {
       kitsuEpisode: { [Op.eq]: episode }
     },
     include: [Torrent],
-    limit: 500
+    limit: 500,
+    order: [
+      [Torrent, 'seeders', 'DESC']
+    ]
   });
 }
 
