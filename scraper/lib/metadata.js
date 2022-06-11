@@ -8,6 +8,10 @@ const { Type } = require('./types');
 const CINEMETA_URL = 'https://v3-cinemeta.strem.io';
 const KITSU_URL = 'https://anime-kitsu.strem.fun';
 const TIMEOUT = 20000;
+const selectors = {
+  ...googleSr.defaultSelectors,
+  LinkSelector: 'a:has(h3)'
+}
 
 function getMetadata(id, type = Type.SERIES) {
   if (!id) {
@@ -108,7 +112,7 @@ async function getImdbId(info, type) {
             reject(err || new Error('failed imdbId search'));
           }
         });
-      }).catch(() => googleSr.search(query)
+      }).catch(() => googleSr.search(query, { selectors })
           .then(response => response.length ? response : Promise.reject('No results'))
           .then(results => results
               .map(result => result.Link)
