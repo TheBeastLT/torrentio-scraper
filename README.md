@@ -1,9 +1,3 @@
-# Torrentio scraper
+# Torrentio
 
-### Socks5 proxy
-
-Run it on  the server via:
-
-```
-docker run -it -p 9050:9050 -d --restart always dperson/torproxy
-```
+- [torrentio-addon](addon) - the Stremio addon which will query scraped entries and return Stremio stream results.
