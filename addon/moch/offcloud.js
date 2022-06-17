@@ -15,7 +15,7 @@ async function getCachedStreams(streams, apiKey) {
       .then(results => results.map(result => result.cachedItems))
       .then(results => results.reduce((all, result) => all.concat(result), []))
       .catch(error => {
-        if (error === 'badToken') {
+        if (error && error.error === 'NOAUTH') {
           return Promise.reject(BadTokenError);
         }
         console.warn('Failed Offcloud cached torrent availability request:', error);
@@ -150,7 +150,7 @@ function statusReady(torrent) {
 }
 
 function errorExpiredSubscriptionError(error) {
-  return error['not_available'] != null;
+  return error && (error.includes('not_available') || error.includes('NOAUTH'));
 }
 
 module.exports = { getCachedStreams, resolve, getCatalog, getItemMeta };
