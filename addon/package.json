@@ -30,11 +30,5 @@
     "stremio-addon-sdk": "^1.6.1",
     "ua-parser-js": "^1.0.2",
     "user-agents": "^1.0.559"
-  },
-  "devDependencies": {
-    "eslint": "^6.4.0",
-    "eslint-config-eslint": "^6.0.0",
-    "eslint-config-google": "^0.14.0",
-    "eslint-plugin-node": "^10.0.0"
   }
 }
