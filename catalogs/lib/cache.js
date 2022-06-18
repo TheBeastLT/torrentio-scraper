@@ -1,7 +1,7 @@
 const cacheManager = require('cache-manager');
 const mangodbStore = require('cache-manager-mongodb');
 
-const CATALOG_TTL = process.env.STREAM_TTL || 12 * 60 * 60; // 12 hours
+const CATALOG_TTL = process.env.STREAM_TTL || 24 * 60 * 60; // 24 hours
 
 const MONGO_URI = process.env.MONGODB_URI;
 
