@@ -28,7 +28,7 @@ builder.defineCatalogHandler((args) => {
     return Promise.reject(`No catalog found for with id: ${args.id}`)
   }
 
-  const cacheKey = `${args.id}|${genre}|${offset}`
+  const cacheKey = `${args.id}|${genre}|${dateKey()}|${offset}`
   return limiter.schedule(() => cacheWrapCatalog(cacheKey, () => getCatalog(catalog, genre, offset)))
       .then(metas => ({
         metas: metas,
@@ -53,7 +53,7 @@ async function getCatalog(catalog, genre, offset) {
   const cursor = await getCursor(catalog, genre, offset)
   const startDate = getStartDate(genre)?.toISOString();
   const endDate = getEndDate(genre)?.toISOString();
-  const cacheKey = `${catalog.id}|${genre}||${dateKey()}`
+  const cacheKey = `${catalog.id}|${genre}|${dateKey()}`
 
   return cacheWrapIds(cacheKey, () => repository.getIds(catalog.type, startDate, endDate))
       .then(ids => ids.slice(ids.indexOf(cursor) + 1))
