@@ -68,6 +68,7 @@ function getStartDate(genre) {
     case genres[2]: return moment().utc().subtract(7, 'day').startOf('isoWeek');
     case genres[3]: return moment().utc().startOf('month');
     case genres[4]: return moment().utc().subtract(30, 'day').startOf('month');
+    case genres[5]: return undefined;
     default: return moment().utc().subtract(30, 'day').startOf('day');
   }
 }
@@ -79,6 +80,7 @@ function getEndDate(genre) {
     case genres[2]: return moment().utc().subtract(7, 'day').endOf('isoWeek');
     case genres[3]: return moment().utc().endOf('month');
     case genres[4]: return moment().utc().subtract(30, 'day').endOf('month');
+    case genres[5]: return undefined;
     default: return moment().utc().subtract(1, 'day').endOf('day');
   }
 }
