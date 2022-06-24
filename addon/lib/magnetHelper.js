@@ -4,7 +4,6 @@ const { getRandomUserAgent } = require('../lib/requestHelper');
 const { getTorrent } = require('../lib/repository');
 const { Type } = require('../lib/types');
 
-axios.defaults.insecureHTTPParser = true;
 const TRACKERS_URL = 'https://raw.githubusercontent.com/ngosang/trackerslist/master/trackers_best.txt';
 const ANIME_TRACKERS = [
   "http://nyaa.tracker.wf:7777/announce",
