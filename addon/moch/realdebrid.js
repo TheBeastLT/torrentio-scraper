@@ -35,8 +35,8 @@ async function _getInstantAvailable(hashes, apiKey, retries = 3, maxChunkSize = 
   if (!missingHashes.length) {
     return cachedResults
   }
-
-  const RD = new RealDebridClient(apiKey, getDefaultOptions());
+  const options = await getDefaultOptions();
+  const RD = new RealDebridClient(apiKey, options);
   const hashBatches = chunkArray(missingHashes, maxChunkSize)
   return Promise.all(hashBatches.map(batch => RD.torrents.instantAvailability(batch)
           .then(response => {

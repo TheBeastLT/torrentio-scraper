@@ -9,4 +9,4 @@ COPY package*.json ./
 RUN npm ci --only-production
 COPY . .
 
-CMD [ "node", "index.js" ]
+CMD [ "node", "--insecure-http-parser", "index.js" ]
