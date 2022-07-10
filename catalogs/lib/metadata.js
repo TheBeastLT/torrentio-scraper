@@ -4,7 +4,7 @@ const { Type } = require('../../addon/lib/types');
 const CINEMETA_URL = 'https://v3-cinemeta.strem.io';
 const KITSU_URL = 'https://anime-kitsu.strem.fun';
 const TIMEOUT = 30000;
-const MAX_SIZE = 50;
+const MAX_SIZE = 40;
 
 function getMetas(ids, type) {
   if (!ids.length || !type) {
