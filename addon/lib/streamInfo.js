@@ -6,7 +6,7 @@ const { getAllTrackers } = require('./magnetHelper');
 const ADDON_NAME = 'Torrentio';
 const SIZE_DELTA = 0.02;
 const UNKNOWN_SIZE = 300000000;
-const CAM_SOURCES = ['CAM', 'TeleSync', 'TeleCine'];
+const CAM_SOURCES = ['CAM', 'TeleSync', 'TeleCine', 'SCR'];
 const ANIME_PROVIDERS = [
   'HorribleSubs',
   'NyaaSi',
