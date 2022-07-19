@@ -60,11 +60,6 @@ const Providers = {
       foreign: '🇵🇹'
     },
     {
-      key: 'lapumia',
-      label: 'Lapumia',
-      foreign: '🇵🇹'
-    },
-    {
       key: 'ondebaixa',
       label: 'OndeBaixa',
       foreign: '🇵🇹'
