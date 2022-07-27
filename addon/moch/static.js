@@ -7,5 +7,6 @@ module.exports = {
   FAILED_ACCESS: `${RESOLVER_HOST}/videos/failed_access_v2.mp4`,
   FAILED_RAR: `${RESOLVER_HOST}/videos/failed_rar_v2.mp4`,
   FAILED_OPENING: `${RESOLVER_HOST}/videos/failed_opening_v2.mp4`,
-  FAILED_UNEXPECTED: `${RESOLVER_HOST}/videos/failed_unexpected_v2.mp4`
+  FAILED_UNEXPECTED: `${RESOLVER_HOST}/videos/failed_unexpected_v2.mp4`,
+  FAILED_INFRINGEMENT: `${RESOLVER_HOST}/videos/failed_infringement_v2.mp4`
 }

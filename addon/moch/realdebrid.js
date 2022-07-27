@@ -153,6 +153,10 @@ async function resolve({ ip, isBrowser, apiKey, infoHash, cachedEntryInfo, fileI
           console.log(`Access denied to RealDebrid ${infoHash} [${fileIndex}]`);
           return StaticResponse.FAILED_ACCESS;
         }
+        if (infringingFile(error)) {
+          console.log(`Infringing file removed from RealDebrid ${infoHash} [${fileIndex}]`);
+          return StaticResponse.FAILED_INFRINGEMENT;
+        }
         return Promise.reject(`Failed RealDebrid adding torrent ${JSON.stringify(error)}`);
       });
 }
@@ -265,7 +269,7 @@ async function _unrestrictLink(RD, torrent, fileIndex, isBrowser) {
   const targetFile = torrent.files.find(file => file.id === fileIndex + 1)
       || torrent.files.filter(file => file.selected).sort((a, b) => b.bytes - a.bytes)[0];
   if (!targetFile.selected) {
-    console.log(`Target RealDebrid file is not downloaded: ${JSON.stringify(torrent)}`);
+    console.log(`Target RealDebrid file is not downloaded: ${JSON.stringify(targetFile)}`);
     await _recreateTorrentId(RD, torrent.hash.toLowerCase(), fileIndex);
     return StaticResponse.DOWNLOADING;
   }
@@ -276,7 +280,7 @@ async function _unrestrictLink(RD, torrent, fileIndex, isBrowser) {
       : torrent.links[selectedFiles.indexOf(targetFile)];
 
   if (!fileLink || !fileLink.length) {
-    return Promise.reject(`No RealDebrid links found for ${torrent.hash} [${fileIndex}]`);
+    return Promise.reject(`No RealDebrid links found for ${torrent.hash} [${fileIndex}]: ${JSON.stringify(torrent)}`);
   }
 
   return _unrestrictFileLink(RD, fileLink, torrent, fileIndex, isBrowser);
@@ -332,6 +336,10 @@ function statusReady(status) {
 
 function accessDeniedError(error) {
   return [9, 20].includes(error && error.code);
+}
+
+function infringingFile(error) {
+  return error && error.code === 35;
 }
 
 async function getDefaultOptions(ip) {
