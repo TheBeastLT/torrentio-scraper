@@ -130,10 +130,10 @@ button:active {
 }
 
 .contact {
-   position: absolute;
    left: 0;
    bottom: 4vh;
    width: 100%;
+   margin-top: 1vh;
    text-align: center;
 }
 
@@ -208,11 +208,6 @@ function landingTemplate(manifest, config = {}) {
 
   const background = manifest.background || 'https://dl.strem.io/addon-background.jpg';
   const logo = manifest.logo || 'https://dl.strem.io/addon-logo.png';
-  const contactHTML = manifest.contactEmail ?
-      `<div class="contact">
-         <p>Contact ${manifest.name} creator:</p>
-         <a href="mailto:${manifest.contactEmail}">${manifest.contactEmail}</a>
-      </div>` : '<div class="separator"></div>';
   const providersHTML = Providers.options
       .map(provider => `<option value="${provider.key}">${provider.foreign || ''}${provider.label}</option>`)
       .join('\n');
@@ -346,7 +341,11 @@ function landingTemplate(manifest, config = {}) {
          <a id="installLink" class="install-link" href="#">
             <button name="Install">INSTALL</button>
          </a>
-         ${contactHTML}
+         <div class="contact">
+           <p>Or paste into Stremio search bar after clicking install</p>
+        </div>
+        
+        <div class="separator"></div>
       </div>
       <script type="text/javascript">
           $(document).ready(function() {
@@ -452,7 +451,9 @@ function landingTemplate(manifest, config = {}) {
                   .filter(([key, value]) => value === configurationValue)
                   .map(([key, value]) => key)[0] || configurationValue;
               const configuration = configurationValue && configurationValue.length ? '/' + configurationValue : '';
-              installLink.href = 'stremio://' + window.location.host + configuration + '/manifest.json';
+              const location = window.location.host + configuration + '/manifest.json'
+              navigator.clipboard.writeText('https://' + location);
+              installLink.href = 'stremio://' + location;
           }
       </script>
 	</body>
