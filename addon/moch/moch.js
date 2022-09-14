@@ -11,7 +11,7 @@ const { cacheWrapResolvedUrl } = require('../lib/cache');
 const { timeout } = require('../lib/promises');
 const { BadTokenError, streamFilename } = require('./mochHelper');
 
-const RESOLVE_TIMEOUT = 10 * 60 * 1000; // 10 minutes
+const RESOLVE_TIMEOUT = 2 * 60 * 1000; // 2 minutes
 const MIN_API_KEY_SYMBOLS = 15;
 const TOKEN_BLACKLIST = [];
 const RESOLVER_HOST = process.env.RESOLVER_HOST || 'http://localhost:7050';
@@ -62,7 +62,7 @@ const MOCHS = {
 
 const unrestrictQueue = new namedQueue((task, callback) => task.method()
     .then(result => callback(false, result))
-    .catch((error => callback(error))), 5);
+    .catch((error => callback(error))), 20);
 
 async function applyMochs(streams, config) {
   if (!streams || !streams.length || !Object.keys(MOCHS).find(moch => config[moch])) {
