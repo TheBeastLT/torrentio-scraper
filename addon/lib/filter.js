@@ -80,6 +80,30 @@ const QualityFilter = {
   key: 'qualityfilter',
   options: [
     {
+      key: 'brremux',
+      label: 'BluRay REMUX',
+      test(quality, bingeGroup) {
+        return bingeGroup && bingeGroup.includes(this.label);
+      }
+    },
+    {
+      key: 'hdrall',
+      label: 'HDR/HRD10+/Dolby Vision',
+      items: ['HDR', 'HRD10+', 'DV'],
+      test(quality) {
+        const hdrProfiles = quality && quality.split(' ').slice(1).join() || '';
+        return this.items.some(hdrType => hdrProfiles.includes(hdrType));
+      }
+    },
+    {
+      key: 'dolbyvision',
+      label: 'Dolby Vision',
+      test(quality) {
+        const hdrProfiles = quality && quality.split(' ').slice(1).join() || '';
+        return hdrProfiles === 'DV';
+      }
+    },
+    {
       key: '4k',
       label: '4k',
       items: ['4k'],
@@ -171,7 +195,8 @@ function filterByQuality(streams, config) {
   const filterOptions = QualityFilter.options.filter(option => filters.includes(option.key));
   return streams.filter(stream => {
     const streamQuality = stream.name.split('\n')[1];
-    return !filterOptions.some(option => option.test(streamQuality));
+    const bingeGroup = stream.behaviorHints.bingeGroup;
+    return !filterOptions.some(option => option.test(streamQuality, bingeGroup));
   });
 }
 
