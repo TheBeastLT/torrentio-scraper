@@ -20,7 +20,7 @@ function toStreamInfo(record) {
       || Math.abs(record.size / record.torrent.size - 1) < SIZE_DELTA
       || record.title.includes(record.torrent.title);
   const quality = getQuality(record, torrentInfo, fileInfo);
-  const hdrQuality = fileInfo.hdr || torrentInfo.hdr
+  const hdrProfiles = torrentInfo.hdr || fileInfo.hdr || []
   const title = joinDetailParts(
       [
         joinDetailParts([record.torrent.title.replace(/[, ]+/g, ' ')]),
@@ -38,7 +38,7 @@ function toStreamInfo(record) {
   const name = joinDetailParts(
       [
         joinDetailParts([ADDON_NAME]),
-        joinDetailParts([quality, hdrQuality])
+        joinDetailParts([quality, joinDetailParts(hdrProfiles, '', ' | ')])
       ],
       '',
       '\n'
@@ -139,14 +139,15 @@ function getSources(trackersInput, infoHash) {
 function getBingeGroupParts(record, sameInfo, quality, torrentInfo, fileInfo) {
   if (record.torrent.type === Type.MOVIE) {
     const source = torrentInfo.source || fileInfo.source
-    return [
-        quality,
-        source !== quality ? source : undefined,
-        torrentInfo.codec || fileInfo.codec,
-        torrentInfo.bitDepth || fileInfo.bitDepth
-    ];
+    return [quality]
+        .concat(source !== quality ? source : [])
+        .concat(torrentInfo.codec || fileInfo.codec)
+        .concat(torrentInfo.bitDepth || fileInfo.bitDepth)
+        .concat(torrentInfo.hdr || fileInfo.hdr);
   } else if (sameInfo) {
-    return [quality, fileInfo.group];
+    return [quality]
+        .concat(fileInfo.hdr)
+        .concat(fileInfo.group);
   }
   return [record.infoHash];
 }

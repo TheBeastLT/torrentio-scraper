@@ -82,9 +82,9 @@ const QualityFilter = {
     {
       key: '4k',
       label: '4k',
-      items: ['4k', '4k HDR'],
+      items: ['4k'],
       test(quality) {
-        return this.items.includes(quality);
+        return quality && this.items.includes(quality.split(' ')[0]);
       }
     },
     {
@@ -115,9 +115,9 @@ const QualityFilter = {
       key: 'other',
       label: 'Other (DVDRip/HDRip/BDRip...)',
       // could be ['DVDRip', 'HDRip', 'BDRip', 'BRRip', 'BluRay', 'WEB-DL', 'WEBRip', 'HDTV', 'DivX', 'XviD']
-      items: ['4k', '4k HDR', '1080p', '720p', '480p', 'SCR', 'CAM', 'TeleSync', 'TeleCine'],
+      items: ['4k', '1080p', '720p', '480p', 'SCR', 'CAM', 'TeleSync', 'TeleCine'],
       test(quality) {
-        return quality && !this.items.includes(quality);
+        return quality && !this.items.includes(quality.split(' ')[0]);
       }
     },
     {
