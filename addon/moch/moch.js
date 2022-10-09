@@ -9,7 +9,7 @@ const putio = require('./putio');
 const StaticResponse = require('./static');
 const { cacheWrapResolvedUrl } = require('../lib/cache');
 const { timeout } = require('../lib/promises');
-const { BadTokenError, streamFilename } = require('./mochHelper');
+const { BadTokenError, streamFilename, AccessDeniedError } = require('./mochHelper');
 
 const RESOLVE_TIMEOUT = 2 * 60 * 1000; // 2 minutes
 const MIN_API_KEY_SYMBOLS = 15;
@@ -136,9 +136,11 @@ async function getMochItemMeta(mochKey, itemId, config) {
 }
 
 function processMochResults(streams, config, results) {
-  const errorResults = results.filter(result => result && result.error === BadTokenError);
+  const errorResults = results
+      .map(result => errorStreamResponse(result.moch.key, result.error))
+      .filter(errorResponse => errorResponse);
   if (errorResults.length) {
-    return errorResults.map(result => badTokenStreamResponse(result.moch.key))
+    return errorResults;
   }
 
   const includeTorrentLinks = options.includeTorrentLinks(config);
@@ -194,12 +196,22 @@ function blackListToken(token, mochKey) {
   TOKEN_BLACKLIST.push(tokenKey);
 }
 
-function badTokenStreamResponse(mochKey) {
-  return {
-    name: `Torrentio\n${MOCHS[mochKey].shortName} error`,
-    title: `Invalid ${MOCHS[mochKey].name} ApiKey/Token!`,
-    url: StaticResponse.FAILED_ACCESS
-  };
+function errorStreamResponse(mochKey, error) {
+  if (error === BadTokenError) {
+    return {
+      name: `Torrentio\n${MOCHS[mochKey].shortName} error`,
+      title: `Invalid ${MOCHS[mochKey].name} ApiKey/Token!`,
+      url: StaticResponse.FAILED_ACCESS
+    };
+  }
+  if (error === AccessDeniedError) {
+    return {
+      name: `Torrentio\n${MOCHS[mochKey].shortName} error`,
+      title: `Expired ${MOCHS[mochKey].name} subscription!`,
+      url: StaticResponse.FAILED_ACCESS
+    };
+  }
+  return undefined;
 }
 
 module.exports = { applyMochs, getMochCatalog, getMochItemMeta, resolve, MochOptions: MOCHS }

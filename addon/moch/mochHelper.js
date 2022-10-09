@@ -1,4 +1,5 @@
 const BadTokenError = { code: 'BAD_TOKEN' }
+const AccessDeniedError = { code: 'ACCESS_DENIED' }
 
 function chunkArray(arr, size) {
   return arr.length > size
@@ -15,4 +16,4 @@ function streamFilename(stream) {
   return encodeURIComponent(filename)
 }
 
-module.exports = { chunkArray, BadTokenError, streamFilename }
+module.exports = { chunkArray, streamFilename, BadTokenError, AccessDeniedError }

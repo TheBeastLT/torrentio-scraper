@@ -5,7 +5,7 @@ const { delay } = require('../lib/promises');
 const { cacheAvailabilityResults, getCachedAvailabilityResults } = require('../lib/cache');
 const StaticResponse = require('./static');
 const { getMagnetLink } = require('../lib/magnetHelper');
-const { chunkArray, BadTokenError } = require('./mochHelper');
+const { chunkArray, BadTokenError, AccessDeniedError } = require('./mochHelper');
 
 const MIN_SIZE = 5 * 1024 * 1024; // 5 MB
 const CATALOG_MAX_PAGE = 5;
@@ -51,6 +51,9 @@ async function _getInstantAvailable(hashes, apiKey, retries = 3, maxChunkSize = 
       .catch(error => {
         if (error && error.code === 8) {
           return Promise.reject(BadTokenError);
+        }
+        if (error && accessDeniedError(error)) {
+          return Promise.reject(AccessDeniedError);
         }
         if (!error && maxChunkSize !== 1) {
           // sometimes due to large response size RD responds with an empty body. Reduce chunk size to reduce body
