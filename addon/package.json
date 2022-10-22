@@ -26,7 +26,7 @@
     "real-debrid-api": "git://github.com/TheBeastLT/node-real-debrid.git#d1f7eaa8593b947edbfbc8a92a176448b48ef445",
     "request-ip": "^2.2.0",
     "sequelize": "^6.21.0",
-    "stremio-addon-sdk": "^1.6.1",
+    "stremio-addon-sdk": "^1.6.7",
     "ua-parser-js": "^1.0.2",
     "user-agents": "^1.0.1050"
   }
