@@ -8,7 +8,7 @@ const { getMagnetLink } = require('../lib/magnetHelper');
 const { chunkArray, BadTokenError, AccessDeniedError } = require('./mochHelper');
 
 const MIN_SIZE = 5 * 1024 * 1024; // 5 MB
-const CATALOG_MAX_PAGE = 5;
+const CATALOG_MAX_PAGE = 1;
 const CATALOG_PAGE_SIZE = 100;
 const NON_BLACKLIST_ERRORS = ['ESOCKETTIMEDOUT', 'EAI_AGAIN', '504 Gateway Time-out'];
 const KEY = "realdebrid"
