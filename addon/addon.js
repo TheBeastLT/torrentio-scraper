@@ -51,7 +51,7 @@ builder.defineCatalogHandler((args) => {
   return getMochCatalog(mochKey, args.extra)
       .then(metas => ({
         metas: metas,
-        cacheMaxAge: 0
+        cacheMaxAge: 1
       }))
       .catch(error => {
         return Promise.reject(`Failed retrieving catalog ${args.id}: ${JSON.stringify(error)}`);
