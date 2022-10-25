@@ -8,7 +8,7 @@ const AVAILABILITY_KEY_PREFIX = `${GLOBAL_KEY_PREFIX}|availability`;
 const RESOLVED_URL_KEY_PREFIX = `${GLOBAL_KEY_PREFIX}|resolved`;
 
 const STREAM_TTL = process.env.STREAM_TTL || 4 * 60 * 60; // 4 hours
-const STREAM_EMPTY_TTL = process.env.STREAM_EMPTY_TTL || 30 * 60; // 30 minutes
+const STREAM_EMPTY_TTL = process.env.STREAM_EMPTY_TTL || 60; // 1 minute
 const AVAILABILITY_TTL = 8 * 60 * 60; // 8 hours
 const AVAILABILITY_EMPTY_TTL = 60 * 60; // 1 hours
 const MESSAGE_VIDEO_URL_TTL = 60; // 1 minutes
