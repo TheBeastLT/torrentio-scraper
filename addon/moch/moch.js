@@ -207,7 +207,7 @@ function errorStreamResponse(mochKey, error) {
   if (error === AccessDeniedError) {
     return {
       name: `Torrentio\n${MOCHS[mochKey].shortName} error`,
-      title: `Expired ${MOCHS[mochKey].name} subscription!`,
+      title: `Expired/invalid ${MOCHS[mochKey].name} subscription!`,
       url: StaticResponse.FAILED_ACCESS
     };
   }

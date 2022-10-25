@@ -3,7 +3,7 @@ const { Type } = require('../lib/types');
 const { isVideo, isArchive } = require('../lib/extension');
 const StaticResponse = require('./static');
 const { getMagnetLink } = require('../lib/magnetHelper');
-const { BadTokenError } = require('./mochHelper');
+const { BadTokenError, AccessDeniedError } = require('./mochHelper');
 
 const KEY = 'alldebrid';
 const AGENT = 'torrentio';
@@ -16,6 +16,9 @@ async function getCachedStreams(streams, apiKey) {
       .catch(error => {
         if (error && error.code === 'AUTH_BAD_APIKEY') {
           return Promise.reject(BadTokenError);
+        }
+        if (error && error.code === 'AUTH_USER_BANNED') {
+          return Promise.reject(AccessDeniedError);
         }
         console.warn(`Failed AllDebrid cached [${hashes[0]}] torrent availability request:`, error);
         return undefined;
