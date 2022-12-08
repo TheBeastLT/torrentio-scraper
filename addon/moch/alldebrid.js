@@ -85,6 +85,9 @@ async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex }) {
         if (errorExpiredSubscriptionError(error)) {
           console.log(`Access denied to AllDebrid ${infoHash} [${fileIndex}]`);
           return StaticResponse.FAILED_ACCESS;
+        } else if (error.code === 'MAGNET_TOO_MANY') {
+          console.log(`Deleting and retrying adding to AllDebrid ${infoHash} [${fileIndex}]...`);
+          return _deleteAndRetry(AD, infoHash, cachedEntryInfo, fileIndex);
         }
         return Promise.reject(`Failed AllDebrid adding torrent ${JSON.stringify(error)}`);
       });
@@ -100,9 +103,6 @@ async function _resolve(AD, infoHash, cachedEntryInfo, fileIndex) {
   } else if (torrent && statusHandledError(torrent.statusCode)) {
     console.log(`Retrying downloading to AllDebrid ${infoHash} [${fileIndex}]...`);
     return _retryCreateTorrent(AD, infoHash, cachedEntryInfo, fileIndex);
-  } else if (torrent && torrent.code === 'MAGNET_TOO_MANY') {
-    console.log(`Deleting and retrying adding to AllDebrid ${infoHash} [${fileIndex}]...`);
-    return _deleteAndRetry(AD, infoHash, cachedEntryInfo, fileIndex);
   }
 
   return Promise.reject(`Failed AllDebrid adding torrent ${JSON.stringify(torrent)}`);
