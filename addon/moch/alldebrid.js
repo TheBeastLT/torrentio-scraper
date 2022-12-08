@@ -100,6 +100,9 @@ async function _resolve(AD, infoHash, cachedEntryInfo, fileIndex) {
   } else if (torrent && statusHandledError(torrent.statusCode)) {
     console.log(`Retrying downloading to AllDebrid ${infoHash} [${fileIndex}]...`);
     return _retryCreateTorrent(AD, infoHash, cachedEntryInfo, fileIndex);
+  } else if (torrent && torrent.code === 'MAGNET_TOO_MANY') {
+    console.log(`Deleting and retrying adding to AllDebrid ${infoHash} [${fileIndex}]...`);
+    return _deleteAndRetry(AD, infoHash, cachedEntryInfo, fileIndex);
   }
 
   return Promise.reject(`Failed AllDebrid adding torrent ${JSON.stringify(torrent)}`);
@@ -116,6 +119,13 @@ async function _retryCreateTorrent(AD, infoHash, encodedFileName, fileIndex) {
   return newTorrent && statusReady(newTorrent.statusCode)
       ? _unrestrictLink(AD, newTorrent, encodedFileName, fileIndex)
       : StaticResponse.FAILED_DOWNLOAD;
+}
+
+async function _deleteAndRetry(AD, infoHash, encodedFileName, fileIndex) {
+  const torrents = await AD.magnet.status().then(response => response.data.magnets);
+  const lastTorrent = torrents[torrents.length - 1];
+  return AD.magnet.delete(lastTorrent.id)
+      .then(() => _retryCreateTorrent(AD, infoHash, encodedFileName, fileIndex));
 }
 
 async function _findTorrent(AD, infoHash) {
@@ -173,7 +183,8 @@ function statusReady(statusCode) {
 }
 
 function errorExpiredSubscriptionError(error) {
-  return ['MUST_BE_PREMIUM', 'MAGNET_MUST_BE_PREMIUM', 'FREE_TRIAL_LIMIT_REACHED'].includes(error.code);
+  return ['AUTH_BAD_APIKEY', 'MUST_BE_PREMIUM', 'MAGNET_MUST_BE_PREMIUM', 'FREE_TRIAL_LIMIT_REACHED', 'AUTH_USER_BANNED']
+      .includes(error.code);
 }
 
 module.exports = { getCachedStreams, resolve, getCatalog, getItemMeta };
