@@ -19,7 +19,7 @@
     "magnet-uri": "^6.2.0",
     "named-queue": "^2.2.1",
     "offcloud-api": "^1.0.0",
-    "parse-torrent-title": "git://github.com/TheBeastLT/parse-torrent-title.git#25a7b1d1f036524d5fd29be944f740f2be6955ee",
+    "parse-torrent-title": "git://github.com/TheBeastLT/parse-torrent-title.git#c69d06014f83da06c1a8f571c21e00eb8c9aabef",
     "pg": "^8.7.3",
     "pg-hstore": "^2.3.4",
     "premiumize-api": "^1.0.3",
