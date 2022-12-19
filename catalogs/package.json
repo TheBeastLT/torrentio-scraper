@@ -15,11 +15,11 @@
     "bottleneck": "^2.19.5",
     "cache-manager": "^3.4.4",
     "cache-manager-mongodb": "^0.3.0",
-    "moment": "^2.29.3",
-    "pg": "^8.7.3",
+    "moment": "^2.29.4",
+    "pg": "^8.8.0",
     "pg-hstore": "^2.3.4",
-    "request-ip": "^2.2.0",
-    "sequelize": "^6.21.0",
-    "stremio-addon-sdk": "^1.6.5"
+    "request-ip": "^3.3.0",
+    "sequelize": "^6.27.0",
+    "stremio-addon-sdk": "^1.6.10"
   }
 }

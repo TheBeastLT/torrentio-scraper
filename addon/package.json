@@ -15,19 +15,19 @@
     "cache-manager": "^3.4.4",
     "cache-manager-mongodb": "^0.3.0",
     "debrid-link-api": "^1.0.1",
-    "express-rate-limit": "^6.4.0",
+    "express-rate-limit": "^6.7.0",
     "magnet-uri": "^6.2.0",
     "named-queue": "^2.2.1",
     "offcloud-api": "^1.0.0",
     "parse-torrent-title": "git://github.com/TheBeastLT/parse-torrent-title.git#c69d06014f83da06c1a8f571c21e00eb8c9aabef",
-    "pg": "^8.7.3",
+    "pg": "^8.8.0",
     "pg-hstore": "^2.3.4",
     "premiumize-api": "^1.0.3",
     "real-debrid-api": "git://github.com/TheBeastLT/node-real-debrid.git#d1f7eaa8593b947edbfbc8a92a176448b48ef445",
-    "request-ip": "^2.2.0",
-    "sequelize": "^6.21.0",
-    "stremio-addon-sdk": "^1.6.7",
-    "ua-parser-js": "^1.0.2",
-    "user-agents": "^1.0.1050"
+    "request-ip": "^3.3.0",
+    "sequelize": "^6.27.0",
+    "stremio-addon-sdk": "^1.6.10",
+    "ua-parser-js": "^1.0.32",
+    "user-agents": "^1.0.1234"
   }
 }
