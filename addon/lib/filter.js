@@ -30,6 +30,10 @@ const Providers = {
       label: 'TorrentGalaxy'
     },
     {
+      key: 'magnetdl',
+      label: 'MagnetDL'
+    },
+    {
       key: 'horriblesubs',
       label: 'HorribleSubs',
       anime: true
