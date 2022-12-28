@@ -77,7 +77,12 @@ const Providers = {
       key: 'torrent9',
       label: 'Torrent9',
       foreign: '🇫🇷'
-    }
+    },
+    {
+      key: 'mejortorrent',
+      label: 'MejorTorrent',
+      foreign: '🇪🇸'
+    },
   ]
 };
 const QualityFilter = {
