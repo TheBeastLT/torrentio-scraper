@@ -15,7 +15,7 @@ function manifest(config = {}) {
     description: getDescription(config),
     catalogs: getCatalogs(config),
     resources: getResources(config),
-    types: [Type.MOVIE, Type.SERIES, Type.OTHER],
+    types: [Type.MOVIE, Type.SERIES, Type.ANIME, Type.OTHER],
     background: `https://i.ibb.co/VtSfFP9/t8wVwcg.jpg`,
     logo: `https://i.ibb.co/w4BnkC9/GwxAcDV.png`,
     behaviorHints: {
