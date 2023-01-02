@@ -31,6 +31,8 @@ function initiateRemoteCache() {
         collection: 'torrentio_addon_collection',
         useNewUrlParser: true,
         useUnifiedTopology: false,
+        autoReconnect: true,
+        poolSize : 20,
         ttl: STREAM_EMPTY_TTL
       },
       ttl: STREAM_EMPTY_TTL,
