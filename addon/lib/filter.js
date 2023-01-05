@@ -54,6 +54,11 @@ const Providers = {
       foreign: '🇷🇺'
     },
     {
+      key: 'rutracker',
+      label: 'Rutracker',
+      foreign: '🇷🇺'
+    },
+    {
       key: 'comando',
       label: 'Comando',
       foreign: '🇵🇹'
