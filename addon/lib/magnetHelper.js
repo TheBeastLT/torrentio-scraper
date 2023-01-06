@@ -20,7 +20,7 @@ const RUSSIAN_TRACKERS = [
   "http://bt2.t-ru.org/ann?magnet",
   "http://bt3.t-ru.org/ann?magnet",
   "http://bt4.t-ru.org/ann?magnet"
-]
+];
 // Some trackers have limits on original torrent trackers,
 // where downloading ip has to seed the torrents for some amount of time,
 // thus it doesn't work on mochs.
@@ -37,7 +37,7 @@ const ANIME_PROVIDERS = [
 const RUSSIAN_PROVIDERS = [
   'Rutor',
   'Rutracker'
-]
+];
 let BEST_TRACKERS = [];
 let ALL_TRACKERS = [];
 
