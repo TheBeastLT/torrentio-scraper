@@ -283,7 +283,8 @@ async function _unrestrictLink(RD, torrent, fileIndex, isBrowser) {
       : torrent.links[selectedFiles.indexOf(targetFile)];
 
   if (!fileLink || !fileLink.length) {
-    return Promise.reject(`No RealDebrid links found for ${torrent.hash} [${fileIndex}]: ${JSON.stringify(torrent)}`);
+    console.log(`No RealDebrid links found for ${torrent.hash} [${fileIndex}]`);
+    return _retryCreateTorrent(RD, torrent.hash, fileIndex)
   }
 
   return _unrestrictFileLink(RD, fileLink, torrent, fileIndex, isBrowser);
@@ -293,6 +294,9 @@ async function _unrestrictFileLink(RD, fileLink, torrent, fileIndex, isBrowser) 
   return RD.unrestrict.link(fileLink)
       .then(response => {
         if (isArchive(response.download)) {
+          if (torrent.files.filter(file => file.selected).length > 1) {
+            return _retryCreateTorrent(RD, torrent.hash, fileIndex)
+          }
           return StaticResponse.FAILED_RAR;
         }
         // if (isBrowser && response.streamable) {
