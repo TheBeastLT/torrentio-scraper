@@ -37,7 +37,7 @@ router.get('/:configuration/:resource/:type/:id/:extra?.json', (req, res, next) 
           staleError: 'stale-if-error'
         };
         const cacheControl = Object.keys(cacheHeaders)
-            .map(prop => resp[prop] && cacheHeaders[prop] + '=' + resp[prop])
+            .map(prop => Number.isInteger(resp[prop]) && cacheHeaders[prop] + '=' + resp[prop])
             .filter(val => !!val).join(', ');
 
         res.setHeader('Cache-Control', `${cacheControl}, public`);

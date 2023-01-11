@@ -1,6 +1,7 @@
 const Bottleneck = require('bottleneck');
 const moment = require('moment')
 const { addonBuilder } = require('stremio-addon-sdk');
+const { Providers } = require('../addon/lib/filter')
 const { createManifest, genres } = require('./lib/manifest');
 const { getMetas } = require('./lib/metadata');
 const { cacheWrapCatalog, cacheWrapIds } = require('./lib/cache');
@@ -17,19 +18,23 @@ const limiter = new Bottleneck({
   highWater: process.env.LIMIT_QUEUE_SIZE || 50,
   strategy: Bottleneck.strategy.OVERFLOW
 });
-
+const defaultProviders = Providers.options
+    .filter(provider => !provider.foreign)
+    .map(provider => provider.label)
+    .sort();
 
 builder.defineCatalogHandler((args) => {
   const offset = parseInt(args.extra.skip || '0', 10);
   const genre = args.extra.genre || 'default';
   const catalog = manifest.catalogs.find(c => c.id === args.id);
+  const providers = defaultProviders;
   console.log(`Incoming catalog ${args.id} request with genre=${genre} and skip=${offset}`)
   if (!catalog) {
     return Promise.reject(`No catalog found for with id: ${args.id}`)
   }
 
-  const cacheKey = `${args.id}|${genre}|${dateKey()}|${offset}`
-  return limiter.schedule(() => cacheWrapCatalog(cacheKey, () => getCatalog(catalog, genre, offset)))
+  const cacheKey = createCacheKey(catalog.id, providers, genre, offset);
+  return limiter.schedule(() => cacheWrapCatalog(cacheKey, () => getCatalog(catalog, providers, genre, offset)))
       .then(metas => ({
         metas: metas,
         cacheMaxAge: CACHE_MAX_AGE,
@@ -39,23 +44,24 @@ builder.defineCatalogHandler((args) => {
       .catch(error => Promise.reject(`Failed retrieving catalog ${args.id}: ${JSON.stringify(error)}`));
 })
 
-async function getCursor(catalog, genre, offset) {
+async function getCursor(catalog, providers, genre, offset) {
   if (offset === 0) {
     return undefined;
   }
-  const previousCacheKey = `${catalog.id}|${genre}|${dateKey()}|${offset - catalog.pageSize}`;
+  const previousOffset = offset - catalog.pageSize;
+  const previousCacheKey = createCacheKey(catalog.id, providers, genre, previousOffset);
   return cacheWrapCatalog(previousCacheKey, () => Promise.reject("cursor not found"))
       .then(metas => metas[metas.length - 1])
       .then(meta => meta.id.replace('kitsu:', ''))
 }
 
-async function getCatalog(catalog, genre, offset) {
-  const cursor = await getCursor(catalog, genre, offset)
+async function getCatalog(catalog, providers, genre, offset) {
+  const cursor = await getCursor(catalog, providers, genre, offset)
   const startDate = getStartDate(genre)?.toISOString();
   const endDate = getEndDate(genre)?.toISOString();
-  const cacheKey = `${catalog.id}|${genre}|${dateKey()}`
+  const cacheKey = createCacheKey(catalog.id, providers, genre);
 
-  return cacheWrapIds(cacheKey, () => repository.getIds(catalog.type, startDate, endDate))
+  return cacheWrapIds(cacheKey, () => repository.getIds(providers, catalog.type, startDate, endDate))
       .then(ids => ids.slice(ids.indexOf(cursor) + 1))
       .then(ids => getMetas(ids, catalog.type))
       .then(metas => metas.slice(0, catalog.pageSize));
@@ -85,8 +91,9 @@ function getEndDate(genre) {
   }
 }
 
-function dateKey() {
-  return moment().format('YYYY-MM-DD')
+function createCacheKey(catalogId, providers, genre, offset) {
+  const dateKey = moment().format('YYYY-MM-DD');
+  return [catalogId, providers.join(','), genre, dateKey, offset].filter(x => x !== undefined).join('|');
 }
 
 module.exports = builder.getInterface();
