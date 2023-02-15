@@ -8,6 +8,7 @@ const repository = require('./lib/repository');
 const applySorting = require('./lib/sort');
 const applyFilters = require('./lib/filter');
 const { applyMochs, getMochCatalog, getMochItemMeta } = require('./moch/moch');
+const StaticLinks = require("./moch/static");
 
 const CACHE_MAX_AGE = parseInt(process.env.CACHE_MAX_AGE) || 60 * 60; // 1 hour in seconds
 const CACHE_MAX_AGE_EMPTY = 60; // 60 seconds
@@ -34,12 +35,7 @@ builder.defineStreamHandler((args) => {
       .then(streams => applySorting(streams, args.extra))
       .then(streams => applyStaticInfo(streams))
       .then(streams => applyMochs(streams, args.extra))
-      .then(streams => ({
-        streams: streams,
-        cacheMaxAge: streams.length ? CACHE_MAX_AGE : CACHE_MAX_AGE_EMPTY,
-        staleRevalidate: STALE_REVALIDATE_AGE,
-        staleError: STALE_ERROR_AGE
-      }))
+      .then(streams => enrichCacheParams(streams))
       .catch(error => {
         return Promise.reject(`Failed request ${args.id}: ${error}`);
       });
@@ -95,7 +91,6 @@ async function seriesRecordsHandler(args) {
         ? repository.getKitsuIdSeriesEntries(kitsuId, episode)
         : repository.getKitsuIdMovieEntries(kitsuId);
   }
-  // return Promise.reject(`Unsupported series id type: ${args.id}`);
   return Promise.resolve([]);
 }
 
@@ -107,8 +102,22 @@ async function movieRecordsHandler(args) {
   } else if (args.id.match(/^kitsu:\d+(?::\d+)?$/i)) {
     return seriesRecordsHandler(args);
   }
-  // return Promise.reject(`Unsupported movie id type: ${args.id}`);
   return Promise.resolve([]);
+}
+
+function enrichCacheParams(streams) {
+  let cacheAge = CACHE_MAX_AGE;
+  if (!streams.length) {
+    cacheAge = CACHE_MAX_AGE_EMPTY;
+  } else if (streams.every(stream => stream?.url === StaticLinks.FAILED_ACCESS)) {
+    cacheAge = 0;
+  }
+  return {
+    streams: streams,
+    cacheMaxAge: cacheAge,
+    staleRevalidate: STALE_REVALIDATE_AGE,
+    staleError: STALE_ERROR_AGE
+  }
 }
 
 module.exports = builder.getInterface();
