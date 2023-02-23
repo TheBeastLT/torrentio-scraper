@@ -25,7 +25,7 @@
     "premiumize-api": "^1.0.3",
     "real-debrid-api": "git://github.com/TheBeastLT/node-real-debrid.git#d1f7eaa8593b947edbfbc8a92a176448b48ef445",
     "request-ip": "^3.3.0",
-    "sequelize": "^6.27.0",
+    "sequelize": "^6.28.2",
     "stremio-addon-sdk": "^1.6.10",
     "ua-parser-js": "^1.0.32",
     "user-agents": "^1.0.1234"
