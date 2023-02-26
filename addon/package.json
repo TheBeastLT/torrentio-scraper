@@ -27,7 +27,7 @@
     "request-ip": "^3.3.0",
     "sequelize": "^6.29.0",
     "stremio-addon-sdk": "^1.6.10",
-    "ua-parser-js": "^1.0.32",
+    "ua-parser-js": "^1.0.33",
     "user-agents": "^1.0.1234"
   }
 }
