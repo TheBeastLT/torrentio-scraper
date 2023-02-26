@@ -18,7 +18,7 @@ const MONGO_URI = process.env.MONGODB_URI;
 const NO_CACHE = process.env.NO_CACHE || false;
 
 const memoryCache = initiateMemoryCache();
-// const remoteCache = initiateRemoteCache();
+const remoteCache = initiateRemoteCache();
 
 function initiateRemoteCache() {
   if (NO_CACHE) {
@@ -62,7 +62,7 @@ function cacheWrap(cache, key, method, options) {
 }
 
 function cacheWrapStream(id, method) {
-  return cacheWrap(memoryCache, `${STREAM_KEY_PREFIX}:${id}`, method, {
+  return cacheWrap(remoteCache, `${STREAM_KEY_PREFIX}:${id}`, method, {
     ttl: (streams) => streams.length ? STREAM_TTL : STREAM_EMPTY_TTL
   });
 }
