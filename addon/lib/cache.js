@@ -10,7 +10,7 @@ const RESOLVED_URL_KEY_PREFIX = `${GLOBAL_KEY_PREFIX}|resolved`;
 const STREAM_TTL = process.env.STREAM_TTL || 4 * 60 * 60; // 4 hours
 const STREAM_EMPTY_TTL = process.env.STREAM_EMPTY_TTL || 60; // 1 minute
 const AVAILABILITY_TTL = 8 * 60 * 60; // 8 hours
-const AVAILABILITY_EMPTY_TTL = 60 * 60; // 1 hours
+const AVAILABILITY_EMPTY_TTL = 60 * 60; // 1 hour
 const MESSAGE_VIDEO_URL_TTL = 60; // 1 minutes
 // When the streams are empty we want to cache it for less time in case of timeouts or failures
 
@@ -18,7 +18,7 @@ const MONGO_URI = process.env.MONGODB_URI;
 const NO_CACHE = process.env.NO_CACHE || false;
 
 const memoryCache = initiateMemoryCache();
-const remoteCache = initiateRemoteCache();
+// const remoteCache = initiateRemoteCache();
 
 function initiateRemoteCache() {
   if (NO_CACHE) {
@@ -62,7 +62,7 @@ function cacheWrap(cache, key, method, options) {
 }
 
 function cacheWrapStream(id, method) {
-  return cacheWrap(remoteCache, `${STREAM_KEY_PREFIX}:${id}`, method, {
+  return cacheWrap(memoryCache, `${STREAM_KEY_PREFIX}:${id}`, method, {
     ttl: (streams) => streams.length ? STREAM_TTL : STREAM_EMPTY_TTL
   });
 }
