@@ -110,7 +110,7 @@ function enrichStreamSources(stream) {
     return { ...stream, sources };
   }
   if (RUSSIAN_PROVIDERS.includes(provider)) {
-    const sources = unique([].concat(stream.sources).concat(getSources(ALL_RUSSIAN_TRACKERS, stream.infoHash)));
+    const sources = unique([].concat(stream.sources || []).concat(getSources(ALL_RUSSIAN_TRACKERS, stream.infoHash)));
     return { ...stream, sources };
   }
   return stream;
