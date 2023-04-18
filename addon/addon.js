@@ -60,7 +60,7 @@ builder.defineMetaHandler((args) => {
   return getMochItemMeta(mochKey, metaId, args.extra)
       .then(meta => ({
         meta: meta,
-        cacheMaxAge: CACHE_MAX_AGE
+        cacheMaxAge: metaId === 'Downloads' ? 0 : CACHE_MAX_AGE
       }))
       .catch(error => {
         return Promise.reject(`Failed retrieving catalog meta ${args.id}: ${JSON.stringify(error)}`);
