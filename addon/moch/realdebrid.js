@@ -11,7 +11,8 @@ const MIN_SIZE = 5 * 1024 * 1024; // 5 MB
 const CATALOG_MAX_PAGE = 1;
 const CATALOG_PAGE_SIZE = 100;
 const NON_BLACKLIST_ERRORS = ['ESOCKETTIMEDOUT', 'EAI_AGAIN', '504 Gateway Time-out'];
-const KEY = "realdebrid"
+const KEY = 'realdebrid';
+const DEBRID_DOWNLOADS = 'Downloads';
 
 async function getCachedStreams(streams, apiKey) {
   const hashes = streams.map(stream => stream.infoHash);
@@ -105,7 +106,12 @@ async function getCatalog(apiKey, offset, ip) {
   }
   const options = await getDefaultOptions(ip);
   const RD = new RealDebridClient(apiKey, options);
-  return _getAllTorrents(RD)
+  const downloadsMeta = {
+    id: `${KEY}:${DEBRID_DOWNLOADS}`,
+    type: Type.OTHER,
+    name: DEBRID_DOWNLOADS
+  };
+  const torrentMetas = await _getAllTorrents(RD)
       .then(torrents => Array.isArray(torrents) ? torrents : [])
       .then(torrents => torrents
           .filter(torrent => torrent && statusReady(torrent.status))
@@ -114,20 +120,28 @@ async function getCatalog(apiKey, offset, ip) {
             type: Type.OTHER,
             name: torrent.filename
           })));
-}
-
-async function _getAllTorrents(RD, page = 1) {
-  return RD.torrents.get(page - 1, page, CATALOG_PAGE_SIZE)
-      .then(torrents => torrents && torrents.length === CATALOG_PAGE_SIZE && page < CATALOG_MAX_PAGE
-          ? _getAllTorrents(RD, page + 1)
-              .then(nextTorrents => torrents.concat(nextTorrents))
-              .catch(() => torrents)
-          : torrents)
+  return [downloadsMeta].concat(torrentMetas)
 }
 
 async function getItemMeta(itemId, apiKey, ip) {
   const options = await getDefaultOptions(ip);
   const RD = new RealDebridClient(apiKey, options);
+  if (itemId === DEBRID_DOWNLOADS) {
+    const videos = await _getAllDownloads(RD)
+        .then(downloads => downloads
+            .map(download => ({
+              id: `${KEY}:${DEBRID_DOWNLOADS}:${download.id}`,
+              title: download.filename,
+              released: new Date(download.generated).toISOString(),
+              streams: [{ url: download.download }]
+            })));
+    return {
+      id: `${KEY}:${DEBRID_DOWNLOADS}`,
+      type: Type.OTHER,
+      name: DEBRID_DOWNLOADS,
+      videos: videos
+    };
+  }
   return _getTorrentInfo(RD, itemId)
       .then(torrent => ({
         id: `${KEY}:${torrent.id}`,
@@ -143,6 +157,19 @@ async function getItemMeta(itemId, apiKey, ip) {
               streams: [{ url: `${apiKey}/${torrent.hash.toLowerCase()}/null/${file.id - 1}` }]
             }))
       }))
+}
+
+async function _getAllTorrents(RD, page = 1) {
+  return RD.torrents.get(page - 1, page, CATALOG_PAGE_SIZE)
+      .then(torrents => torrents && torrents.length === CATALOG_PAGE_SIZE && page < CATALOG_MAX_PAGE
+          ? _getAllTorrents(RD, page + 1)
+              .then(nextTorrents => torrents.concat(nextTorrents))
+              .catch(() => torrents)
+          : torrents)
+}
+
+async function _getAllDownloads(RD, page = 1) {
+  return RD.downloads.get(page - 1, page, CATALOG_PAGE_SIZE);
 }
 
 async function resolve({ ip, isBrowser, apiKey, infoHash, cachedEntryInfo, fileIndex }) {
