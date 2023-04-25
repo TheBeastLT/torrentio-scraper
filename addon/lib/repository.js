@@ -48,8 +48,8 @@ function getTorrent(infoHash) {
   return Torrent.findOne({ where: { infoHash: infoHash } });
 }
 
-function getTorrentWithFiles(infoHash) {
-  return Torrent.findOne({ where: { infoHash: infoHash }, include: [File] });
+function getFiles(infoHashes) {
+  return File.findAll({ where: { infoHash: { [Op.in]: infoHashes} } });
 }
 
 function getImdbIdMovieEntries(imdbId) {
@@ -109,7 +109,7 @@ function getKitsuIdSeriesEntries(kitsuId, episode) {
 
 module.exports = {
   getTorrent,
-  getTorrentWithFiles,
+  getFiles,
   getImdbIdMovieEntries,
   getImdbIdSeriesEntries,
   getKitsuIdMovieEntries,

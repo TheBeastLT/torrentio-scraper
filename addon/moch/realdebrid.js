@@ -127,10 +127,14 @@ async function getItemMeta(itemId, apiKey, ip) {
   const options = await getDefaultOptions(ip);
   const RD = new RealDebridClient(apiKey, options);
   if (itemId === DEBRID_DOWNLOADS) {
+    // const allTorrents = await _getAllTorrents(RD).catch(() => []);
     const videos = await _getAllDownloads(RD)
         .then(downloads => downloads
             .map(download => ({
               id: `${KEY}:${DEBRID_DOWNLOADS}:${download.id}`,
+              // infoHash: allTorrents
+              //     .filter(torrent => (torrent.links || []).find(link => link === download.link))
+              //     .map(torrent => torrent.hash.toLowerCase())[0],
               title: download.filename,
               released: new Date(download.generated).toISOString(),
               streams: [{ url: download.download }]
