@@ -9,7 +9,7 @@ const putio = require('./putio');
 const StaticResponse = require('./static');
 const { cacheWrapResolvedUrl } = require('../lib/cache');
 const { timeout } = require('../lib/promises');
-const { BadTokenError, streamFilename, AccessDeniedError } = require('./mochHelper');
+const { BadTokenError, streamFilename, AccessDeniedError, enrichMeta } = require('./mochHelper');
 
 const RESOLVE_TIMEOUT = 2 * 60 * 1000; // 2 minutes
 const MIN_API_KEY_SYMBOLS = 15;
@@ -125,6 +125,7 @@ async function getMochItemMeta(mochKey, itemId, config) {
   }
 
   return moch.instance.getItemMeta(itemId, config[moch.key], config.ip)
+      .then(meta => enrichMeta(meta))
       .then(meta => {
         meta.videos
             .map(video => video.streams)

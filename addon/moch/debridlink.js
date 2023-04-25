@@ -60,6 +60,7 @@ async function getItemMeta(itemId, apiKey, ip) {
         id: `${KEY}:${torrent.id}`,
         type: Type.OTHER,
         name: torrent.name,
+        infoHash: torrent.hashString.toLowerCase(),
         videos: torrent.files
             .filter(file => isVideo(file.name))
             .map((file, index) => ({

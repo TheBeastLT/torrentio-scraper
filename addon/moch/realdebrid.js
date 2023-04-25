@@ -147,6 +147,7 @@ async function getItemMeta(itemId, apiKey, ip) {
         id: `${KEY}:${torrent.id}`,
         type: Type.OTHER,
         name: torrent.filename,
+        infoHash: torrent.hash.toLowerCase(),
         videos: torrent.files
             .filter(file => file.selected)
             .filter(file => isVideo(file.path))
