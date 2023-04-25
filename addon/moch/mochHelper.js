@@ -1,4 +1,5 @@
 const repository = require('../lib/repository')
+const { Type } = require("../lib/types");
 
 const METAHUB_URL = 'https://images.metahub.space'
 const BadTokenError = { code: 'BAD_TOKEN' }
@@ -25,6 +26,7 @@ async function enrichMeta(itemMeta) {
   if (commonImdbId) {
     return {
       ...itemMeta,
+      type: torrent.type === Type.SERIES ? torrent.type : itemMeta.type,
       logo: `${METAHUB_URL}/logo/medium/${commonImdbId}/img`,
       poster: `${METAHUB_URL}/poster/medium/${commonImdbId}/img`,
       background: `${METAHUB_URL}/background/medium/${commonImdbId}/img`,
