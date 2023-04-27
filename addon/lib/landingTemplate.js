@@ -193,7 +193,7 @@ const { MochOptions } = require('../moch/moch');
 const { PreConfigurations } = require('../lib/configuration');
 
 function landingTemplate(manifest, config = {}) {
-  const providers = config.providers || [];
+  const providers = config.providers || Providers.options.map(provider => provider.key);
   const sort = config[SortOptions.key] || SortOptions.options.qualitySeeders.key;
   const language = config[LanguageOptions.key];
   const qualityFilters = config[QualityFilter.key] || [];
@@ -294,7 +294,7 @@ function landingTemplate(manifest, config = {}) {
          </select>
          
          <label class="label" id="iLimitLabel" for="iLimit">Max results per quality:</label>
-         <input type="number" id="iLimit" onchange="generateInstallLink()" class="input"  placeholder="All results">
+         <input type="text" inputmode="numeric" pattern="[0-9]*" id="iLimit" onchange="generateInstallLink()" class="input" placeholder="All results">
          
          <label class="label" for="iDebridProviders">Debrid provider:</label>
          <select id="iDebridProviders" class="input" onchange="debridProvidersChange()">
@@ -354,12 +354,9 @@ function landingTemplate(manifest, config = {}) {
       <script type="text/javascript">
           $(document).ready(function() {
               const isTvMedia = window.matchMedia("tv").matches;
-              const istTvAgent = /\\b(?:tv|wv)\\b/i.test(navigator.userAgent)
-              if (isTvMedia || istTvAgent) {
-                $('#iProviders').val([${providers.map(provider => '"' + provider + '"')}]);
-                $('#iQualityFilter').val([${qualityFilters.map(filter => '"' + filter + '"')}]);
-                $('#iDebridOptions').val([${debridOptions.map(option => '"' + option + '"')}]);
-              } else {
+              const isTvAgent = /\\b(?:tv|wv)\\b/i.test(navigator.userAgent)
+              const isDesktopMedia = window.matchMedia("(pointer:fine)").matches;
+              if (isDesktopMedia && !isTvMedia && !isTvAgent) {
                 $('#iProviders').multiselect({ 
                     nonSelectedText: 'All providers',
                     buttonTextAlignment: 'left',
@@ -378,6 +375,10 @@ function landingTemplate(manifest, config = {}) {
                     onChange: () => generateInstallLink()
                 });
                 $('#iDebridOptions').multiselect('select', [${debridOptions.map(option => '"' + option + '"')}]);
+              } else {
+                $('#iProviders').val([${providers.map(provider => '"' + provider + '"')}]);
+                $('#iQualityFilter').val([${qualityFilters.map(filter => '"' + filter + '"')}]);
+                $('#iDebridOptions').val([${debridOptions.map(option => '"' + option + '"')}]);
               }
               $('#iDebridProviders').val("${debridProvider || 'none'}");
               $('#iRealDebrid').val("${realDebridApiKey}");
@@ -415,7 +416,8 @@ function landingTemplate(manifest, config = {}) {
           }
           
           function generateInstallLink() {
-              const providersValue = $('#iProviders').val().join(',') || '';
+              const providersList = $('#iProviders').val() || [];
+              const providersValue = providersList.join(',');
               const qualityFilterValue = $('#iQualityFilter').val().join(',') || '';
               const sortValue = $('#iSort').val() || '';
               const languageValue = $('#iLanguage').val() || '';
@@ -431,11 +433,11 @@ function landingTemplate(manifest, config = {}) {
               const putioTokenValue = $('#iPutioToken').val() || '';
               
               
-              const providers = providersValue.length && providersValue;
+              const providers = providersList.length && providersList.length < ${Providers.options.length} && providersValue;
               const qualityFilters = qualityFilterValue.length && qualityFilterValue;
               const sort = sortValue !== '${SortOptions.options.qualitySeeders.key}' && sortValue;
               const language = languageValue.length && languageValue !== 'none' && languageValue;
-              const limit = /^[1-9][0-9]*$/.test(limitValue) && limitValue;
+              const limit = /^[1-9][0-9]?$/.test(limitValue) && limitValue;
               
               const debridOptions = debridOptionsValue.length && debridOptionsValue.trim();
               const realDebrid = realDebridValue.length && realDebridValue.trim();
