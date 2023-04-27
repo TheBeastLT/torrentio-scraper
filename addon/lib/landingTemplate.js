@@ -69,7 +69,7 @@ a.install-link {
    text-decoration: none
 }
 
-button {
+.install-button {
    border: 0;
    outline: 0;
    color: white;
@@ -86,11 +86,11 @@ button {
    transition: box-shadow 0.1s ease-in-out;
 }
 
-button:hover {
+.install-button:hover {
    box-shadow: none;
 }
 
-button:active {
+.install-button:active {
    box-shadow: 0 0 0 0.5vh white inset;
 }
 
@@ -245,12 +245,12 @@ function landingTemplate(manifest, config = {}) {
       <title>${manifest.name} - Stremio Addon</title>
       <link rel="shortcut icon" href="${logo}" type="image/x-icon">
       <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,600,700&display=swap" rel="stylesheet">
-      <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+      <script src="https://code.jquery.com/jquery-3.6.4.slim.min.js"></script>
       <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
       <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
       <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet" >
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-multiselect/0.9.15/js/bootstrap-multiselect.min.js"></script>
-      <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-multiselect/0.9.15/css/bootstrap-multiselect.css" rel="stylesheet"/>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-multiselect/1.1.2/js/bootstrap-multiselect.min.js"></script>
+      <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-multiselect/1.1.2/css/bootstrap-multiselect.css" rel="stylesheet"/>
       <style>${STYLESHEET}</style>
    </head>
 
@@ -343,7 +343,7 @@ function landingTemplate(manifest, config = {}) {
          <div class="separator"></div>
 
          <a id="installLink" class="install-link" href="#">
-            <button name="Install">INSTALL</button>
+            <button name="Install" class="install-button">INSTALL</button>
          </a>
          <div class="contact">
            <p>Or paste into Stremio search bar after clicking install</p>
@@ -355,16 +355,19 @@ function landingTemplate(manifest, config = {}) {
           $(document).ready(function() {
               $('#iProviders').multiselect({ 
                   nonSelectedText: 'All providers',
+                  buttonTextAlignment: 'left',
                   onChange: () => generateInstallLink()
               });
               $('#iProviders').multiselect('select', [${providers.map(provider => '"' + provider + '"')}]);
               $('#iQualityFilter').multiselect({ 
                   nonSelectedText: 'None',
+                  buttonTextAlignment: 'left',
                   onChange: () => generateInstallLink()
               });
               $('#iQualityFilter').multiselect('select', [${qualityFilters.map(filter => '"' + filter + '"')}]);
               $('#iDebridOptions').multiselect({ 
                   nonSelectedText: 'None',
+                  buttonTextAlignment: 'left',
                   onChange: () => generateInstallLink()
               });
               $('#iDebridOptions').multiselect('select', [${debridOptions.map(option => '"' + option + '"')}]);
