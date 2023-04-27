@@ -294,7 +294,7 @@ function landingTemplate(manifest, config = {}) {
          </select>
          
          <label class="label" id="iLimitLabel" for="iLimit">Max results per quality:</label>
-         <input type="text" id="iLimit" onchange="generateInstallLink()" class="input"  placeholder="All results">
+         <input type="number" id="iLimit" onchange="generateInstallLink()" class="input"  placeholder="All results">
          
          <label class="label" for="iDebridProviders">Debrid provider:</label>
          <select id="iDebridProviders" class="input" onchange="debridProvidersChange()">
