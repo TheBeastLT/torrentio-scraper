@@ -167,7 +167,6 @@ button:active {
 }
 
 .input, .btn {
-  height: 3.8vh;
   width: 100%;
   margin: auto;
   margin-bottom: 10px;
@@ -178,6 +177,11 @@ button:active {
   color: #333;
   background-color: rgb(255, 255, 255);
   box-shadow: 0 0.5vh 1vh rgba(0, 0, 0, 0.2);
+}
+
+.input:focus, .btn:focus {
+  outline: none; 
+  box-shadow: 0 0 0 2pt rgb(30, 144, 255, 0.7);
 }
 `;
 const { Providers } = require('./filter');
@@ -209,7 +213,7 @@ function landingTemplate(manifest, config = {}) {
   const background = manifest.background || 'https://dl.strem.io/addon-background.jpg';
   const logo = manifest.logo || 'https://dl.strem.io/addon-logo.png';
   const providersHTML = Providers.options
-      .map(provider => `<option value="${provider.key}">${provider.foreign || ''}${provider.label}</option>`)
+      .map(provider => `<option value="${provider.key}">${provider.foreign ? provider.foreign + ' ' : ''}${provider.label}</option>`)
       .join('\n');
   const sortOptionsHTML = Object.values(SortOptions.options)
       .map((option, i) => `<option value="${option.key}" ${i === 0 ? 'selected' : ''}>${option.description}</option>`)
