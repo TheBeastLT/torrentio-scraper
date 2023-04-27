@@ -273,7 +273,7 @@ function landingTemplate(manifest, config = {}) {
          <div class="separator"></div>
          
          <label class="label" for="iProviders">Providers:</label>
-         <select id="iProviders" class="input" name="providers[]" multiple="multiple">
+         <select id="iProviders" class="input" onchange="generateInstallLink()" name="providers[]" multiple="multiple">
             ${providersHTML}
          </select>
          
@@ -289,7 +289,7 @@ function landingTemplate(manifest, config = {}) {
          </select>
          
          <label class="label" for="iQualityFilter">Exclude qualities/resolutions:</label>
-         <select id="iQualityFilter" class="input" name="qualityFilters[]" multiple="multiple">
+         <select id="iQualityFilter" class="input" onchange="generateInstallLink()" name="qualityFilters[]" multiple="multiple">
             ${qualityFiltersHTML}
          </select>
          
@@ -335,7 +335,7 @@ function landingTemplate(manifest, config = {}) {
          
          <div id="dDebridOptions">
            <label class="label" for="iDebridOptions">Debrid options:</label>
-           <select id="iDebridOptions" class="input" name="debridOptions[]" multiple="multiple">
+           <select id="iDebridOptions" class="input" onchange="generateInstallLink()" name="debridOptions[]" multiple="multiple">
               ${debridOptionsHTML}
            </select>
          </div>
@@ -353,24 +353,32 @@ function landingTemplate(manifest, config = {}) {
       </div>
       <script type="text/javascript">
           $(document).ready(function() {
-              $('#iProviders').multiselect({ 
-                  nonSelectedText: 'All providers',
-                  buttonTextAlignment: 'left',
-                  onChange: () => generateInstallLink()
-              });
-              $('#iProviders').multiselect('select', [${providers.map(provider => '"' + provider + '"')}]);
-              $('#iQualityFilter').multiselect({ 
-                  nonSelectedText: 'None',
-                  buttonTextAlignment: 'left',
-                  onChange: () => generateInstallLink()
-              });
-              $('#iQualityFilter').multiselect('select', [${qualityFilters.map(filter => '"' + filter + '"')}]);
-              $('#iDebridOptions').multiselect({ 
-                  nonSelectedText: 'None',
-                  buttonTextAlignment: 'left',
-                  onChange: () => generateInstallLink()
-              });
-              $('#iDebridOptions').multiselect('select', [${debridOptions.map(option => '"' + option + '"')}]);
+              const isTvMedia = window.matchMedia("tv").matches;
+              const istTvAgent = /\\b(?:tv|wv)\\b/i.test(navigator.userAgent)
+              if (isTvMedia || istTvAgent) {
+                $('#iProviders').val([${providers.map(provider => '"' + provider + '"')}]);
+                $('#iQualityFilter').val([${qualityFilters.map(filter => '"' + filter + '"')}]);
+                $('#iDebridOptions').val([${debridOptions.map(option => '"' + option + '"')}]);
+              } else {
+                $('#iProviders').multiselect({ 
+                    nonSelectedText: 'All providers',
+                    buttonTextAlignment: 'left',
+                    onChange: () => generateInstallLink()
+                });
+                $('#iProviders').multiselect('select', [${providers.map(provider => '"' + provider + '"')}]);
+                $('#iQualityFilter').multiselect({ 
+                    nonSelectedText: 'None',
+                    buttonTextAlignment: 'left',
+                    onChange: () => generateInstallLink()
+                });
+                $('#iQualityFilter').multiselect('select', [${qualityFilters.map(filter => '"' + filter + '"')}]);
+                $('#iDebridOptions').multiselect({ 
+                    nonSelectedText: 'None',
+                    buttonTextAlignment: 'left',
+                    onChange: () => generateInstallLink()
+                });
+                $('#iDebridOptions').multiselect('select', [${debridOptions.map(option => '"' + option + '"')}]);
+              }
               $('#iDebridProviders').val("${debridProvider || 'none'}");
               $('#iRealDebrid').val("${realDebridApiKey}");
               $('#iPremiumize').val("${premiumizeApiKey}");
