@@ -1,5 +1,7 @@
 const { QualityFilter } = require('./filter');
 const { languages, containsLanguage } = require('./languages');
+const { Type } = require("./types");
+const { hasMochConfigured } = require("../moch/moch");
 
 const OTHER_QUALITIES = QualityFilter.options.find(option => option.key === 'other');
 const CAM_QUALITIES = QualityFilter.options.find(option => option.key === 'cam');
@@ -37,39 +39,42 @@ const LanguageOptions = {
   }))
 }
 
-function sortStreams(streams, config) {
+function sortStreams(streams, config, type) {
   const language = config[LanguageOptions.key];
   if (language && language !== languages[0]) {
     // No need to filter english since it's hard to predict which entries are english
     const streamsWithLanguage = streams.filter(stream => containsLanguage(stream, language));
     const streamsNoLanguage = streams.filter(stream => !streamsWithLanguage.includes(stream));
-    return _sortStreams(streamsWithLanguage, config).concat(_sortStreams(streamsNoLanguage, config));
+    return _sortStreams(streamsWithLanguage, config, type).concat(_sortStreams(streamsNoLanguage, config, type));
   }
-  return _sortStreams(streams, config);
+  return _sortStreams(streams, config, type);
 }
 
-function _sortStreams(streams, config) {
+function _sortStreams(streams, config, type) {
   const sort = config.sort && config.sort.toLowerCase() || undefined;
   const limit = /^[1-9][0-9]*$/.test(config.limit) && parseInt(config.limit) || undefined;
+  const sortedStreams = sortBySeeders(streams, config, type, limit);
   if (sort === SortOptions.options.seeders.key) {
-    return sortBySeeders(streams, limit);
+    return sortedStreams
   } else if (sort === SortOptions.options.size.key) {
-    return sortBySize(streams, limit);
+    return sortBySize(sortedStreams, limit);
   }
   const nestedSort = sort === SortOptions.options.qualitySize.key ? sortBySize : noopSort;
-  return sortByVideoQuality(streams, nestedSort, limit)
+  return sortByVideoQuality(sortedStreams, nestedSort, limit)
 }
 
 function noopSort(streams) {
   return streams;
 }
 
-function sortBySeeders(streams, limit) {
+function sortBySeeders(streams, config, type, limit) {
   // streams are already presorted by seeders and upload date
   const healthy = streams.filter(stream => extractSeeders(stream.title) >= HEALTHY_SEEDERS);
   const seeded = streams.filter(stream => extractSeeders(stream.title) >= SEEDED_SEEDERS);
 
-  if (healthy.length >= MIN_HEALTHY_COUNT) {
+  if (type === Type.SERIES && hasMochConfigured(config)) {
+    return streams.slice(0, limit);
+  } else if (healthy.length >= MIN_HEALTHY_COUNT) {
     return healthy.slice(0, limit);
   } else if (seeded.length >= MAX_UNHEALTHY_COUNT) {
     return seeded.slice(0, MIN_HEALTHY_COUNT).slice(0, limit);
@@ -78,7 +83,7 @@ function sortBySeeders(streams, limit) {
 }
 
 function sortBySize(streams, limit) {
-  return sortBySeeders(streams)
+  return streams
       .sort((a, b) => {
         const aSize = extractSize(a.title);
         const bSize = extractSize(b.title);
@@ -87,7 +92,7 @@ function sortBySize(streams, limit) {
 }
 
 function sortByVideoQuality(streams, nestedSort, limit) {
-  const qualityMap = sortBySeeders(streams)
+  const qualityMap = streams
       .reduce((map, stream) => {
         const quality = extractQuality(stream.name);
         map[quality] = (map[quality] || []).concat(stream);

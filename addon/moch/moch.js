@@ -64,8 +64,12 @@ const unrestrictQueue = new namedQueue((task, callback) => task.method()
     .then(result => callback(false, result))
     .catch((error => callback(error))), 20);
 
+function hasMochConfigured(config) {
+  return Object.keys(MOCHS).find(moch => config && config[moch])
+}
+
 async function applyMochs(streams, config) {
-  if (!streams || !streams.length || !Object.keys(MOCHS).find(moch => config[moch])) {
+  if (!streams || !streams.length || !hasMochConfigured(config)) {
     return streams;
   }
   return Promise.all(Object.keys(config)
@@ -170,21 +174,27 @@ function populateCachedLinks(streams, mochResult) {
 }
 
 function populateDownloadLinks(streams, mochResults) {
-  streams
-      .filter(stream => stream.infoHash)
-      .forEach(stream => mochResults
-          .forEach(mochResult => {
-            const cachedEntry = mochResult.mochStreams[stream.infoHash];
-            if (!cachedEntry || !cachedEntry.cached) {
-              streams.push({
-                name: `[${mochResult.moch.shortName} download] ${stream.name}`,
-                title: stream.title,
-                url: `${RESOLVER_HOST}/${mochResult.moch.key}/${cachedEntry.url}/${streamFilename(stream)}`,
-                behaviorHints: stream.behaviorHints
-              })
-            }
-          }));
+  const torrentStreams = streams.filter(stream => stream.infoHash);
+  torrentStreams.forEach(stream => mochResults.forEach(mochResult => {
+    const cachedEntry = mochResult.mochStreams[stream.infoHash];
+    const isCached = cachedEntry && cachedEntry.cached;
+    if (!isCached && isHealthyStreamForDebrid(torrentStreams, stream)) {
+      streams.push({
+        name: `[${mochResult.moch.shortName} download] ${stream.name}`,
+        title: stream.title,
+        url: `${RESOLVER_HOST}/${mochResult.moch.key}/${cachedEntry.url}/${streamFilename(stream)}`,
+        behaviorHints: stream.behaviorHints
+      })
+    }
+  }));
   return streams;
+}
+
+function isHealthyStreamForDebrid(streams, stream) {
+  const isZeroSeeders = /👤 0\b/.test(stream.title);
+  const is4kStream = /\b4k\b/.test(stream.name);
+  const isNotEnoughOptions = streams.length <= 5;
+  return !isZeroSeeders || is4kStream || isNotEnoughOptions;
 }
 
 function isInvalidToken(token, mochKey) {
@@ -215,4 +225,4 @@ function errorStreamResponse(mochKey, error) {
   return undefined;
 }
 
-module.exports = { applyMochs, getMochCatalog, getMochItemMeta, resolve, MochOptions: MOCHS }
+module.exports = { applyMochs, getMochCatalog, getMochItemMeta, resolve, hasMochConfigured, MochOptions: MOCHS }

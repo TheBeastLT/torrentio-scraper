@@ -437,7 +437,7 @@ function landingTemplate(manifest, config = {}) {
               const qualityFilters = qualityFilterValue.length && qualityFilterValue;
               const sort = sortValue !== '${SortOptions.options.qualitySeeders.key}' && sortValue;
               const language = languageValue.length && languageValue !== 'none' && languageValue;
-              const limit = /^[1-9][0-9]?$/.test(limitValue) && limitValue;
+              const limit = /^[1-9][0-9]{0,2}$/.test(limitValue) && limitValue;
               
               const debridOptions = debridOptionsValue.length && debridOptionsValue.trim();
               const realDebrid = realDebridValue.length && realDebridValue.trim();
