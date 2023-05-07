@@ -53,9 +53,9 @@ function sortStreams(streams, config, type) {
 function _sortStreams(streams, config, type) {
   const sort = config.sort && config.sort.toLowerCase() || undefined;
   const limit = /^[1-9][0-9]*$/.test(config.limit) && parseInt(config.limit) || undefined;
-  const sortedStreams = sortBySeeders(streams, config, type, limit);
+  const sortedStreams = sortBySeeders(streams, config, type);
   if (sort === SortOptions.options.seeders.key) {
-    return sortedStreams
+    return sortedStreams.slice(0, limit);
   } else if (sort === SortOptions.options.size.key) {
     return sortBySize(sortedStreams, limit);
   }
@@ -67,19 +67,19 @@ function noopSort(streams) {
   return streams;
 }
 
-function sortBySeeders(streams, config, type, limit) {
+function sortBySeeders(streams, config, type) {
   // streams are already presorted by seeders and upload date
   const healthy = streams.filter(stream => extractSeeders(stream.title) >= HEALTHY_SEEDERS);
   const seeded = streams.filter(stream => extractSeeders(stream.title) >= SEEDED_SEEDERS);
 
   if (type === Type.SERIES && hasMochConfigured(config)) {
-    return streams.slice(0, limit);
+    return streams;
   } else if (healthy.length >= MIN_HEALTHY_COUNT) {
-    return healthy.slice(0, limit);
+    return healthy;
   } else if (seeded.length >= MAX_UNHEALTHY_COUNT) {
-    return seeded.slice(0, MIN_HEALTHY_COUNT).slice(0, limit);
+    return seeded.slice(0, MIN_HEALTHY_COUNT);
   }
-  return streams.slice(0, MAX_UNHEALTHY_COUNT).slice(0, limit);
+  return streams.slice(0, MAX_UNHEALTHY_COUNT);
 }
 
 function sortBySize(streams, limit) {
