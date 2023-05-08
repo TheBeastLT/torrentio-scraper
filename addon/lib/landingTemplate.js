@@ -195,7 +195,7 @@ const { PreConfigurations } = require('../lib/configuration');
 function landingTemplate(manifest, config = {}) {
   const providers = config.providers || Providers.options.map(provider => provider.key);
   const sort = config[SortOptions.key] || SortOptions.options.qualitySeeders.key;
-  const language = config[LanguageOptions.key];
+  const languages = config[LanguageOptions.key] || [];
   const qualityFilters = config[QualityFilter.key] || [];
   const limit = config.limit || '';
 
@@ -218,7 +218,7 @@ function landingTemplate(manifest, config = {}) {
   const sortOptionsHTML = Object.values(SortOptions.options)
       .map((option, i) => `<option value="${option.key}" ${i === 0 ? 'selected' : ''}>${option.description}</option>`)
       .join('\n');
-  const languageOptionsHTML = LanguageOptions.options
+  const languagesOptionsHTML = LanguageOptions.options
       .map((option, i) => `<option value="${option.key}">${option.label}</option>`)
       .join('\n');
   const qualityFiltersHTML = Object.values(QualityFilter.options)
@@ -282,10 +282,9 @@ function landingTemplate(manifest, config = {}) {
            ${sortOptionsHTML}
          </select>
          
-         <label class="label" for="iLanguage">Priority foreign language:</label>
-         <select id="iLanguage" class="input" onchange="generateInstallLink()" title="Streams with the selected dubs/subs language will be shown on the top">
-           <option value="none" selected>None</option>
-           ${languageOptionsHTML}
+         <label class="label" for="iLanguages">Priority foreign language:</label>
+         <select id="iLanguages" class="input" onchange="generateInstallLink()" name="languages[]" multiple="multiple" title="Streams with the selected dubs/subs language will be shown on the top">
+           ${languagesOptionsHTML}
          </select>
          
          <label class="label" for="iQualityFilter">Exclude qualities/resolutions:</label>
@@ -363,6 +362,12 @@ function landingTemplate(manifest, config = {}) {
                     onChange: () => generateInstallLink()
                 });
                 $('#iProviders').multiselect('select', [${providers.map(provider => '"' + provider + '"')}]);
+                $('#iLanguages').multiselect({ 
+                    nonSelectedText: 'None',
+                    buttonTextAlignment: 'left',
+                    onChange: () => generateInstallLink()
+                });
+                $('#iLanguages').multiselect('select', [${languages.map(language => '"' + language + '"')}]);
                 $('#iQualityFilter').multiselect({ 
                     nonSelectedText: 'None',
                     buttonTextAlignment: 'left',
@@ -377,6 +382,7 @@ function landingTemplate(manifest, config = {}) {
                 $('#iDebridOptions').multiselect('select', [${debridOptions.map(option => '"' + option + '"')}]);
               } else {
                 $('#iProviders').val([${providers.map(provider => '"' + provider + '"')}]);
+                $('#iLanguages').val([${languages.map(language => '"' + language + '"')}]);
                 $('#iQualityFilter').val([${qualityFilters.map(filter => '"' + filter + '"')}]);
                 $('#iDebridOptions').val([${debridOptions.map(option => '"' + option + '"')}]);
               }
@@ -389,7 +395,6 @@ function landingTemplate(manifest, config = {}) {
               $('#iPutioClientId').val("${putioClientId}");
               $('#iPutioToken').val("${putioToken}");
               $('#iSort').val("${sort}");
-              $('#iLanguage').val("${language || 'none'}");
               $('#iLimit').val("${limit}");
               generateInstallLink();
               debridProvidersChange();
@@ -420,7 +425,7 @@ function landingTemplate(manifest, config = {}) {
               const providersValue = providersList.join(',');
               const qualityFilterValue = $('#iQualityFilter').val().join(',') || '';
               const sortValue = $('#iSort').val() || '';
-              const languageValue = $('#iLanguage').val() || '';
+              const languagesValue = $('#iLanguages').val().join(',') || [];
               const limitValue = $('#iLimit').val() || '';
               
               const debridOptionsValue = $('#iDebridOptions').val().join(',') || '';
@@ -436,7 +441,7 @@ function landingTemplate(manifest, config = {}) {
               const providers = providersList.length && providersList.length < ${Providers.options.length} && providersValue;
               const qualityFilters = qualityFilterValue.length && qualityFilterValue;
               const sort = sortValue !== '${SortOptions.options.qualitySeeders.key}' && sortValue;
-              const language = languageValue.length && languageValue !== 'none' && languageValue;
+              const languages = languagesValue.length && languagesValue;
               const limit = /^[1-9][0-9]{0,2}$/.test(limitValue) && limitValue;
               
               const debridOptions = debridOptionsValue.length && debridOptionsValue.trim();
@@ -453,7 +458,7 @@ function landingTemplate(manifest, config = {}) {
               let configurationValue = [
                     ['${Providers.key}', providers],
                     ['${SortOptions.key}', sort],
-                    ['${LanguageOptions.key}', language],
+                    ['${LanguageOptions.key}', languages],
                     ['${QualityFilter.key}', qualityFilters],
                     ['limit', limit],
                     ['${DebridOptions.key}', debridOptions], 

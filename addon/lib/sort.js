@@ -40,10 +40,10 @@ const LanguageOptions = {
 }
 
 function sortStreams(streams, config, type) {
-  const language = config[LanguageOptions.key];
-  if (language && language !== languages[0]) {
+  const configLanguages = config[LanguageOptions.key];
+  if (configLanguages && configLanguages.length && configLanguages[0] !== languages[0]) {
     // No need to filter english since it's hard to predict which entries are english
-    const streamsWithLanguage = streams.filter(stream => containsLanguage(stream, language));
+    const streamsWithLanguage = streams.filter(stream => containsLanguage(stream, configLanguages));
     const streamsNoLanguage = streams.filter(stream => !streamsWithLanguage.includes(stream));
     return _sortStreams(streamsWithLanguage, config, type).concat(_sortStreams(streamsNoLanguage, config, type));
   }

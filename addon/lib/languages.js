@@ -51,8 +51,8 @@ function mapLanguages(languages) {
   return [...new Set([].concat(mapped).concat(unmapped))];
 }
 
-function containsLanguage(stream, language) {
-  return stream.title.includes(languageMapping[language]);
+function containsLanguage(stream, languages) {
+  return languages.map(lang => languageMapping[lang]).some(lang => stream.title.includes(lang));
 }
 
 module.exports = { mapLanguages, containsLanguage, languages }

@@ -26,7 +26,7 @@ const PRE_CONFIGURATIONS = {
   }
 }
 
-const keysToSplit = [Providers.key, QualityFilter.key, DebridOptions.key];
+const keysToSplit = [Providers.key, LanguageOptions.key, QualityFilter.key, DebridOptions.key];
 
 function parseConfiguration(configuration) {
   if (PRE_CONFIGURATIONS[configuration]) {
