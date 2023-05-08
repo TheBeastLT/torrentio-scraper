@@ -186,7 +186,7 @@ a.install-link {
 `;
 const { Providers } = require('./filter');
 const { SortOptions } = require('./sort');
-const { LanguageOptions } = require('./sort');
+const { LanguageOptions } = require('./languages');
 const { QualityFilter } = require('./filter');
 const { DebridOptions } = require('../moch/options');
 const { MochOptions } = require('../moch/moch');

@@ -6,9 +6,10 @@ const languageMapping = {
   'english': '🇬🇧',
   'japanese': '🇯🇵',
   'russian': '🇷🇺',
+  'italian': '🇮🇹',
   'portuguese': '🇵🇹',
   'spanish': '🇪🇸',
-  'italian': '🇮🇹',
+  'latino': '🇲🇽',
   'korean': '🇰🇷',
   'chinese': '🇨🇳',
   'french': '🇫🇷',
@@ -38,7 +39,14 @@ const languageMapping = {
   'indonesian': '🇮🇩',
   'thai': '🇹🇭'
 }
-const languages = Object.keys(languageMapping).slice(4);
+
+const LanguageOptions = {
+  key: 'language',
+  options: Object.keys(languageMapping).slice(5).map(lang => ({
+    key: lang,
+    label: `${languageMapping[lang]} ${lang.charAt(0).toUpperCase()}${lang.slice(1)}`
+  }))
+}
 
 function mapLanguages(languages) {
   const mapped = languages
@@ -55,4 +63,4 @@ function containsLanguage(stream, languages) {
   return languages.map(lang => languageMapping[lang]).some(lang => stream.title.includes(lang));
 }
 
-module.exports = { mapLanguages, containsLanguage, languages }
+module.exports = { mapLanguages, containsLanguage, LanguageOptions }

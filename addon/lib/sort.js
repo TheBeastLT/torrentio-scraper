@@ -1,5 +1,5 @@
 const { QualityFilter } = require('./filter');
-const { languages, containsLanguage } = require('./languages');
+const { containsLanguage, LanguageOptions } = require('./languages');
 const { Type } = require("./types");
 const { hasMochConfigured } = require("../moch/moch");
 
@@ -31,19 +31,12 @@ const SortOptions = {
     },
   }
 }
-const LanguageOptions = {
-  key: 'language',
-  options: languages.slice(1).map(lang => ({
-    key: lang,
-    label: lang.charAt(0).toUpperCase() + lang.slice(1)
-  }))
-}
 
 function sortStreams(streams, config, type) {
-  const configLanguages = config[LanguageOptions.key];
-  if (configLanguages && configLanguages.length && configLanguages[0] !== languages[0]) {
+  const languages = config[LanguageOptions.key];
+  if (languages && languages.length && languages[0] !== 'english') {
     // No need to filter english since it's hard to predict which entries are english
-    const streamsWithLanguage = streams.filter(stream => containsLanguage(stream, configLanguages));
+    const streamsWithLanguage = streams.filter(stream => containsLanguage(stream, languages));
     const streamsNoLanguage = streams.filter(stream => !streamsWithLanguage.includes(stream));
     return _sortStreams(streamsWithLanguage, config, type).concat(_sortStreams(streamsNoLanguage, config, type));
   }
@@ -162,4 +155,3 @@ function parseSize(sizeText) {
 
 module.exports = sortStreams;
 module.exports.SortOptions = SortOptions;
-module.exports.LanguageOptions = LanguageOptions;

@@ -1,6 +1,6 @@
 const { DebridOptions } = require('../moch/options');
 const { QualityFilter, Providers } = require('./filter');
-const { LanguageOptions } = require('./sort');
+const { LanguageOptions } = require('./languages');
 
 const PRE_CONFIGURATIONS = {
   lite: {
