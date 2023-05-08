@@ -78,6 +78,11 @@ const Providers = {
       label: 'MejorTorrent',
       foreign: '🇪🇸'
     },
+    {
+      key: 'cinecalidad',
+      label: 'Cinecalidad',
+      foreign: '🇲🇽'
+    },
   ]
 };
 const QualityFilter = {
