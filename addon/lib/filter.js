@@ -64,21 +64,6 @@ const Providers = {
       foreign: '🇵🇹'
     },
     {
-      key: 'comoeubaixo',
-      label: 'ComoEuBaixo',
-      foreign: '🇵🇹'
-    },
-    {
-      key: 'ondebaixa',
-      label: 'OndeBaixa',
-      foreign: '🇵🇹'
-    },
-    {
-      key: 'adorocinema',
-      label: 'AdoroCinema',
-      foreign: '🇵🇹'
-    },
-    {
       key: 'torrent9',
       label: 'Torrent9',
       foreign: '🇫🇷'
