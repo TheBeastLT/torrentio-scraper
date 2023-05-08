@@ -64,6 +64,11 @@ const Providers = {
       foreign: '🇵🇹'
     },
     {
+      key: 'bludv',
+      label: 'BluDV',
+      foreign: '🇵🇹'
+    },
+    {
       key: 'torrent9',
       label: 'Torrent9',
       foreign: '🇫🇷'
