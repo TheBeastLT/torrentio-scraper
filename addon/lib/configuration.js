@@ -61,7 +61,7 @@ function brazucaConfig() {
   config[Providers.key] = Providers.options
       .filter(provider => !provider.foreign || provider.foreign === '🇵🇹')
       .map(provider => provider.key);
-  config[LanguageOptions.key] = 'portuguese';
+  config[LanguageOptions.key] = ['portuguese'];
   return config;
 }
 
