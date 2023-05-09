@@ -41,7 +41,7 @@ builder.defineCatalogHandler((args) => {
         staleRevalidate: STALE_REVALIDATE_AGE,
         staleError: STALE_ERROR_AGE
       }))
-      .catch(error => Promise.reject(`Failed retrieving catalog ${args.id}: ${JSON.stringify(error)}`));
+      .catch(error => Promise.reject(`Failed retrieving catalog ${args.id}: ${error.message}`));
 })
 
 async function getCursor(catalog, providers, genre, offset) {
