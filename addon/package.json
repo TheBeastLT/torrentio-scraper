@@ -10,7 +10,7 @@
   "dependencies": {
     "@putdotio/api-client": "^8.32.0",
     "all-debrid-api": "^1.1.0",
-    "axios": "^0.27.2",
+    "axios": "^1.4.0",
     "bottleneck": "^2.19.5",
     "cache-manager": "^3.4.4",
     "cache-manager-mongodb": "^0.3.0",
@@ -20,7 +20,7 @@
     "name-to-imdb": "^3.0.4",
     "named-queue": "^2.2.1",
     "offcloud-api": "^1.0.0",
-    "parse-torrent-title": "git://github.com/TheBeastLT/parse-torrent-title.git#f5aff1a444c5f82f2164c1041f306af9d3743ea0",
+    "parse-torrent-title": "git://github.com/TheBeastLT/parse-torrent-title.git#1e8cafff8c426bdc09c7c6db042a585303dc265f",
     "pg": "^8.8.0",
     "pg-hstore": "^2.3.4",
     "premiumize-api": "^1.0.3",
