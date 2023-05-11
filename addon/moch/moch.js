@@ -175,10 +175,11 @@ function populateCachedLinks(streams, mochResult) {
 
 function populateDownloadLinks(streams, mochResults) {
   const torrentStreams = streams.filter(stream => stream.infoHash);
+  const seededStreams = streams.filter(stream => !stream.title.includes('👤 0'));
   torrentStreams.forEach(stream => mochResults.forEach(mochResult => {
     const cachedEntry = mochResult.mochStreams[stream.infoHash];
     const isCached = cachedEntry && cachedEntry.cached;
-    if (!isCached && isHealthyStreamForDebrid(torrentStreams, stream)) {
+    if (!isCached && isHealthyStreamForDebrid(seededStreams, stream)) {
       streams.push({
         name: `[${mochResult.moch.shortName} download] ${stream.name}`,
         title: stream.title,
@@ -191,8 +192,8 @@ function populateDownloadLinks(streams, mochResults) {
 }
 
 function isHealthyStreamForDebrid(streams, stream) {
-  const isZeroSeeders = /👤 0\b/.test(stream.title);
-  const is4kStream = /\b4k\b/.test(stream.name);
+  const isZeroSeeders = stream.title.includes('👤 0');
+  const is4kStream = stream.name.includes('4k');
   const isNotEnoughOptions = streams.length <= 5;
   return !isZeroSeeders || is4kStream || isNotEnoughOptions;
 }
