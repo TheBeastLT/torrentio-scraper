@@ -44,11 +44,6 @@ const Providers = {
       anime: true
     },
     {
-      key: 'nyaapantsu',
-      label: 'NyaaPantsu',
-      anime: true
-    },
-    {
       key: 'rutor',
       label: 'Rutor',
       foreign: '🇷🇺'
