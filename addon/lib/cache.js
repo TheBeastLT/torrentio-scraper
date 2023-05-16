@@ -32,8 +32,6 @@ function initiateRemoteCache() {
         socketTimeoutMS: 120000,
         useNewUrlParser: true,
         useUnifiedTopology: false,
-        autoReconnect: true,
-        poolSize : 20,
         ttl: STREAM_EMPTY_TTL
       },
       ttl: STREAM_EMPTY_TTL,
