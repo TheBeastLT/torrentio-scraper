@@ -16,10 +16,13 @@ async function getIds(providers, type, startDate, endDate) {
   const providersCondition = providers && providers.length
       ? `AND provider in (${providers.map(it => `'${it}'`).join(',')})`
       : '';
+  const titleCondition = type === Type.MOVIE
+      ? 'AND torrents.title NOT LIKE \'%[Erotic]%\''
+      : '';
   const sortCondition = type === Type.MOVIE ? 'sum(torrents.seeders)' : 'max(torrents.seeders)';
   const query = `SELECT files."${idName}"
         FROM (SELECT torrents."infoHash", torrents.seeders FROM torrents
-                WHERE seeders > 0 AND type = '${type}' ${providersCondition} ${dateCondition}
+                WHERE seeders > 0 AND type = '${type}' ${providersCondition} ${dateCondition} ${titleCondition}
               ) as torrents
         JOIN files ON torrents."infoHash" = files."infoHash"
         WHERE files."${idName}" IS NOT NULL ${episodeCondition}
