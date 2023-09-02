@@ -4,7 +4,7 @@ const { getRandomUserAgent } = require('../lib/requestHelper');
 const { getTorrent } = require('../lib/repository');
 const { Type } = require('../lib/types');
 
-const TRACKERS_URL = 'https://web.archive.org/web/20230823105403id_/https://raw.githubusercontent.com/ngosang/trackerslist/master/trackers_best.txt';
+const TRACKERS_URL = 'https://raw.githubusercontent.com/ngosang/trackerslist/master/trackers_best.txt';
 const DEFAULT_TRACKERS = [
   "udp://47.ip-51-68-199.eu:6969/announce",
   "udp://9.rarbg.me:2940",
