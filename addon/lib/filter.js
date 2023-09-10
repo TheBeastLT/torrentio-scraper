@@ -92,8 +92,8 @@ const QualityFilter = {
     },
     {
       key: 'hdrall',
-      label: 'HDR/HRD10+/Dolby Vision',
-      items: ['HDR', 'HRD10+', 'DV'],
+      label: 'HDR/HDR10+/Dolby Vision',
+      items: ['HDR', 'HDR10+', 'DV'],
       test(quality) {
         const hdrProfiles = quality && quality.split(' ').slice(1).join() || '';
         return this.items.some(hdrType => hdrProfiles.includes(hdrType));
