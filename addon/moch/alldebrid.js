@@ -115,8 +115,7 @@ async function _createOrFindTorrent(AD, infoHash) {
 }
 
 async function _retryCreateTorrent(AD, infoHash, encodedFileName, fileIndex) {
-  const newTorrentId = await _createTorrent(AD, infoHash);
-  const newTorrent = await AD.magnet.status(newTorrentId);
+  const newTorrent = await _createTorrent(AD, infoHash);
   return newTorrent && statusReady(newTorrent.statusCode)
       ? _unrestrictLink(AD, newTorrent, encodedFileName, fileIndex)
       : StaticResponse.FAILED_DOWNLOAD;
