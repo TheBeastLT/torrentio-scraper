@@ -199,7 +199,7 @@ function filterByQuality(streams, config) {
   const filterOptions = QualityFilter.options.filter(option => filters.includes(option.key));
   return streams.filter(stream => {
     const streamQuality = stream.name.split('\n')[1];
-    const bingeGroup = stream.behaviorHints.bingeGroup;
+    const bingeGroup = stream.behaviorHints?.bingeGroup;
     return !filterOptions.some(option => option.test(streamQuality, bingeGroup));
   });
 }
