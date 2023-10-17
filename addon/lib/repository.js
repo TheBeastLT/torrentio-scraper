@@ -41,8 +41,31 @@ const File = database.define('file',
     },
 );
 
+const Subtitle = database.define('subtitle',
+    {
+      infoHash: {
+        type: Sequelize.STRING(64),
+        allowNull: false,
+        references: { model: Torrent, key: 'infoHash' },
+        onDelete: 'CASCADE'
+      },
+      fileIndex: { type: Sequelize.INTEGER, allowNull: false },
+      fileId: {
+        type: Sequelize.BIGINT,
+        allowNull: true,
+        references: { model: File, key: 'id' },
+        onDelete: 'SET NULL'
+      },
+      title: { type: Sequelize.STRING(512), allowNull: false },
+      size: { type: Sequelize.BIGINT, allowNull: false },
+    },
+    { timestamps: false }
+);
+
 Torrent.hasMany(File, { foreignKey: 'infoHash', constraints: false });
 File.belongsTo(Torrent, { foreignKey: 'infoHash', constraints: false });
+File.hasMany(Subtitle, { foreignKey: 'fileId', constraints: false });
+Subtitle.belongsTo(File, { foreignKey: 'fileId', constraints: false });
 
 function getTorrent(infoHash) {
   return Torrent.findOne({ where: { infoHash: infoHash } });

@@ -2,6 +2,7 @@ const titleParser = require('parse-torrent-title');
 const { Type } = require('./types');
 const { mapLanguages } = require('./languages');
 const { enrichStreamSources, getSources } = require('./magnetHelper');
+const { getSubtitles } = require("./subtitles");
 
 const ADDON_NAME = 'Torrentio';
 const SIZE_DELTA = 0.02;
@@ -39,9 +40,8 @@ function toStreamInfo(record) {
       '\n'
   );
   const bingeGroupParts = getBingeGroupParts(record, sameInfo, quality, torrentInfo, fileInfo);
-  const behaviorHints = {
-    bingeGroup: joinDetailParts(bingeGroupParts, "torrentio|", "|")
-  };
+  const bingeGroup = joinDetailParts(bingeGroupParts, "torrentio|", "|")
+  const behaviorHints = bingeGroup ? { bingeGroup } : undefined;
 
   return cleanOutputObject({
     name: name,
@@ -49,7 +49,8 @@ function toStreamInfo(record) {
     infoHash: record.infoHash,
     fileIdx: record.fileIndex,
     behaviorHints: behaviorHints,
-    sources: getSources(record.torrent.trackers, record.infoHash)
+    sources: getSources(record.torrent.trackers, record.infoHash),
+    subtitles: getSubtitles(record)
   });
 }
 
@@ -110,7 +111,23 @@ function applyStaticInfo(streams) {
 }
 
 function enrichStaticInfo(stream) {
-  return enrichStreamSources(stream);
+  return enrichSubtitles(enrichStreamSources({ ...stream }));
+}
+
+function enrichSubtitles(stream) {
+  if (stream.subtitles?.length) {
+    stream.subtitles = stream.subtitles.map(subtitle =>{
+      if (subtitle.url) {
+        return subtitle;
+      }
+      return {
+        id: `${subtitle.fileIndex}`,
+        lang: subtitle.lang,
+        url: `http://localhost:11470/${subtitle.infoHash}/${subtitle.fileIndex}/${subtitle.title.split('/').pop()}`
+      };
+    });
+  }
+  return stream;
 }
 
 function getBingeGroupParts(record, sameInfo, quality, torrentInfo, fileInfo) {

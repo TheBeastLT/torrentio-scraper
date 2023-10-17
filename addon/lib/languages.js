@@ -21,11 +21,15 @@ const languageMapping = {
   'tamil': '🇮🇳',
   'polish': '🇵🇱',
   'lithuanian': '🇱🇹',
+  'latvian': '🇱🇻',
+  'estonian': '🇪🇪',
   'czech': '🇨🇿',
   'slovakian': '🇸🇰',
   'slovenian': '🇸🇮',
   'hungarian': '🇭🇺',
   'romanian': '🇷🇴',
+  'bulgarian': '🇧🇬',
+  'serbian': '🇷🇸  ',
   'croatian': '🇭🇷',
   'ukrainian': '🇺🇦',
   'greek': '🇬🇷',
@@ -65,4 +69,9 @@ function containsLanguage(stream, languages) {
   return languages.map(lang => languageMapping[lang]).some(lang => stream.title.includes(lang));
 }
 
-module.exports = { mapLanguages, containsLanguage, LanguageOptions }
+function languageFromCode(code) {
+  const entry = Object.entries(languageMapping).find(entry => entry[1] === code);
+  return entry && entry[0];
+}
+
+module.exports = { mapLanguages, containsLanguage, languageFromCode, LanguageOptions }

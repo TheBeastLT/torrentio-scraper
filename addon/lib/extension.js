@@ -71,4 +71,4 @@ function isExtension(filename, extensions) {
   return extensionMatch && extensions.includes(extensionMatch[1].toLowerCase());
 }
 
-module.exports = { isVideo, isSubtitle, isDisk, isArchive }
+module.exports = { isVideo, isSubtitle, isDisk, isArchive, isExtension }
