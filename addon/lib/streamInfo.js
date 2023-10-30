@@ -73,10 +73,9 @@ function getLanguages(record, torrentInfo, fileInfo) {
   const dubbed = torrentInfo.dubbed || fileInfo.dubbed;
   let languages = Array.from(new Set([].concat(torrentLanguages).concat(fileLanguages).concat(providerLanguages)));
   if (record.kitsuId || record.torrent.type === Type.ANIME) {
-    // no need to display japanese for anime or english if anime is dubbed
+    // no need to display japanese for anime
     languages = languages.concat(dubbed ? ['dubbed'] : [])
-        .filter(lang => lang !== 'japanese')
-        .filter(lang => dubbed && lang !== 'english' || !dubbed);
+        .filter(lang => lang !== 'japanese');
   }
   if (languages.length === 1 && languages.includes('english')) {
     // no need to display languages if only english is present
