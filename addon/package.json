@@ -20,7 +20,7 @@
     "name-to-imdb": "^3.0.4",
     "named-queue": "^2.2.1",
     "offcloud-api": "^1.0.0",
-    "parse-torrent-title": "git://github.com/TheBeastLT/parse-torrent-title.git#ac6ef7ee31ecd96e1543d7b60ee44edaba957935",
+    "parse-torrent-title": "git://github.com/TheBeastLT/parse-torrent-title.git#5691af5b5d66792bc496251b9410caf9244c7d2e",
     "pg": "^8.10.0",
     "premiumize-api": "^1.0.3",
     "real-debrid-api": "git://github.com/TheBeastLT/node-real-debrid.git#d1f7eaa8593b947edbfbc8a92a176448b48ef445",
