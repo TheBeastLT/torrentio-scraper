@@ -67,7 +67,7 @@ function getQuality(record, torrentInfo, fileInfo) {
 }
 
 function getLanguages(record, torrentInfo, fileInfo) {
-  const providerLanguages = record.torrent.languages && titleParser.parse(record.torrent.languages).languages || [];
+  const providerLanguages = record.torrent.languages && titleParser.parse(record.torrent.languages + '.srt').languages || [];
   const torrentLanguages = torrentInfo.languages || [];
   const fileLanguages = fileInfo.languages || [];
   const dubbed = torrentInfo.dubbed || fileInfo.dubbed;
