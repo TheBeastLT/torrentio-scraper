@@ -27,7 +27,7 @@ export const PreConfigurations = {
 }
 
 const keysToSplit = [Providers.key, LanguageOptions.key, QualityFilter.key, SizeFilter.key, DebridOptions.key];
-const keyToUppercase = [SizeFilter.key];
+const keysToUppercase = [SizeFilter.key];
 
 export function parseConfiguration(configuration) {
   if (PreConfigurations[configuration]) {
@@ -44,7 +44,7 @@ export function parseConfiguration(configuration) {
   keysToSplit
       .filter(key => configValues[key])
       .forEach(key => configValues[key] = configValues[key].split(',')
-          .map(value => keyToUppercase.includes(key) ? value.toUpperCase() : value.toLowerCase()))
+          .map(value => keysToUppercase.includes(key) ? value.toUpperCase() : value.toLowerCase()))
   return configValues;
 }
 
