@@ -43,6 +43,7 @@ const languageMapping = {
   'hebrew': '🇮🇱',
   'vietnamese': '🇻🇳',
   'indonesian': '🇮🇩',
+  'malay': '🇲🇾',
   'thai': '🇹🇭'
 }
 
