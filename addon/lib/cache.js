@@ -10,7 +10,7 @@ const RESOLVED_URL_KEY_PREFIX = `${GLOBAL_KEY_PREFIX}|resolved`;
 const STREAM_TTL = process.env.STREAM_TTL || 4 * 60 * 60; // 4 hours
 const STREAM_EMPTY_TTL = process.env.STREAM_EMPTY_TTL || 60; // 1 minute
 const AVAILABILITY_TTL = 8 * 60 * 60; // 8 hours
-const AVAILABILITY_EMPTY_TTL = 60 * 60; // 1 hour
+const AVAILABILITY_EMPTY_TTL = 30 * 60; // 30 minutes
 const MESSAGE_VIDEO_URL_TTL = 60; // 1 minutes
 // When the streams are empty we want to cache it for less time in case of timeouts or failures
 
@@ -77,7 +77,7 @@ function cacheAvailabilityResults(results) {
       .forEach(infoHash => {
         const key = `${AVAILABILITY_KEY_PREFIX}:${infoHash}`;
         const value = results[infoHash];
-        const ttl = value && value.length ? AVAILABILITY_TTL : AVAILABILITY_EMPTY_TTL;
+        const ttl = value?.length ? AVAILABILITY_TTL : AVAILABILITY_EMPTY_TTL;
         memoryCache.set(key, value, { ttl })
       });
   return results;
