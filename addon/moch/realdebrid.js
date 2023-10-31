@@ -49,11 +49,8 @@ async function _getInstantAvailable(hashes, apiKey, retries = 3, maxChunkSize = 
       .then(results => cacheAvailabilityResults(results))
       .then(results => Object.assign(cachedResults, results))
       .catch(error => {
-        if (error && error.code === 8) {
-          return Promise.reject(BadTokenError);
-        }
-        if (error && accessDeniedError(error)) {
-          return Promise.reject(AccessDeniedError);
+        if (toCommonError(error)) {
+          return Promise.reject(error);
         }
         if (!error && maxChunkSize !== 1) {
           // sometimes due to large response size RD responds with an empty body. Reduce chunk size to reduce body
@@ -353,6 +350,16 @@ async function _unrestrictFileLink(RD, fileLink, torrent, fileIndex, isBrowser) 
         }
         return Promise.reject(error);
       });
+}
+
+export function toCommonError(error) {
+  if (error && error.code === 8) {
+    return BadTokenError;
+  }
+  if (error && accessDeniedError(error)) {
+    return AccessDeniedError;
+  }
+  return undefined;
 }
 
 function statusError(status) {

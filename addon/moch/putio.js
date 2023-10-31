@@ -3,6 +3,7 @@ import { isVideo } from '../lib/extension.js';
 import { delay } from '../lib/promises.js';
 import StaticResponse from './static.js';
 import { getMagnetLink } from '../lib/magnetHelper.js';
+import { BadTokenError } from "./mochHelper.js";
 
 export async function getCachedStreams(streams, apiKey) {
   return streams
@@ -138,6 +139,10 @@ async function _getPublicToken(Putio, targetVideoId) {
     await Putio.File.RevokePublicLink(publicLinks[0].id);
   }
   return Putio.File.CreatePublicLink(targetVideoId).then(response => response.data.token);
+}
+
+export function toCommonError(error) {
+  return undefined;
 }
 
 function statusError(status) {

@@ -16,8 +16,8 @@ export async function getCachedStreams(streams, apiKey) {
       .then(results => results.map(result => result.value))
       .then(results => results.reduce((all, result) => Object.assign(all, result), {}))
       .catch(error => {
-        if (error === 'badToken') {
-          return Promise.reject(BadTokenError);
+        if (toCommonError(error)) {
+          return Promise.reject(error);
         }
         console.warn('Failed DebridLink cached torrent availability request:', error);
         return undefined;
@@ -133,6 +133,13 @@ async function _unrestrictLink(DL, torrent, fileIndex) {
 
 async function getDefaultOptions(ip) {
   return { ip, timeout: 30000 };
+}
+
+export function toCommonError(error) {
+  if (error === 'badToken') {
+    return BadTokenError;
+  }
+  return undefined;
 }
 
 function statusDownloading(torrent) {

@@ -11,6 +11,7 @@ import { cacheWrapResolvedUrl } from '../lib/cache.js';
 import { timeout } from '../lib/promises.js';
 import { BadTokenError, streamFilename, AccessDeniedError, enrichMeta } from './mochHelper.js';
 import { isStaticUrl } from './static.js';
+import { toCommonError } from "./realdebrid.js";
 
 const RESOLVE_TIMEOUT = 2 * 60 * 1000; // 2 minutes
 const MIN_API_KEY_SYMBOLS = 15;
@@ -81,7 +82,8 @@ export async function applyMochs(streams, config) {
         }
         return moch.instance.getCachedStreams(streams, config[moch.key])
             .then(mochStreams => ({ moch, mochStreams }))
-            .catch(error => {
+            .catch(rawError => {
+              const error = moch.instance.toCommonError(rawError) || rawError;
               if (error === BadTokenError) {
                 blackListToken(config[moch.key], moch.key);
               }
@@ -120,7 +122,14 @@ export async function getMochCatalog(mochKey, config) {
   if (isInvalidToken(config[mochKey], mochKey)) {
     return Promise.reject(new Error(`Invalid API key for moch provider: ${mochKey}`));
   }
-  return moch.instance.getCatalog(config[moch.key], config.skip, config.ip);
+  return moch.instance.getCatalog(config[moch.key], config.skip, config.ip)
+      .catch(rawError => {
+        const commonError = moch.instance.toCommonError(rawError);
+        if (commonError === BadTokenError) {
+          blackListToken(config[moch.key], moch.key);
+        }
+        return commonError ? [] : Promise.reject(rawError);
+      });
 }
 
 export async function getMochItemMeta(mochKey, itemId, config) {

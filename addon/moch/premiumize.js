@@ -20,8 +20,8 @@ async function _getCachedStreams(PM, apiKey, streams) {
   const hashes = streams.map(stream => stream.infoHash);
   return PM.cache.check(hashes)
       .catch(error => {
-        if (error && error.message === 'Not logged in.') {
-          return Promise.reject(BadTokenError);
+        if (toCommonError(error)) {
+          return Promise.reject(error);
         }
         console.warn('Failed Premiumize cached torrent availability request:', error);
         return undefined;
@@ -161,6 +161,13 @@ async function _retryCreateTorrent(PM, infoHash, encodedFileName, fileIndex) {
   return newTorrent && statusReady(newTorrent.status)
       ? _getCachedLink(PM, infoHash, encodedFileName, fileIndex)
       : StaticResponse.FAILED_DOWNLOAD;
+}
+
+export function toCommonError(error) {
+  if (error && error.message === 'Not logged in.') {
+    return BadTokenError;
+  }
+  return undefined;
 }
 
 function statusError(status) {

@@ -14,11 +14,8 @@ export async function getCachedStreams(streams, apiKey) {
   const hashes = streams.map(stream => stream.infoHash);
   const available = await AD.magnet.instant(hashes)
       .catch(error => {
-        if (error && error.code === 'AUTH_BAD_APIKEY') {
-          return Promise.reject(BadTokenError);
-        }
-        if (error && error.code === 'AUTH_USER_BANNED') {
-          return Promise.reject(AccessDeniedError);
+        if (toCommonError(error)) {
+          return Promise.reject(error);
         }
         console.warn(`Failed AllDebrid cached [${hashes[0]}] torrent availability request:`, error);
         return undefined;
@@ -164,6 +161,16 @@ async function _unrestrictLink(AD, torrent, encodedFileName, fileIndex) {
 
 async function getDefaultOptions(ip) {
   return { base_agent: AGENT, timeout: 30000 };
+}
+
+export function toCommonError(error) {
+  if (error && error.code === 'AUTH_BAD_APIKEY') {
+    return BadTokenError;
+  }
+  if (error && error.code === 'AUTH_USER_BANNED') {
+    return AccessDeniedError;
+  }
+  return undefined;
 }
 
 function statusError(statusCode) {

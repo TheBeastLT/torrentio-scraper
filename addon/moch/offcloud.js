@@ -15,8 +15,8 @@ export async function getCachedStreams(streams, apiKey) {
       .then(results => results.map(result => result.cachedItems))
       .then(results => results.reduce((all, result) => all.concat(result), []))
       .catch(error => {
-        if (error && error.error === 'NOAUTH') {
-          return Promise.reject(BadTokenError);
+        if (toCommonError(error)) {
+          return Promise.reject(error);
         }
         console.warn('Failed Offcloud cached torrent availability request:', error);
         return undefined;
@@ -43,6 +43,7 @@ export async function getCatalog(apiKey, offset = 0) {
   const options = await getDefaultOptions();
   const OC = new OffcloudClient(apiKey, options);
   return OC.cloud.history()
+      .then(torrents => torrents)
       .then(torrents => (torrents || [])
           .filter(torrent => torrent && statusReady(torrent))
           .map(torrent => ({
@@ -135,6 +136,13 @@ async function _unrestrictLink(OC, infoHash, torrent, cachedEntryInfo, fileIndex
 
 async function getDefaultOptions(ip) {
   return { ip, timeout: 30000 };
+}
+
+export function toCommonError(error) {
+  if (error?.error === 'NOAUTH' || error?.message?.startsWith('Cannot read property')) {
+    return BadTokenError;
+  }
+  return undefined;
 }
 
 function statusDownloading(torrent) {
