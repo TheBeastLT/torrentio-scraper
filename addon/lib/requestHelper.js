@@ -1,8 +1,6 @@
-const UserAgent = require('user-agents');
+import UserAgent from 'user-agents';
 const userAgent = new UserAgent();
 
-function getRandomUserAgent() {
+export function getRandomUserAgent() {
   return userAgent.random().toString();
 }
-
-module.exports = { getRandomUserAgent };

@@ -1,6 +1,6 @@
-const { extractProvider, parseSize, extractSize } = require("./titleHelper");
-const { Type } = require("./types");
-const Providers = {
+import { extractProvider, parseSize, extractSize } from './titleHelper.js';
+import { Type } from './types.js';
+export const Providers = {
   key: 'providers',
   options: [
     {
@@ -82,7 +82,7 @@ const Providers = {
     },
   ]
 };
-const QualityFilter = {
+export const QualityFilter = {
   key: 'qualityfilter',
   options: [
     {
@@ -175,12 +175,12 @@ const QualityFilter = {
     }
   ]
 };
-const SizeFilter = {
+export const SizeFilter = {
   key: 'sizefilter'
 }
 const defaultProviderKeys = Providers.options.map(provider => provider.key);
 
-function applyFilters(streams, config) {
+export default function applyFilters(streams, config) {
   return [
     filterByProvider,
     filterByQuality,
@@ -223,8 +223,3 @@ function filterBySize(streams, config) {
     return size <= sizeLimit;
   })
 }
-
-module.exports = applyFilters;
-module.exports.Providers = Providers;
-module.exports.QualityFilter = QualityFilter;
-module.exports.SizeFilter = SizeFilter;

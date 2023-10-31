@@ -1,13 +1,13 @@
-const { MochOptions } = require('../moch/moch');
-const { Providers } = require('./filter');
-const { showDebridCatalog } = require('../moch/options');
-const { getManifestOverride } = require('./configuration');
-const { Type } = require('./types');
+import { MochOptions } from '../moch/moch.js';
+import { Providers } from './filter.js';
+import { showDebridCatalog } from '../moch/options.js';
+import { getManifestOverride } from './configuration.js';
+import { Type } from './types.js';
 
 const DefaultProviders = Providers.options.map(provider => provider.key);
 const CatalogMochs = Object.values(MochOptions).filter(moch => moch.catalog);
 
-function manifest(config = {}) {
+export function manifest(config = {}) {
   const defaultManifest = {
     id: 'com.stremio.torrentio.addon',
     version: '0.0.13',
@@ -27,7 +27,7 @@ function manifest(config = {}) {
   return Object.assign(defaultManifest, overrideManifest);
 }
 
-function dummyManifest() {
+export function dummyManifest() {
   const manifestDefault = manifest();
   manifestDefault.catalogs = [{ id: 'dummy', type: Type.OTHER }];
   manifestDefault.resources = ['stream', 'meta'];
@@ -35,7 +35,7 @@ function dummyManifest() {
 }
 
 function getDescription(config) {
-  const providersList = config.providers || DefaultProviders;
+  const providersList = config[Providers.key] || DefaultProviders;
   const enabledProvidersDesc = Providers.options
       .map(provider => `${provider.label}${providersList.includes(provider.key) ? '(+)' : '(-)'}`)
       .join(', ')
@@ -76,5 +76,3 @@ function getResources(config) {
   }
   return [streamResource];
 }
-
-module.exports = { manifest, dummyManifest };

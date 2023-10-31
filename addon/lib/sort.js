@@ -1,8 +1,8 @@
-const { QualityFilter } = require('./filter');
-const { containsLanguage, LanguageOptions } = require('./languages');
-const { Type } = require("./types");
-const { hasMochConfigured } = require("../moch/moch");
-const { extractSeeders, extractSize } = require("./titleHelper");
+import { QualityFilter } from './filter.js';
+import { containsLanguage, LanguageOptions } from './languages.js';
+import { Type } from './types.js';
+import { hasMochConfigured } from '../moch/moch.js';
+import { extractSeeders, extractSize } from './titleHelper.js';
 
 const OTHER_QUALITIES = QualityFilter.options.find(option => option.key === 'other');
 const CAM_QUALITIES = QualityFilter.options.find(option => option.key === 'cam');
@@ -11,7 +11,7 @@ const SEEDED_SEEDERS = 1;
 const MIN_HEALTHY_COUNT = 50;
 const MAX_UNHEALTHY_COUNT = 5;
 
-const SortOptions = {
+export const SortOptions = {
   key: 'sort',
   options: {
     qualitySeeders: {
@@ -33,7 +33,7 @@ const SortOptions = {
   }
 }
 
-function sortStreams(streams, config, type) {
+export default function sortStreams(streams, config, type) {
   const languages = config[LanguageOptions.key];
   if (languages?.length && languages[0] !== 'english') {
     // No need to filter english since it's hard to predict which entries are english
@@ -126,6 +126,3 @@ function extractQuality(title) {
   }
   return qualityDesc;
 }
-
-module.exports = sortStreams;
-module.exports.SortOptions = SortOptions;

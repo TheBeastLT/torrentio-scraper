@@ -1,4 +1,4 @@
-const DebridOptions = {
+export const DebridOptions = {
   key: 'debridoptions',
   options: {
     noDownloadLinks: {
@@ -16,19 +16,14 @@ const DebridOptions = {
   }
 }
 
-function excludeDownloadLinks(config) {
-  return config[DebridOptions.key] && config[DebridOptions.key]
-      .includes(DebridOptions.options.noDownloadLinks.key);
+export function excludeDownloadLinks(config) {
+  return config[DebridOptions.key]?.includes(DebridOptions.options.noDownloadLinks.key);
 }
 
-function includeTorrentLinks(config) {
-  return config[DebridOptions.key] && config[DebridOptions.key]
-      .includes(DebridOptions.options.torrentLinks.key);
+export function includeTorrentLinks(config) {
+  return config[DebridOptions.key]?.includes(DebridOptions.options.torrentLinks.key);
 }
 
-function showDebridCatalog(config) {
-  return !(config[DebridOptions.key] && config[DebridOptions.key]
-      .includes(DebridOptions.options.noCatalog.key));
+export function showDebridCatalog(config) {
+  return !config[DebridOptions.key]?.includes(DebridOptions.options.noCatalog.key);
 }
-
-module.exports = { DebridOptions, excludeDownloadLinks, showDebridCatalog, includeTorrentLinks }

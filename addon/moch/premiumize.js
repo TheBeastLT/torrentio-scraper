@@ -1,14 +1,14 @@
-const PremiumizeClient = require('premiumize-api');
-const magnet = require('magnet-uri');
-const { Type } = require('../lib/types');
-const { isVideo, isArchive } = require('../lib/extension');
-const StaticResponse = require('./static');
-const { getMagnetLink } = require('../lib/magnetHelper');
-const { BadTokenError, chunkArray } = require('./mochHelper');
+import PremiumizeClient from 'premiumize-api';
+import magnet from 'magnet-uri';
+import { Type } from '../lib/types.js';
+import { isVideo, isArchive } from '../lib/extension.js';
+import StaticResponse from './static.js';
+import { getMagnetLink } from '../lib/magnetHelper.js';
+import { BadTokenError, chunkArray } from './mochHelper.js';
 
 const KEY = 'premiumize';
 
-async function getCachedStreams(streams, apiKey) {
+export async function getCachedStreams(streams, apiKey) {
   const options = await getDefaultOptions();
   const PM = new PremiumizeClient(apiKey, options);
   return Promise.all(chunkArray(streams, 100)
@@ -34,13 +34,13 @@ async function _getCachedStreams(PM, apiKey, streams) {
             const encodedFileName = encodeURIComponent(fileName);
             mochStreams[stream.infoHash] = {
               url: `${apiKey}/${stream.infoHash}/${encodedFileName}/${fileIndex}`,
-              cached: available && available.response[index]
+              cached: available?.response[index]
             };
             return mochStreams;
           }, {}));
 }
 
-async function getCatalog(apiKey, offset = 0) {
+export async function getCatalog(apiKey, offset = 0) {
   if (offset > 0) {
     return [];
   }
@@ -57,7 +57,7 @@ async function getCatalog(apiKey, offset = 0) {
           })));
 }
 
-async function getItemMeta(itemId, apiKey, ip) {
+export async function getItemMeta(itemId, apiKey, ip) {
   const options = await getDefaultOptions();
   const PM = new PremiumizeClient(apiKey, options);
   const rootFolder = await PM.folder.list(itemId, null);
@@ -89,7 +89,7 @@ async function getFolderContents(PM, itemId, ip, folderPrefix = '') {
               .concat(otherContents)));
 }
 
-async function resolve({ ip, isBrowser, apiKey, infoHash, cachedEntryInfo, fileIndex }) {
+export async function resolve({ ip, isBrowser, apiKey, infoHash, cachedEntryInfo, fileIndex }) {
   console.log(`Unrestricting Premiumize ${infoHash} [${fileIndex}] for IP ${ip} from browser=${isBrowser}`);
   const options = await getDefaultOptions();
   const PM = new PremiumizeClient(apiKey, options);
@@ -120,7 +120,7 @@ async function _resolve(PM, infoHash, cachedEntryInfo, fileIndex, ip, isBrowser)
 
 async function _getCachedLink(PM, infoHash, encodedFileName, fileIndex, ip, isBrowser) {
   const cachedTorrent = await PM.transfer.directDownload(magnet.encode({ infoHash }), ip);
-  if (cachedTorrent && cachedTorrent.content && cachedTorrent.content.length) {
+  if (cachedTorrent?.content?.length) {
     const targetFileName = decodeURIComponent(encodedFileName);
     const videos = cachedTorrent.content.filter(file => isVideo(file.path));
     const targetVideo = Number.isInteger(fileIndex)
@@ -178,5 +178,3 @@ function statusReady(status) {
 async function getDefaultOptions(ip) {
   return { timeout: 30000 };
 }
-
-module.exports = { getCachedStreams, resolve, getCatalog, getItemMeta };

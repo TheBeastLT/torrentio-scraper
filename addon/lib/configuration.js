@@ -1,8 +1,8 @@
-const { DebridOptions } = require('../moch/options');
-const { QualityFilter, Providers, SizeFilter } = require('./filter');
-const { LanguageOptions } = require('./languages');
+import { DebridOptions } from '../moch/options.js';
+import { QualityFilter, Providers, SizeFilter } from './filter.js';
+import { LanguageOptions } from './languages.js';
 
-const PRE_CONFIGURATIONS = {
+export const PreConfigurations = {
   lite: {
     config: liteConfig(),
     serialized: configValue(liteConfig()),
@@ -29,9 +29,9 @@ const PRE_CONFIGURATIONS = {
 const keysToSplit = [Providers.key, LanguageOptions.key, QualityFilter.key, SizeFilter.key, DebridOptions.key];
 const keyToUppercase = [SizeFilter.key];
 
-function parseConfiguration(configuration) {
-  if (PRE_CONFIGURATIONS[configuration]) {
-    return PRE_CONFIGURATIONS[configuration].config;
+export function parseConfiguration(configuration) {
+  if (PreConfigurations[configuration]) {
+    return PreConfigurations[configuration].config;
   }
   const configValues = configuration.split('|')
       .reduce((map, next) => {
@@ -73,11 +73,7 @@ function configValue(config) {
       .join('|');
 }
 
-function getManifestOverride(config) {
-  const preConfig = Object.values(PRE_CONFIGURATIONS).find(pre => pre.config === config);
+export function getManifestOverride(config) {
+  const preConfig = Object.values(PreConfigurations).find(pre => pre.config === config);
   return preConfig ? preConfig.manifest : {};
 }
-
-module.exports.PreConfigurations = PRE_CONFIGURATIONS;
-module.exports.parseConfiguration = parseConfiguration;
-module.exports.getManifestOverride = getManifestOverride;

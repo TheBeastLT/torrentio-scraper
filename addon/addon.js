@@ -1,14 +1,14 @@
-const Bottleneck = require('bottleneck');
-const { addonBuilder } = require('stremio-addon-sdk');
-const { Type } = require('./lib/types');
-const { dummyManifest } = require('./lib/manifest');
-const { cacheWrapStream } = require('./lib/cache');
-const { toStreamInfo, applyStaticInfo } = require('./lib/streamInfo');
-const repository = require('./lib/repository');
-const applySorting = require('./lib/sort');
-const applyFilters = require('./lib/filter');
-const { applyMochs, getMochCatalog, getMochItemMeta } = require('./moch/moch');
-const StaticLinks = require("./moch/static");
+import Bottleneck from 'bottleneck';
+import { addonBuilder } from 'stremio-addon-sdk';
+import { Type } from './lib/types.js';
+import { dummyManifest } from './lib/manifest.js';
+import { cacheWrapStream } from './lib/cache.js';
+import { toStreamInfo, applyStaticInfo } from './lib/streamInfo.js';
+import * as repository from './lib/repository.js';
+import applySorting from './lib/sort.js';
+import applyFilters from './lib/filter.js';
+import { applyMochs, getMochCatalog, getMochItemMeta } from './moch/moch.js';
+import StaticLinks from './moch/static.js';
 
 const CACHE_MAX_AGE = parseInt(process.env.CACHE_MAX_AGE) || 60 * 60; // 1 hour in seconds
 const CACHE_MAX_AGE_EMPTY = 60; // 60 seconds
@@ -109,7 +109,7 @@ function enrichCacheParams(streams) {
   let cacheAge = CACHE_MAX_AGE;
   if (!streams.length) {
     cacheAge = CACHE_MAX_AGE_EMPTY;
-  } else if (streams.every(stream => stream?.url === StaticLinks.FAILED_ACCESS)) {
+  } else if (streams.every(stream => stream?.url?.endsWith(StaticLinks.FAILED_ACCESS))) {
     cacheAge = 0;
   }
   return {
@@ -120,4 +120,4 @@ function enrichCacheParams(streams) {
   }
 }
 
-module.exports = builder.getInterface();
+export default builder.getInterface();

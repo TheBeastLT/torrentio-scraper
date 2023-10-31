@@ -1,21 +1,21 @@
-const namedQueue = require('named-queue');
-const options = require('./options');
-const realdebrid = require('./realdebrid');
-const premiumize = require('./premiumize');
-const alldebrid = require('./alldebrid');
-const debridlink = require('./debridlink');
-const offcloud = require('./offcloud');
-const putio = require('./putio');
-const StaticResponse = require('./static');
-const { cacheWrapResolvedUrl } = require('../lib/cache');
-const { timeout } = require('../lib/promises');
-const { BadTokenError, streamFilename, AccessDeniedError, enrichMeta } = require('./mochHelper');
-const { isStaticUrl } = require("./static");
+import namedQueue from 'named-queue';
+import * as options from './options.js';
+import * as realdebrid from './realdebrid.js';
+import * as premiumize from './premiumize.js';
+import * as alldebrid from './alldebrid.js';
+import * as debridlink from './debridlink.js';
+import * as offcloud from './offcloud.js';
+import * as putio from './putio.js';
+import StaticResponse from './static.js';
+import { cacheWrapResolvedUrl } from '../lib/cache.js';
+import { timeout } from '../lib/promises.js';
+import { BadTokenError, streamFilename, AccessDeniedError, enrichMeta } from './mochHelper.js';
+import { isStaticUrl } from './static.js';
 
 const RESOLVE_TIMEOUT = 2 * 60 * 1000; // 2 minutes
 const MIN_API_KEY_SYMBOLS = 15;
 const TOKEN_BLACKLIST = [];
-const MOCHS = {
+export const MochOptions = {
   realdebrid: {
     key: 'realdebrid',
     instance: realdebrid,
@@ -64,17 +64,17 @@ const unrestrictQueue = new namedQueue((task, callback) => task.method()
     .then(result => callback(false, result))
     .catch((error => callback(error))), 20);
 
-function hasMochConfigured(config) {
-  return Object.keys(MOCHS).find(moch => config?.[moch])
+export function hasMochConfigured(config) {
+  return Object.keys(MochOptions).find(moch => config?.[moch])
 }
 
-async function applyMochs(streams, config) {
+export async function applyMochs(streams, config) {
   if (!streams?.length || !hasMochConfigured(config)) {
     return streams;
   }
   return Promise.all(Object.keys(config)
-      .filter(configKey => MOCHS[configKey])
-      .map(configKey => MOCHS[configKey])
+      .filter(configKey => MochOptions[configKey])
+      .map(configKey => MochOptions[configKey])
       .map(moch => {
         if (isInvalidToken(config[moch.key], moch.key)) {
           return { moch, error: BadTokenError };
@@ -91,8 +91,8 @@ async function applyMochs(streams, config) {
       .then(results => processMochResults(streams, config, results));
 }
 
-async function resolve(parameters) {
-  const moch = MOCHS[parameters.mochKey];
+export async function resolve(parameters) {
+  const moch = MochOptions[parameters.mochKey];
   if (!moch) {
     return Promise.reject(new Error(`Not a valid moch provider: ${parameters.mochKey}`));
   }
@@ -112,8 +112,8 @@ async function resolve(parameters) {
   }));
 }
 
-async function getMochCatalog(mochKey, config) {
-  const moch = MOCHS[mochKey];
+export async function getMochCatalog(mochKey, config) {
+  const moch = MochOptions[mochKey];
   if (!moch) {
     return Promise.reject(new Error(`Not a valid moch provider: ${mochKey}`));
   }
@@ -123,8 +123,8 @@ async function getMochCatalog(mochKey, config) {
   return moch.instance.getCatalog(config[moch.key], config.skip, config.ip);
 }
 
-async function getMochItemMeta(mochKey, itemId, config) {
-  const moch = MOCHS[mochKey];
+export async function getMochItemMeta(mochKey, itemId, config) {
+  const moch = MochOptions[mochKey];
   if (!moch) {
     return Promise.reject(new Error(`Not a valid moch provider: ${mochKey}`));
   }
@@ -212,19 +212,17 @@ function blackListToken(token, mochKey) {
 function errorStreamResponse(mochKey, error, config) {
   if (error === BadTokenError) {
     return {
-      name: `Torrentio\n${MOCHS[mochKey].shortName} error`,
-      title: `Invalid ${MOCHS[mochKey].name} ApiKey/Token!`,
+      name: `Torrentio\n${MochOptions[mochKey].shortName} error`,
+      title: `Invalid ${MochOptions[mochKey].name} ApiKey/Token!`,
       url: `${config.host}/${StaticResponse.FAILED_ACCESS}`
     };
   }
   if (error === AccessDeniedError) {
     return {
-      name: `Torrentio\n${MOCHS[mochKey].shortName} error`,
-      title: `Expired/invalid ${MOCHS[mochKey].name} subscription!`,
+      name: `Torrentio\n${MochOptions[mochKey].shortName} error`,
+      title: `Expired/invalid ${MochOptions[mochKey].name} subscription!`,
       url: `${config.host}/${StaticResponse.FAILED_ACCESS}`
     };
   }
   return undefined;
 }
-
-module.exports = { applyMochs, getMochCatalog, getMochItemMeta, resolve, hasMochConfigured, MochOptions: MOCHS }

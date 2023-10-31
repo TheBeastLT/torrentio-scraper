@@ -1,14 +1,13 @@
-const DebridLinkClient = require('debrid-link-api');
-const { Type } = require('../lib/types');
-const { isVideo, isArchive } = require('../lib/extension');
-const { delay } = require('../lib/promises');
-const StaticResponse = require('./static');
-const { getMagnetLink } = require('../lib/magnetHelper');
-const { chunkArray, BadTokenError } = require('./mochHelper');
+import DebridLinkClient from 'debrid-link-api';
+import { Type } from '../lib/types.js';
+import { isVideo, isArchive } from '../lib/extension.js';
+import StaticResponse from './static.js';
+import { getMagnetLink } from '../lib/magnetHelper.js';
+import { chunkArray, BadTokenError } from './mochHelper.js';
 
 const KEY = 'debridlink';
 
-async function getCachedStreams(streams, apiKey) {
+export async function getCachedStreams(streams, apiKey) {
   const options = await getDefaultOptions();
   const DL = new DebridLinkClient(apiKey, options);
   const hashBatches = chunkArray(streams.map(stream => stream.infoHash), 50)
@@ -34,7 +33,7 @@ async function getCachedStreams(streams, apiKey) {
       }, {})
 }
 
-async function getCatalog(apiKey, offset = 0) {
+export async function getCatalog(apiKey, offset = 0) {
   if (offset > 0) {
     return [];
   }
@@ -51,7 +50,7 @@ async function getCatalog(apiKey, offset = 0) {
           })));
 }
 
-async function getItemMeta(itemId, apiKey, ip) {
+export async function getItemMeta(itemId, apiKey, ip) {
   const options = await getDefaultOptions(ip);
   const DL = new DebridLinkClient(apiKey, options);
   return DL.seedbox.list(itemId)
@@ -72,7 +71,7 @@ async function getItemMeta(itemId, apiKey, ip) {
       }))
 }
 
-async function resolve({ ip, apiKey, infoHash, fileIndex }) {
+export async function resolve({ ip, apiKey, infoHash, fileIndex }) {
   console.log(`Unrestricting DebridLink ${infoHash} [${fileIndex}]`);
   const options = await getDefaultOptions(ip);
   const DL = new DebridLinkClient(apiKey, options);
@@ -147,5 +146,3 @@ function statusReady(torrent) {
 function errorExpiredSubscriptionError(error) {
   return ['freeServerOverload', 'maxTorrent', 'maxLink', 'maxLinkHost', 'maxData', 'maxDataHost'].includes(error);
 }
-
-module.exports = { getCachedStreams, resolve, getCatalog, getItemMeta };

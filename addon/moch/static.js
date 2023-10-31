@@ -8,11 +8,9 @@ const staticVideoUrls = {
   FAILED_INFRINGEMENT: `videos/failed_infringement_v2.mp4`
 }
 
-function isStaticUrl(url) {
+
+export function isStaticUrl(url) {
   return Object.values(staticVideoUrls).some(videoUrl => url?.endsWith(videoUrl));
 }
 
-module.exports = {
-  ...staticVideoUrls,
-  isStaticUrl
-}
+export default staticVideoUrls

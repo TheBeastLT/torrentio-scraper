@@ -1,13 +1,13 @@
-const OffcloudClient = require('offcloud-api');
-const { Type } = require('../lib/types');
-const { isVideo } = require('../lib/extension');
-const StaticResponse = require('./static');
-const { getMagnetLink } = require('../lib/magnetHelper');
-const { chunkArray, BadTokenError } = require('./mochHelper');
+import OffcloudClient from 'offcloud-api';
+import { Type } from '../lib/types.js';
+import { isVideo } from '../lib/extension.js';
+import StaticResponse from './static.js';
+import { getMagnetLink } from '../lib/magnetHelper.js';
+import { chunkArray, BadTokenError } from './mochHelper.js';
 
 const KEY = 'offcloud';
 
-async function getCachedStreams(streams, apiKey) {
+export async function getCachedStreams(streams, apiKey) {
   const options = await getDefaultOptions();
   const OC = new OffcloudClient(apiKey, options);
   const hashBatches = chunkArray(streams.map(stream => stream.infoHash), 100);
@@ -36,7 +36,7 @@ async function getCachedStreams(streams, apiKey) {
       }, {})
 }
 
-async function getCatalog(apiKey, offset = 0) {
+export async function getCatalog(apiKey, offset = 0) {
   if (offset > 0) {
     return [];
   }
@@ -52,7 +52,7 @@ async function getCatalog(apiKey, offset = 0) {
           })));
 }
 
-async function getItemMeta(itemId, apiKey, ip) {
+export async function getItemMeta(itemId, apiKey, ip) {
   const options = await getDefaultOptions(ip);
   const OC = new OffcloudClient(apiKey, options);
   const torrents = await OC.cloud.history();
@@ -74,7 +74,7 @@ async function getItemMeta(itemId, apiKey, ip) {
       }))
 }
 
-async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex }) {
+export async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex }) {
   console.log(`Unrestricting Offcloud ${infoHash} [${fileIndex}]`);
   const options = await getDefaultOptions(ip);
   const OC = new OffcloudClient(apiKey, options);
@@ -152,5 +152,3 @@ function statusReady(torrent) {
 function errorExpiredSubscriptionError(error) {
   return error && (error.includes('not_available') || error.includes('NOAUTH'));
 }
-
-module.exports = { getCachedStreams, resolve, getCatalog, getItemMeta };

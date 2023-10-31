@@ -1,16 +1,16 @@
-const repository = require('../lib/repository')
+import * as repository  from '../lib/repository.js';
 
 const METAHUB_URL = 'https://images.metahub.space'
-const BadTokenError = { code: 'BAD_TOKEN' }
-const AccessDeniedError = { code: 'ACCESS_DENIED' }
+export const BadTokenError = { code: 'BAD_TOKEN' }
+export const AccessDeniedError = { code: 'ACCESS_DENIED' }
 
-function chunkArray(arr, size) {
+export function chunkArray(arr, size) {
   return arr.length > size
       ? [arr.slice(0, size), ...chunkArray(arr.slice(size), size)]
       : [arr];
 }
 
-function streamFilename(stream) {
+export function streamFilename(stream) {
   const titleParts = stream.title.replace(/\n👤.*/s, '').split('\n');
   const filePath = titleParts.pop();
   const filename = titleParts.length
@@ -19,7 +19,7 @@ function streamFilename(stream) {
   return encodeURIComponent(filename)
 }
 
-async function enrichMeta(itemMeta) {
+export async function enrichMeta(itemMeta) {
   const infoHashes = [...new Set([itemMeta.infoHash]
       .concat(itemMeta.videos.map(video => video.infoHash))
       .filter(infoHash => infoHash))];
@@ -33,7 +33,7 @@ async function enrichMeta(itemMeta) {
       background: commonImdbId && `${METAHUB_URL}/background/medium/${commonImdbId}/img`,
       videos: itemMeta.videos.map(video => {
         const file = files.find(file => video.title.includes(file.title));
-        if (file && file.imdbId) {
+        if (file?.imdbId) {
           if (file.imdbSeason && file.imdbEpisode) {
             video.id = `${file.imdbId}:${file.imdbSeason}:${file.imdbEpisode}`;
             video.season = file.imdbSeason;
@@ -54,5 +54,3 @@ async function enrichMeta(itemMeta) {
 function mostCommonValue(array) {
   return array.sort((a, b) => array.filter(v => v === a).length - array.filter(v => v === b).length).pop();
 }
-
-module.exports = { chunkArray, streamFilename, enrichMeta, BadTokenError, AccessDeniedError }

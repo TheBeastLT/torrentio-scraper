@@ -1,15 +1,15 @@
-const titleParser = require('parse-torrent-title');
-const { Type } = require('./types');
-const { mapLanguages } = require('./languages');
-const { enrichStreamSources, getSources } = require('./magnetHelper');
-const { getSubtitles } = require("./subtitles");
+import titleParser from 'parse-torrent-title';
+import { Type } from './types.js';
+import { mapLanguages } from './languages.js';
+import { enrichStreamSources, getSources } from './magnetHelper.js';
+import { getSubtitles } from './subtitles.js';
 
 const ADDON_NAME = 'Torrentio';
 const SIZE_DELTA = 0.02;
 const UNKNOWN_SIZE = 300000000;
 const CAM_SOURCES = ['CAM', 'TeleSync', 'TeleCine', 'SCR'];
 
-function toStreamInfo(record) {
+export function toStreamInfo(record) {
   const torrentInfo = titleParser.parse(record.torrent.title);
   const fileInfo = titleParser.parse(record.title);
   const sameInfo = !Number.isInteger(record.fileIndex)
@@ -105,7 +105,7 @@ function formatSize(size) {
   return Number((size / Math.pow(1024, i)).toFixed(2)) + ' ' + ['B', 'kB', 'MB', 'GB', 'TB'][i];
 }
 
-function applyStaticInfo(streams) {
+export function applyStaticInfo(streams) {
   return streams.map(stream => enrichStaticInfo(stream));
 }
 
@@ -148,5 +148,3 @@ function getBingeGroupParts(record, sameInfo, quality, torrentInfo, fileInfo) {
 function cleanOutputObject(object) {
   return Object.fromEntries(Object.entries(object).filter(([_, v]) => v != null));
 }
-
-module.exports = { toStreamInfo, applyStaticInfo };

@@ -1,12 +1,12 @@
-const { getRouter } = require('stremio-addon-sdk');
-const requestIp = require('request-ip');
-const userAgentParser = require('ua-parser-js');
-const addonInterface = require('./addon');
-const qs = require('querystring')
-const { manifest } = require('./lib/manifest');
-const { parseConfiguration, PreConfigurations } = require('./lib/configuration');
-const landingTemplate = require('./lib/landingTemplate');
-const moch = require('./moch/moch');
+import getRouter from 'stremio-addon-sdk/src/getRouter.js';
+import requestIp from 'request-ip';
+import userAgentParser from 'ua-parser-js';
+import addonInterface from './addon.js';
+import qs from 'querystring';
+import { manifest } from './lib/manifest.js';
+import { parseConfiguration, PreConfigurations } from './lib/configuration.js';
+import landingTemplate from './lib/landingTemplate.js';
+import * as moch from './moch/moch.js';
 
 const router = getRouter({ ...addonInterface, manifest: manifest() });
 
@@ -95,7 +95,7 @@ router.get('/:moch/:apiKey/:infoHash/:cachedEntryInfo/:fileIndex/:filename?', (r
       });
 });
 
-module.exports = function (req, res) {
+export default function (req, res) {
   router(req, res, function () {
     res.statusCode = 404;
     res.end();

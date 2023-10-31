@@ -1,8 +1,8 @@
-const express = require('express');
-const rateLimit = require("express-rate-limit");
-const requestIp = require("request-ip");
-const serverless = require('./serverless');
-const { initBestTrackers } = require('./lib/magnetHelper');
+import express from 'express';
+import rateLimit from 'express-rate-limit';
+import requestIp from 'request-ip';
+import serverless from './serverless.js';
+import { initBestTrackers } from './lib/magnetHelper.js';
 
 const app = express();
 app.enable('trust proxy');

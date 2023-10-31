@@ -1,10 +1,10 @@
-const PutioAPI = require('@putdotio/api-client').default
-const { isVideo } = require('../lib/extension');
-const { delay } = require('../lib/promises');
-const StaticResponse = require('./static');
-const { getMagnetLink } = require('../lib/magnetHelper');
+import PutioAPI from '@putdotio/api-client'
+import { isVideo } from '../lib/extension.js';
+import { delay } from '../lib/promises.js';
+import StaticResponse from './static.js';
+import { getMagnetLink } from '../lib/magnetHelper.js';
 
-async function getCachedStreams(streams, apiKey) {
+export async function getCachedStreams(streams, apiKey) {
   return streams
       .reduce((mochStreams, stream) => {
         const streamTitleParts = stream.title.replace(/\n👤.*/s, '').split('\n');
@@ -19,7 +19,7 @@ async function getCachedStreams(streams, apiKey) {
       }, {});
 }
 
-async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex }) {
+export async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex }) {
   console.log(`Unrestricting Putio ${infoHash} [${fileIndex}]`);
   const clientId = apiKey.replace(/@.*/, '');
   const token = apiKey.replace(/.*@/, '');
@@ -28,7 +28,7 @@ async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex }) {
 
   return _resolve(Putio, infoHash, cachedEntryInfo, fileIndex)
       .catch(error => {
-        if (error && error.data && error.data.status_code === 401) {
+        if (error?.data?.status_code === 401) {
           console.log(`Access denied to Putio ${infoHash} [${fileIndex}]`);
           return StaticResponse.FAILED_ACCESS;
         }
@@ -90,7 +90,7 @@ async function _unrestrictLink(Putio, torrent, encodedFileName, fileIndex) {
   const publicToken = await _getPublicToken(Putio, targetVideo.id);
   const publicFile = await Putio.File.Public(publicToken).then(response => response.data.parent);
 
-  if (!publicFile.stream_url || !publicFile.stream_url.length) {
+  if (!publicFile?.stream_url?.length) {
     return Promise.reject(`No Putio links found for [${torrent.hash}] ${encodedFileName}`);
   }
   console.log(`Unrestricted Putio ${torrent.hash} [${fileIndex}] to ${publicFile.stream_url}`);
@@ -155,5 +155,3 @@ function statusProcessing(status) {
 function statusReady(status) {
   return ['COMPLETED', 'SEEDING'].includes(status);
 }
-
-module.exports = { getCachedStreams, resolve };

@@ -47,7 +47,7 @@ const languageMapping = {
   'thai': '🇹🇭'
 }
 
-const LanguageOptions = {
+export const LanguageOptions = {
   key: 'language',
   options: Object.keys(languageMapping).slice(5).map(lang => ({
     key: lang,
@@ -55,7 +55,7 @@ const LanguageOptions = {
   }))
 }
 
-function mapLanguages(languages) {
+export function mapLanguages(languages) {
   const mapped = languages
       .map(language => languageMapping[language])
       .filter(language => language)
@@ -66,13 +66,11 @@ function mapLanguages(languages) {
   return [...new Set([].concat(mapped).concat(unmapped))];
 }
 
-function containsLanguage(stream, languages) {
+export function containsLanguage(stream, languages) {
   return languages.map(lang => languageMapping[lang]).some(lang => stream.title.includes(lang));
 }
 
-function languageFromCode(code) {
+export function languageFromCode(code) {
   const entry = Object.entries(languageMapping).find(entry => entry[1] === code);
-  return entry && entry[0];
+  return entry?.[0];
 }
-
-module.exports = { mapLanguages, containsLanguage, languageFromCode, LanguageOptions }

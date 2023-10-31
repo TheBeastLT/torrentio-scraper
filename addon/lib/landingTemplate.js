@@ -184,16 +184,15 @@ a.install-link {
   box-shadow: 0 0 0 2pt rgb(30, 144, 255, 0.7);
 }
 `;
-const { Providers } = require('./filter');
-const { SortOptions } = require('./sort');
-const { LanguageOptions } = require('./languages');
-const { QualityFilter, SizeFilter } = require('./filter');
-const { DebridOptions } = require('../moch/options');
-const { MochOptions } = require('../moch/moch');
-const { PreConfigurations } = require('../lib/configuration');
+import { Providers, QualityFilter, SizeFilter } from './filter.js';
+import { SortOptions } from './sort.js';
+import { LanguageOptions } from './languages.js';
+import { DebridOptions } from '../moch/options.js';
+import { MochOptions } from '../moch/moch.js';
+import { PreConfigurations } from './configuration.js';
 
-function landingTemplate(manifest, config = {}) {
-  const providers = config.providers || Providers.options.map(provider => provider.key);
+export default function landingTemplate(manifest, config = {}) {
+  const providers = config[Providers.key] || Providers.options.map(provider => provider.key);
   const sort = config[SortOptions.key] || SortOptions.options.qualitySeeders.key;
   const languages = config[LanguageOptions.key] || [];
   const qualityFilters = config[QualityFilter.key] || [];
@@ -491,5 +490,3 @@ function landingTemplate(manifest, config = {}) {
 
 	</html>`
 }
-
-module.exports = landingTemplate;

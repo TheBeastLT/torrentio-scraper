@@ -1,19 +1,19 @@
-function extractSeeders(title) {
+export function extractSeeders(title) {
   const seedersMatch = title.match(/👤 (\d+)/);
   return seedersMatch && parseInt(seedersMatch[1]) || 0;
 }
 
-function extractSize(title) {
+export function extractSize(title) {
   const seedersMatch = title.match(/💾 ([\d.]+ \w+)/);
   return seedersMatch && parseSize(seedersMatch[1]) || 0;
 }
 
-function extractProvider(title) {
+export function extractProvider(title) {
   const match = title.match(/⚙.* ([^ \n]+)/);
   return match?.[1]?.toLowerCase();
 }
 
-function parseSize(sizeText) {
+export function parseSize(sizeText) {
   if (!sizeText) {
     return 0;
   }
@@ -29,5 +29,3 @@ function parseSize(sizeText) {
   }
   return Math.floor(parseFloat(sizeText.replace(/,/g, '')) * scale);
 }
-
-module.exports = { extractSeeders, extractSize, extractProvider, parseSize }

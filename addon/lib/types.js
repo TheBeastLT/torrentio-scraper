@@ -1,4 +1,4 @@
-exports.Type = {
+export const Type = {
   MOVIE: 'movie',
   SERIES: 'series',
   ANIME: 'anime',

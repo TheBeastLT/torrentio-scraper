@@ -1,7 +1,7 @@
-const { parse } = require('parse-torrent-title');
-const { isExtension } = require("./extension");
-const { Providers } = require("./filter");
-const { languageFromCode } = require("./languages");
+import { parse } from 'parse-torrent-title';
+import { isExtension } from './extension.js';
+import { Providers } from './filter.js';
+import { languageFromCode } from './languages.js';
 
 const languageMapping = {
   'english': 'eng',
@@ -50,8 +50,8 @@ const languageMapping = {
 const ignoreSet = new Set(['dubbed', 'multi audio', 'multi subs', 'dual audio']);
 const allowedExtensions = ['srt', 'vtt', 'ass', 'ssa'];
 
-function getSubtitles(record) {
-  if (!record.subtitles || !record.subtitles.length) {
+export function getSubtitles(record) {
+  if (!record?.subtitles?.length) {
     return null;
   }
   return record.subtitles
@@ -95,7 +95,5 @@ function getSingleLanguage(title) {
 
 function getFileNameLanguageCode(fileName) {
   const match = fileName.match(/(?:(?:^|[._ ])([A-Za-z][a-z]{1,2})|\[([a-z]{2,3})])\.\w{3,4}$/);
-  return match && match[1].toLowerCase();
+  return match?.[1]?.toLowerCase();
 }
-
-module.exports = { getSubtitles }

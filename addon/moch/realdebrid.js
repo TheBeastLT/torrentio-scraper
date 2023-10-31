@@ -1,11 +1,11 @@
-const RealDebridClient = require('real-debrid-api');
-const { Type } = require('../lib/types');
-const { isVideo, isArchive } = require('../lib/extension');
-const { delay } = require('../lib/promises');
-const { cacheAvailabilityResults, getCachedAvailabilityResults } = require('../lib/cache');
-const StaticResponse = require('./static');
-const { getMagnetLink } = require('../lib/magnetHelper');
-const { chunkArray, BadTokenError, AccessDeniedError } = require('./mochHelper');
+import RealDebridClient from 'real-debrid-api';
+import { Type } from '../lib/types.js';
+import { isVideo, isArchive } from '../lib/extension.js';
+import { delay } from '../lib/promises.js';
+import { cacheAvailabilityResults, getCachedAvailabilityResults } from '../lib/cache.js';
+import StaticResponse from './static.js';
+import { getMagnetLink } from '../lib/magnetHelper.js';
+import { chunkArray, BadTokenError, AccessDeniedError } from './mochHelper.js';
 
 const MIN_SIZE = 5 * 1024 * 1024; // 5 MB
 const CATALOG_MAX_PAGE = 1;
@@ -14,7 +14,7 @@ const NON_BLACKLIST_ERRORS = ['ESOCKETTIMEDOUT', 'EAI_AGAIN', '504 Gateway Time-
 const KEY = 'realdebrid';
 const DEBRID_DOWNLOADS = 'Downloads';
 
-async function getCachedStreams(streams, apiKey) {
+export async function getCachedStreams(streams, apiKey) {
   const hashes = streams.map(stream => stream.infoHash);
   const available = await _getInstantAvailable(hashes, apiKey);
   return available && streams
@@ -100,7 +100,7 @@ function _getCachedFileIds(fileIndex, cachedResults) {
   return cachedIds || [];
 }
 
-async function getCatalog(apiKey, offset, ip) {
+export async function getCatalog(apiKey, offset, ip) {
   if (offset > 0) {
     return [];
   }
@@ -123,11 +123,10 @@ async function getCatalog(apiKey, offset, ip) {
   return [downloadsMeta].concat(torrentMetas)
 }
 
-async function getItemMeta(itemId, apiKey, ip) {
+export async function getItemMeta(itemId, apiKey, ip) {
   const options = await getDefaultOptions(ip);
   const RD = new RealDebridClient(apiKey, options);
   if (itemId === DEBRID_DOWNLOADS) {
-    // const allTorrents = await _getAllTorrents(RD).catch(() => []);
     const videos = await _getAllDownloads(RD)
         .then(downloads => downloads
             .map(download => ({
@@ -177,7 +176,7 @@ async function _getAllDownloads(RD, page = 1) {
   return RD.downloads.get(page - 1, page, CATALOG_PAGE_SIZE);
 }
 
-async function resolve({ ip, isBrowser, apiKey, infoHash, cachedEntryInfo, fileIndex }) {
+export async function resolve({ ip, isBrowser, apiKey, infoHash, cachedEntryInfo, fileIndex }) {
   console.log(`Unrestricting RealDebrid ${infoHash} [${fileIndex}]`);
   const options = await getDefaultOptions(ip);
   const RD = new RealDebridClient(apiKey, options);
@@ -384,5 +383,3 @@ function infringingFile(error) {
 async function getDefaultOptions(ip) {
   return { ip, timeout: 30000 };
 }
-
-module.exports = { getCachedStreams, resolve, getCatalog, getItemMeta };

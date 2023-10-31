@@ -50,25 +50,23 @@ const ARCHIVE_EXTENSIONS = [
   "zip"
 ]
 
-function isVideo(filename) {
+export function isVideo(filename) {
   return isExtension(filename, VIDEO_EXTENSIONS);
 }
 
-function isSubtitle(filename) {
+export function isSubtitle(filename) {
   return isExtension(filename, SUBTITLE_EXTENSIONS);
 }
 
-function isDisk(filename) {
+export function isDisk(filename) {
   return isExtension(filename, DISK_EXTENSIONS);
 }
 
-function isArchive(filename) {
+export function isArchive(filename) {
   return isExtension(filename, ARCHIVE_EXTENSIONS);
 }
 
-function isExtension(filename, extensions) {
-  const extensionMatch = filename && filename.match(/\.(\w{2,4})$/);
+export function isExtension(filename, extensions) {
+  const extensionMatch = filename?.match(/\.(\w{2,4})$/);
   return extensionMatch && extensions.includes(extensionMatch[1].toLowerCase());
 }
-
-module.exports = { isVideo, isSubtitle, isDisk, isArchive, isExtension }

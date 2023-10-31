@@ -1,4 +1,4 @@
-const { Sequelize } = require('sequelize');
+import { Sequelize } from 'sequelize';
 const Op = Sequelize.Op;
 
 const DATABASE_URI = process.env.DATABASE_URI;
@@ -67,15 +67,15 @@ File.belongsTo(Torrent, { foreignKey: 'infoHash', constraints: false });
 File.hasMany(Subtitle, { foreignKey: 'fileId', constraints: false });
 Subtitle.belongsTo(File, { foreignKey: 'fileId', constraints: false });
 
-function getTorrent(infoHash) {
+export function getTorrent(infoHash) {
   return Torrent.findOne({ where: { infoHash: infoHash } });
 }
 
-function getFiles(infoHashes) {
+export function getFiles(infoHashes) {
   return File.findAll({ where: { infoHash: { [Op.in]: infoHashes} } });
 }
 
-function getImdbIdMovieEntries(imdbId) {
+export function getImdbIdMovieEntries(imdbId) {
   return File.findAll({
     where: {
       imdbId: { [Op.eq]: imdbId }
@@ -88,7 +88,7 @@ function getImdbIdMovieEntries(imdbId) {
   });
 }
 
-function getImdbIdSeriesEntries(imdbId, season, episode) {
+export function getImdbIdSeriesEntries(imdbId, season, episode) {
   return File.findAll({
     where: {
       imdbId: { [Op.eq]: imdbId },
@@ -103,7 +103,7 @@ function getImdbIdSeriesEntries(imdbId, season, episode) {
   });
 }
 
-function getKitsuIdMovieEntries(kitsuId) {
+export function getKitsuIdMovieEntries(kitsuId) {
   return File.findAll({
     where: {
       kitsuId: { [Op.eq]: kitsuId }
@@ -116,7 +116,7 @@ function getKitsuIdMovieEntries(kitsuId) {
   });
 }
 
-function getKitsuIdSeriesEntries(kitsuId, episode) {
+export function getKitsuIdSeriesEntries(kitsuId, episode) {
   return File.findAll({
     where: {
       kitsuId: { [Op.eq]: kitsuId },
@@ -129,12 +129,3 @@ function getKitsuIdSeriesEntries(kitsuId, episode) {
     ]
   });
 }
-
-module.exports = {
-  getTorrent,
-  getFiles,
-  getImdbIdMovieEntries,
-  getImdbIdSeriesEntries,
-  getKitsuIdMovieEntries,
-  getKitsuIdSeriesEntries
-};

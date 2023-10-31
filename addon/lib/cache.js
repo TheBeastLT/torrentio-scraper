@@ -1,6 +1,6 @@
-const cacheManager = require('cache-manager');
-const mangodbStore = require('cache-manager-mongodb');
-const { isStaticUrl } = require('../moch/static')
+import cacheManager from 'cache-manager';
+import mangodbStore from 'cache-manager-mongodb';
+import { isStaticUrl }  from '../moch/static.js';
 
 const GLOBAL_KEY_PREFIX = 'torrentio-addon';
 const STREAM_KEY_PREFIX = `${GLOBAL_KEY_PREFIX}|stream`;
@@ -60,19 +60,19 @@ function cacheWrap(cache, key, method, options) {
   return cache.wrap(key, method, options);
 }
 
-function cacheWrapStream(id, method) {
+export function cacheWrapStream(id, method) {
   return cacheWrap(remoteCache, `${STREAM_KEY_PREFIX}:${id}`, method, {
     ttl: (streams) => streams.length ? STREAM_TTL : STREAM_EMPTY_TTL
   });
 }
 
-function cacheWrapResolvedUrl(id, method) {
+export function cacheWrapResolvedUrl(id, method) {
   return cacheWrap(memoryCache, `${RESOLVED_URL_KEY_PREFIX}:${id}`, method, {
     ttl: (url) => isStaticUrl(url) ? MESSAGE_VIDEO_URL_TTL : STREAM_TTL
   });
 }
 
-function cacheAvailabilityResults(results) {
+export function cacheAvailabilityResults(results) {
   Object.keys(results)
       .forEach(infoHash => {
         const key = `${AVAILABILITY_KEY_PREFIX}:${infoHash}`;
@@ -83,7 +83,7 @@ function cacheAvailabilityResults(results) {
   return results;
 }
 
-function getCachedAvailabilityResults(infoHashes) {
+export function getCachedAvailabilityResults(infoHashes) {
   const keys = infoHashes.map(infoHash => `${AVAILABILITY_KEY_PREFIX}:${infoHash}`)
   return new Promise(resolve => {
     memoryCache.mget(...keys, (error, result) => {
@@ -101,6 +101,3 @@ function getCachedAvailabilityResults(infoHashes) {
     })
   });
 }
-
-module.exports = { cacheWrapStream, cacheWrapResolvedUrl, cacheAvailabilityResults, getCachedAvailabilityResults };
-

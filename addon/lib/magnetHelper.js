@@ -1,8 +1,9 @@
-const axios = require('axios');
-const magnet = require('magnet-uri');
-const { getRandomUserAgent } = require('../lib/requestHelper');
-const { getTorrent } = require('../lib/repository');
-const { Type } = require('../lib/types');
+import axios from 'axios';
+import magnet from 'magnet-uri';
+import { getRandomUserAgent } from './requestHelper.js';
+import { getTorrent } from './repository.js';
+import { Type } from './types.js';
+import { extractProvider } from "./titleHelper.js";
 
 const TRACKERS_URL = 'https://raw.githubusercontent.com/ngosang/trackerslist/master/trackers_best.txt';
 const DEFAULT_TRACKERS = [
@@ -61,9 +62,9 @@ let BEST_TRACKERS = [];
 let ALL_ANIME_TRACKERS = [];
 let ALL_RUSSIAN_TRACKERS = [];
 
-async function getMagnetLink(infoHash) {
+export async function getMagnetLink(infoHash) {
   const torrent = await getTorrent(infoHash).catch(() => ({ infoHash }));
-  const torrentTrackers = torrent.trackers && torrent.trackers.split(',');
+  const torrentTrackers = torrent?.trackers?.split(',');
   const animeTrackers = torrent.type === Type.ANIME ? ALL_ANIME_TRACKERS : undefined;
   const providerTrackers = RUSSIAN_PROVIDERS.includes(torrent.provider) && ALL_RUSSIAN_TRACKERS;
   const trackers = unique([].concat(torrentTrackers).concat(animeTrackers).concat(providerTrackers));
@@ -73,7 +74,7 @@ async function getMagnetLink(infoHash) {
       : magnet.encode({ infoHash: infoHash });
 }
 
-async function initBestTrackers() {
+export async function initBestTrackers() {
   BEST_TRACKERS = await getBestTrackers();
   ALL_ANIME_TRACKERS = unique(BEST_TRACKERS.concat(DEFAULT_TRACKERS).concat(ANIME_TRACKERS));
   ALL_RUSSIAN_TRACKERS = unique(BEST_TRACKERS.concat(DEFAULT_TRACKERS).concat(RUSSIAN_TRACKERS));
@@ -94,7 +95,7 @@ async function getBestTrackers(retry = 2) {
       });
 }
 
-function getSources(trackersInput, infoHash) {
+export function getSources(trackersInput, infoHash) {
   if (!trackersInput) {
     return null;
   }
@@ -102,9 +103,8 @@ function getSources(trackersInput, infoHash) {
   return trackers.map(tracker => `tracker:${tracker}`).concat(`dht:${infoHash}`);
 }
 
-function enrichStreamSources(stream) {
-  const match = stream.title.match(/⚙.* ([^ \n]+)/);
-  const provider = match && match[1];
+export function enrichStreamSources(stream) {
+  const provider = extractProvider(stream.title);
   if (ANIME_PROVIDERS.includes(provider)) {
     const sources = getSources(ALL_ANIME_TRACKERS, stream.infoHash);
     return { ...stream, sources };
@@ -119,5 +119,3 @@ function enrichStreamSources(stream) {
 function unique(array) {
   return Array.from(new Set(array));
 }
-
-module.exports = { initBestTrackers, getMagnetLink, getSources, enrichStreamSources };

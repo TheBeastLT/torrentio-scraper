@@ -1,14 +1,14 @@
-const AllDebridClient = require('all-debrid-api');
-const { Type } = require('../lib/types');
-const { isVideo, isArchive } = require('../lib/extension');
-const StaticResponse = require('./static');
-const { getMagnetLink } = require('../lib/magnetHelper');
-const { BadTokenError, AccessDeniedError } = require('./mochHelper');
+import AllDebridClient from 'all-debrid-api';
+import { Type } from '../lib/types.js';
+import { isVideo, isArchive } from '../lib/extension.js';
+import StaticResponse from './static.js';
+import { getMagnetLink } from '../lib/magnetHelper.js';
+import { BadTokenError, AccessDeniedError } from './mochHelper.js';
 
 const KEY = 'alldebrid';
 const AGENT = 'torrentio';
 
-async function getCachedStreams(streams, apiKey) {
+export async function getCachedStreams(streams, apiKey) {
   const options = await getDefaultOptions();
   const AD = new AllDebridClient(apiKey, options);
   const hashes = streams.map(stream => stream.infoHash);
@@ -23,7 +23,7 @@ async function getCachedStreams(streams, apiKey) {
         console.warn(`Failed AllDebrid cached [${hashes[0]}] torrent availability request:`, error);
         return undefined;
       });
-  return available && available.data && available.data.magnets && streams
+  return available?.data?.magnets && streams
       .reduce((mochStreams, stream) => {
         const cachedEntry = available.data.magnets.find(magnet => stream.infoHash === magnet.hash.toLowerCase());
         const streamTitleParts = stream.title.replace(/\n👤.*/s, '').split('\n');
@@ -32,13 +32,13 @@ async function getCachedStreams(streams, apiKey) {
         const encodedFileName = encodeURIComponent(fileName);
         mochStreams[stream.infoHash] = {
           url: `${apiKey}/${stream.infoHash}/${encodedFileName}/${fileIndex}`,
-          cached: cachedEntry && cachedEntry.instant
+          cached: cachedEntry?.instant
         }
         return mochStreams;
       }, {})
 }
 
-async function getCatalog(apiKey, offset = 0) {
+export async function getCatalog(apiKey, offset = 0) {
   if (offset > 0) {
     return [];
   }
@@ -55,7 +55,7 @@ async function getCatalog(apiKey, offset = 0) {
           })));
 }
 
-async function getItemMeta(itemId, apiKey) {
+export async function getItemMeta(itemId, apiKey) {
   const options = await getDefaultOptions();
   const AD = new AllDebridClient(apiKey, options);
   return AD.magnet.status(itemId)
@@ -76,7 +76,7 @@ async function getItemMeta(itemId, apiKey) {
       }))
 }
 
-async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex }) {
+export async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex }) {
   console.log(`Unrestricting AllDebrid ${infoHash} [${fileIndex}]`);
   const options = await getDefaultOptions(ip);
   const AD = new AllDebridClient(apiKey, options);
@@ -186,5 +186,3 @@ function errorExpiredSubscriptionError(error) {
   return ['AUTH_BAD_APIKEY', 'MUST_BE_PREMIUM', 'MAGNET_MUST_BE_PREMIUM', 'FREE_TRIAL_LIMIT_REACHED', 'AUTH_USER_BANNED']
       .includes(error.code);
 }
-
-module.exports = { getCachedStreams, resolve, getCatalog, getItemMeta };
