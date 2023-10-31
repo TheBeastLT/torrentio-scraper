@@ -5,6 +5,7 @@ const serverless = require('./serverless');
 const { initBestTrackers } = require('./lib/magnetHelper');
 
 const app = express();
+app.enable('trust proxy');
 const limiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hours
   max: 300, // limit each IP to 300 requests per windowMs

@@ -37,7 +37,9 @@ router.get('/:configuration?/manifest.json', (req, res) => {
 router.get('/:configuration/:resource/:type/:id/:extra?.json', (req, res, next) => {
   const { configuration, resource, type, id } = req.params;
   const extra = req.params.extra ? qs.parse(req.url.split('/').pop().slice(0, -5)) : {}
-  const configValues = { ...extra, ...parseConfiguration(configuration), ip: requestIp.getClientIp(req) };
+  const ip = requestIp.getClientIp(req);
+  const host = `${req.protocol}://${req.headers.host}`;
+  const configValues = { ...extra, ...parseConfiguration(configuration), ip, host };
   addonInterface.get(resource, type, id, configValues)
       .then(resp => {
         const cacheHeaders = {
@@ -78,6 +80,7 @@ router.get('/:moch/:apiKey/:infoHash/:cachedEntryInfo/:fileIndex/:filename?', (r
     fileIndex: isNaN(req.params.fileIndex) ? undefined : parseInt(req.params.fileIndex),
     cachedEntryInfo: req.params.cachedEntryInfo,
     ip: requestIp.getClientIp(req),
+    host: `${req.protocol}://${req.headers.host}`,
     isBrowser: !userAgent.includes('Stremio') && !!userAgentParser(userAgent).browser.name
   }
   moch.resolve(parameters)

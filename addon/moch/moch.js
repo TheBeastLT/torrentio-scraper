@@ -10,11 +10,11 @@ const StaticResponse = require('./static');
 const { cacheWrapResolvedUrl } = require('../lib/cache');
 const { timeout } = require('../lib/promises');
 const { BadTokenError, streamFilename, AccessDeniedError, enrichMeta } = require('./mochHelper');
+const { isStaticUrl } = require("./static");
 
 const RESOLVE_TIMEOUT = 2 * 60 * 1000; // 2 minutes
 const MIN_API_KEY_SYMBOLS = 15;
 const TOKEN_BLACKLIST = [];
-const RESOLVER_HOST = process.env.RESOLVER_HOST || 'http://localhost:7050';
 const MOCHS = {
   realdebrid: {
     key: 'realdebrid',
@@ -65,11 +65,11 @@ const unrestrictQueue = new namedQueue((task, callback) => task.method()
     .catch((error => callback(error))), 20);
 
 function hasMochConfigured(config) {
-  return Object.keys(MOCHS).find(moch => config && config[moch])
+  return Object.keys(MOCHS).find(moch => config?.[moch])
 }
 
 async function applyMochs(streams, config) {
-  if (!streams || !streams.length || !hasMochConfigured(config)) {
+  if (!streams?.length || !hasMochConfigured(config)) {
     return streams;
   }
   return Promise.all(Object.keys(config)
@@ -94,18 +94,19 @@ async function applyMochs(streams, config) {
 async function resolve(parameters) {
   const moch = MOCHS[parameters.mochKey];
   if (!moch) {
-    return Promise.reject(`Not a valid moch provider: ${parameters.mochKey}`);
+    return Promise.reject(new Error(`Not a valid moch provider: ${parameters.mochKey}`));
   }
 
   if (!parameters.apiKey || !parameters.infoHash || !parameters.cachedEntryInfo) {
-    return Promise.reject("No valid parameters passed");
+    return Promise.reject(new Error("No valid parameters passed"));
   }
   const id = `${parameters.ip}_${parameters.mochKey}_${parameters.apiKey}_${parameters.infoHash}_${parameters.fileIndex}`;
   const method = () => timeout(RESOLVE_TIMEOUT, cacheWrapResolvedUrl(id, () => moch.instance.resolve(parameters)))
       .catch(error => {
         console.warn(error);
         return StaticResponse.FAILED_UNEXPECTED;
-      });
+      })
+      .then(url => isStaticUrl(url) ? `${parameters.host}/${url}` : url);
   return new Promise(((resolve, reject) => {
     unrestrictQueue.push({ id, method }, (error, result) => result ? resolve(result) : reject(error));
   }));
@@ -114,10 +115,10 @@ async function resolve(parameters) {
 async function getMochCatalog(mochKey, config) {
   const moch = MOCHS[mochKey];
   if (!moch) {
-    return Promise.reject(`Not a valid moch provider: ${mochKey}`);
+    return Promise.reject(new Error(`Not a valid moch provider: ${mochKey}`));
   }
   if (isInvalidToken(config[mochKey], mochKey)) {
-    return Promise.reject(`Invalid API key for moch provider: ${mochKey}`);
+    return Promise.reject(new Error(`Invalid API key for moch provider: ${mochKey}`));
   }
   return moch.instance.getCatalog(config[moch.key], config.skip, config.ip);
 }
@@ -125,7 +126,7 @@ async function getMochCatalog(mochKey, config) {
 async function getMochItemMeta(mochKey, itemId, config) {
   const moch = MOCHS[mochKey];
   if (!moch) {
-    return Promise.reject(`Not a valid moch provider: ${mochKey}`);
+    return Promise.reject(new Error(`Not a valid moch provider: ${mochKey}`));
   }
 
   return moch.instance.getItemMeta(itemId, config[moch.key], config.ip)
@@ -135,14 +136,14 @@ async function getMochItemMeta(mochKey, itemId, config) {
             .map(video => video.streams)
             .reduce((a, b) => a.concat(b), [])
             .filter(stream => !stream.url.startsWith('http'))
-            .forEach(stream => stream.url = `${RESOLVER_HOST}/${moch.key}/${stream.url}`)
+            .forEach(stream => stream.url = `${config.host}/${moch.key}/${stream.url}`)
         return meta;
       });
 }
 
 function processMochResults(streams, config, results) {
   const errorResults = results
-      .map(result => errorStreamResponse(result.moch.key, result.error))
+      .map(result => errorStreamResponse(result.moch.key, result.error, config))
       .filter(errorResponse => errorResponse);
   if (errorResults.length) {
     return errorResults;
@@ -150,22 +151,22 @@ function processMochResults(streams, config, results) {
 
   const includeTorrentLinks = options.includeTorrentLinks(config);
   const excludeDownloadLinks = options.excludeDownloadLinks(config);
-  const mochResults = results.filter(result => result && result.mochStreams);
+  const mochResults = results.filter(result => result?.mochStreams);
 
   const cachedStreams = mochResults
-      .reduce((resultStreams, mochResult) => populateCachedLinks(resultStreams, mochResult), streams);
-  const resultStreams = excludeDownloadLinks ? cachedStreams : populateDownloadLinks(cachedStreams, mochResults);
+      .reduce((resultStreams, mochResult) => populateCachedLinks(resultStreams, mochResult, config), streams);
+  const resultStreams = excludeDownloadLinks ? cachedStreams : populateDownloadLinks(cachedStreams, mochResults, config);
   return includeTorrentLinks ? resultStreams : resultStreams.filter(stream => stream.url);
 }
 
-function populateCachedLinks(streams, mochResult) {
+function populateCachedLinks(streams, mochResult, config) {
   return streams.map(stream => {
     const cachedEntry = stream.infoHash && mochResult.mochStreams[stream.infoHash];
-    if (cachedEntry && cachedEntry.cached) {
+    if (cachedEntry?.cached) {
       return {
         name: `[${mochResult.moch.shortName}+] ${stream.name}`,
         title: stream.title,
-        url: `${RESOLVER_HOST}/${mochResult.moch.key}/${cachedEntry.url}/${streamFilename(stream)}`,
+        url: `${config.host}/${mochResult.moch.key}/${cachedEntry.url}/${streamFilename(stream)}`,
         behaviorHints: stream.behaviorHints
       };
     }
@@ -173,17 +174,17 @@ function populateCachedLinks(streams, mochResult) {
   });
 }
 
-function populateDownloadLinks(streams, mochResults) {
+function populateDownloadLinks(streams, mochResults, config) {
   const torrentStreams = streams.filter(stream => stream.infoHash);
   const seededStreams = streams.filter(stream => !stream.title.includes('👤 0'));
   torrentStreams.forEach(stream => mochResults.forEach(mochResult => {
     const cachedEntry = mochResult.mochStreams[stream.infoHash];
-    const isCached = cachedEntry && cachedEntry.cached;
+    const isCached = cachedEntry?.cached;
     if (!isCached && isHealthyStreamForDebrid(seededStreams, stream)) {
       streams.push({
         name: `[${mochResult.moch.shortName} download] ${stream.name}`,
         title: stream.title,
-        url: `${RESOLVER_HOST}/${mochResult.moch.key}/${cachedEntry.url}/${streamFilename(stream)}`,
+        url: `${config.host}/${mochResult.moch.key}/${cachedEntry.url}/${streamFilename(stream)}`,
         behaviorHints: stream.behaviorHints
       })
     }
@@ -208,19 +209,19 @@ function blackListToken(token, mochKey) {
   TOKEN_BLACKLIST.push(tokenKey);
 }
 
-function errorStreamResponse(mochKey, error) {
+function errorStreamResponse(mochKey, error, config) {
   if (error === BadTokenError) {
     return {
       name: `Torrentio\n${MOCHS[mochKey].shortName} error`,
       title: `Invalid ${MOCHS[mochKey].name} ApiKey/Token!`,
-      url: StaticResponse.FAILED_ACCESS
+      url: `${config.host}/${StaticResponse.FAILED_ACCESS}`
     };
   }
   if (error === AccessDeniedError) {
     return {
       name: `Torrentio\n${MOCHS[mochKey].shortName} error`,
       title: `Expired/invalid ${MOCHS[mochKey].name} subscription!`,
-      url: StaticResponse.FAILED_ACCESS
+      url: `${config.host}/${StaticResponse.FAILED_ACCESS}`
     };
   }
   return undefined;

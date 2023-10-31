@@ -1,6 +1,6 @@
 const cacheManager = require('cache-manager');
 const mangodbStore = require('cache-manager-mongodb');
-const { RESOLVER_HOST } = require('../moch/static')
+const { isStaticUrl } = require('../moch/static')
 
 const GLOBAL_KEY_PREFIX = 'torrentio-addon';
 const STREAM_KEY_PREFIX = `${GLOBAL_KEY_PREFIX}|stream`;
@@ -68,7 +68,7 @@ function cacheWrapStream(id, method) {
 
 function cacheWrapResolvedUrl(id, method) {
   return cacheWrap(memoryCache, `${RESOLVED_URL_KEY_PREFIX}:${id}`, method, {
-    ttl: (url) => url.startsWith(RESOLVER_HOST) ? MESSAGE_VIDEO_URL_TTL : STREAM_TTL
+    ttl: (url) => isStaticUrl(url) ? MESSAGE_VIDEO_URL_TTL : STREAM_TTL
   });
 }
 
