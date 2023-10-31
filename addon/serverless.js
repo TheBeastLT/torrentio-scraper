@@ -39,7 +39,7 @@ router.get('/:configuration/:resource/:type/:id/:extra?.json', (req, res, next) 
   const extra = req.params.extra ? qs.parse(req.url.split('/').pop().slice(0, -5)) : {}
   const ip = requestIp.getClientIp(req);
   const host = `${req.protocol}://${req.headers.host}`;
-  const configValues = { ...extra, ...parseConfiguration(configuration), ip, host };
+  const configValues = { ...extra, ...parseConfiguration(configuration), id, type, ip, host };
   addonInterface.get(resource, type, id, configValues)
       .then(resp => {
         const cacheHeaders = {

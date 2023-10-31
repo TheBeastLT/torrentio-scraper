@@ -1,5 +1,5 @@
 const { DebridOptions } = require('../moch/options');
-const { QualityFilter, Providers } = require('./filter');
+const { QualityFilter, Providers, SizeFilter } = require('./filter');
 const { LanguageOptions } = require('./languages');
 
 const PRE_CONFIGURATIONS = {
@@ -26,7 +26,8 @@ const PRE_CONFIGURATIONS = {
   }
 }
 
-const keysToSplit = [Providers.key, LanguageOptions.key, QualityFilter.key, DebridOptions.key];
+const keysToSplit = [Providers.key, LanguageOptions.key, QualityFilter.key, SizeFilter.key, DebridOptions.key];
+const keyToUppercase = [SizeFilter.key];
 
 function parseConfiguration(configuration) {
   if (PRE_CONFIGURATIONS[configuration]) {
@@ -42,7 +43,8 @@ function parseConfiguration(configuration) {
       }, {});
   keysToSplit
       .filter(key => configValues[key])
-      .filter(key => configValues[key] = configValues[key].split(',').map(provider => provider.toLowerCase()))
+      .forEach(key => configValues[key] = configValues[key].split(',')
+          .map(value => keyToUppercase.includes(key) ? value.toUpperCase() : value.toLowerCase()))
   return configValues;
 }
 

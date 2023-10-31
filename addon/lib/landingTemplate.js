@@ -187,7 +187,7 @@ a.install-link {
 const { Providers } = require('./filter');
 const { SortOptions } = require('./sort');
 const { LanguageOptions } = require('./languages');
-const { QualityFilter } = require('./filter');
+const { QualityFilter, SizeFilter } = require('./filter');
 const { DebridOptions } = require('../moch/options');
 const { MochOptions } = require('../moch/moch');
 const { PreConfigurations } = require('../lib/configuration');
@@ -197,6 +197,7 @@ function landingTemplate(manifest, config = {}) {
   const sort = config[SortOptions.key] || SortOptions.options.qualitySeeders.key;
   const languages = config[LanguageOptions.key] || [];
   const qualityFilters = config[QualityFilter.key] || [];
+  const sizeFilter = (config[SizeFilter.key] || []).join(',');
   const limit = config.limit || '';
 
   const debridProvider = Object.keys(MochOptions).find(mochKey => config[mochKey]);
@@ -294,6 +295,10 @@ function landingTemplate(manifest, config = {}) {
          
          <label class="label" id="iLimitLabel" for="iLimit">Max results per quality:</label>
          <input type="text" inputmode="numeric" pattern="[0-9]*" id="iLimit" onchange="generateInstallLink()" class="input" placeholder="All results">
+         
+         <label class="label" id="iSizeFilterLabel" for="iSizeFilter">Video size limit:</label>
+         <input type="text" pattern="([0-9.]*(?:MB|GB),?)+" id="iSizeFilter" onchange="generateInstallLink()" class="input" placeholder="No limit" title="Returned videos cannot exceed this size, use comma to have different size for movies and series. Examples: 5GB ; 800MB ; 10GB,2GB">
+         
          
          <label class="label" for="iDebridProviders">Debrid provider:</label>
          <select id="iDebridProviders" class="input" onchange="debridProvidersChange()">
@@ -396,6 +401,7 @@ function landingTemplate(manifest, config = {}) {
               $('#iPutioToken').val("${putioToken}");
               $('#iSort').val("${sort}");
               $('#iLimit').val("${limit}");
+              $('#iSizeFilter').val("${sizeFilter}");
               generateInstallLink();
               debridProvidersChange();
           });
@@ -427,6 +433,7 @@ function landingTemplate(manifest, config = {}) {
               const sortValue = $('#iSort').val() || '';
               const languagesValue = $('#iLanguages').val().join(',') || [];
               const limitValue = $('#iLimit').val() || '';
+              const sizeFilterValue = $('#iSizeFilter').val() || '';
               
               const debridOptionsValue = $('#iDebridOptions').val().join(',') || '';
               const realDebridValue = $('#iRealDebrid').val() || '';
@@ -443,6 +450,7 @@ function landingTemplate(manifest, config = {}) {
               const sort = sortValue !== '${SortOptions.options.qualitySeeders.key}' && sortValue;
               const languages = languagesValue.length && languagesValue;
               const limit = /^[1-9][0-9]{0,2}$/.test(limitValue) && limitValue;
+              const sizeFilter = sizeFilterValue.length && sizeFilterValue;
               
               const debridOptions = debridOptionsValue.length && debridOptionsValue.trim();
               const realDebrid = realDebridValue.length && realDebridValue.trim();
@@ -461,6 +469,7 @@ function landingTemplate(manifest, config = {}) {
                     ['${LanguageOptions.key}', languages],
                     ['${QualityFilter.key}', qualityFilters],
                     ['limit', limit],
+                    ['${SizeFilter.key}', sizeFilter],
                     ['${DebridOptions.key}', debridOptions], 
                     ['${MochOptions.realdebrid.key}', realDebrid],
                     ['${MochOptions.premiumize.key}', premiumize],

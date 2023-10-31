@@ -1,3 +1,5 @@
+const { extractProvider, parseSize, extractSize } = require("./titleHelper");
+const { Type } = require("./types");
 const Providers = {
   key: 'providers',
   options: [
@@ -87,7 +89,7 @@ const QualityFilter = {
       key: 'brremux',
       label: 'BluRay REMUX',
       test(quality, bingeGroup) {
-        return bingeGroup && bingeGroup.includes(this.label);
+        return bingeGroup?.includes(this.label);
       }
     },
     {
@@ -95,7 +97,7 @@ const QualityFilter = {
       label: 'HDR/HDR10+/Dolby Vision',
       items: ['HDR', 'HDR10+', 'DV'],
       test(quality) {
-        const hdrProfiles = quality && quality.split(' ').slice(1).join() || '';
+        const hdrProfiles = quality?.split(' ')?.slice(1)?.join() || '';
         return this.items.some(hdrType => hdrProfiles.includes(hdrType));
       }
     },
@@ -103,7 +105,7 @@ const QualityFilter = {
       key: 'dolbyvision',
       label: 'Dolby Vision',
       test(quality) {
-        const hdrProfiles = quality && quality.split(' ').slice(1).join() || '';
+        const hdrProfiles = quality?.split(' ')?.slice(1)?.join() || '';
         return hdrProfiles === 'DV';
       }
     },
@@ -173,20 +175,26 @@ const QualityFilter = {
     }
   ]
 };
+const SizeFilter = {
+  key: 'sizefilter'
+}
 const defaultProviderKeys = Providers.options.map(provider => provider.key);
 
 function applyFilters(streams, config) {
-  return filterByQuality(filterByProvider(streams, config), config);
+  return [
+    filterByProvider,
+    filterByQuality,
+    filterBySize
+  ].reduce((filteredStreams, filter) => filter(filteredStreams, config), streams);
 }
 
 function filterByProvider(streams, config) {
   const providers = config.providers || defaultProviderKeys;
-  if (!providers || !providers.length) {
+  if (!providers?.length) {
     return streams;
   }
   return streams.filter(stream => {
-    const match = stream.title.match(/⚙.* ([^ \n]+)/);
-    const provider = match && match[1].toLowerCase();
+    const provider = extractProvider(stream.title)
     return providers.includes(provider);
   })
 }
@@ -204,6 +212,19 @@ function filterByQuality(streams, config) {
   });
 }
 
+function filterBySize(streams, config) {
+  const sizeFilters = config[SizeFilter.key];
+  if (!sizeFilters?.length) {
+    return streams;
+  }
+  const sizeLimit = parseSize(config.type === Type.MOVIE ? sizeFilters.shift() : sizeFilters.pop());
+  return streams.filter(stream => {
+    const size = extractSize(stream.title)
+    return size <= sizeLimit;
+  })
+}
+
 module.exports = applyFilters;
 module.exports.Providers = Providers;
 module.exports.QualityFilter = QualityFilter;
+module.exports.SizeFilter = SizeFilter;

@@ -2,6 +2,7 @@ const { QualityFilter } = require('./filter');
 const { containsLanguage, LanguageOptions } = require('./languages');
 const { Type } = require("./types");
 const { hasMochConfigured } = require("../moch/moch");
+const { extractSeeders, extractSize } = require("./titleHelper");
 
 const OTHER_QUALITIES = QualityFilter.options.find(option => option.key === 'other');
 const CAM_QUALITIES = QualityFilter.options.find(option => option.key === 'cam');
@@ -34,7 +35,7 @@ const SortOptions = {
 
 function sortStreams(streams, config, type) {
   const languages = config[LanguageOptions.key];
-  if (languages && languages.length && languages[0] !== 'english') {
+  if (languages?.length && languages[0] !== 'english') {
     // No need to filter english since it's hard to predict which entries are english
     const streamsWithLanguage = streams.filter(stream => containsLanguage(stream, languages));
     const streamsNoLanguage = streams.filter(stream => !streamsWithLanguage.includes(stream));
@@ -44,7 +45,7 @@ function sortStreams(streams, config, type) {
 }
 
 function _sortStreams(streams, config, type) {
-  const sort = config.sort && config.sort.toLowerCase() || undefined;
+  const sort = config?.sort?.toLowerCase() || undefined;
   const limit = /^[1-9][0-9]*$/.test(config.limit) && parseInt(config.limit) || undefined;
   const sortedStreams = sortBySeeders(streams, config, type);
   if (sort === SortOptions.options.seeders.key) {
@@ -93,8 +94,8 @@ function sortByVideoQuality(streams, nestedSort, limit) {
       }, {});
   const sortedQualities = Object.keys(qualityMap)
       .sort((a, b) => {
-        const aResolution = a && a.match(/\d+p/) && parseInt(a, 10);
-        const bResolution = b && b.match(/\d+p/) && parseInt(b, 10);
+        const aResolution = a?.match(/\d+p/) && parseInt(a, 10);
+        const bResolution = b?.match(/\d+p/) && parseInt(b, 10);
         if (aResolution && bResolution) {
           return bResolution - aResolution; // higher resolution first;
         } else if (aResolution) {
@@ -111,7 +112,7 @@ function sortByVideoQuality(streams, nestedSort, limit) {
 
 function extractQuality(title) {
   const qualityDesc = title.split('\n')[1];
-  const resolutionMatch = qualityDesc && qualityDesc.match(/\d+p/);
+  const resolutionMatch = qualityDesc?.match(/\d+p/);
   if (resolutionMatch) {
     return resolutionMatch[0];
   } else if (/8k/i.test(qualityDesc)) {
@@ -124,33 +125,6 @@ function extractQuality(title) {
     return OTHER_QUALITIES.label;
   }
   return qualityDesc;
-}
-
-function extractSeeders(title) {
-  const seedersMatch = title.match(/👤 (\d+)/);
-  return seedersMatch && parseInt(seedersMatch[1]) || 0;
-}
-
-function extractSize(title) {
-  const seedersMatch = title.match(/💾 ([\d.]+ \w+)/);
-  return seedersMatch && parseSize(seedersMatch[1]) || 0;
-}
-
-function parseSize(sizeText) {
-  if (!sizeText) {
-    return 0;
-  }
-  let scale = 1;
-  if (sizeText.includes('TB')) {
-    scale = 1024 * 1024 * 1024 * 1024
-  } else if (sizeText.includes('GB')) {
-    scale = 1024 * 1024 * 1024
-  } else if (sizeText.includes('MB')) {
-    scale = 1024 * 1024;
-  } else if (sizeText.includes('kB')) {
-    scale = 1024;
-  }
-  return Math.floor(parseFloat(sizeText.replace(/,/g, '')) * scale);
 }
 
 module.exports = sortStreams;
