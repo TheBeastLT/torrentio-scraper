@@ -21,10 +21,9 @@ export async function getCachedStreams(streams, apiKey) {
       .reduce((mochStreams, stream) => {
         const cachedEntry = available[stream.infoHash];
         const cachedIds = _getCachedFileIds(stream.fileIdx, cachedEntry);
-        const cachedIdsString = cachedIds.length ? cachedIds.join(',') : null;
         mochStreams[stream.infoHash] = {
-          url: `${apiKey}/${stream.infoHash}/${cachedIdsString}/${stream.fileIdx}`,
-          cached: !!cachedIdsString
+          url: `${apiKey}/${stream.infoHash}/null/${stream.fileIdx}`,
+          cached: !!cachedIds.length
         };
         return mochStreams;
       }, {})
@@ -61,7 +60,7 @@ async function _getInstantAvailable(hashes, apiKey, retries = 3, maxChunkSize = 
           console.log(`Reducing chunk size for availability request: ${hashes[0]}`);
           return _getInstantAvailable(hashes, apiKey, retries - 1, Math.ceil(maxChunkSize / 10));
         }
-        if (retries > 0 && NON_BLACKLIST_ERRORS.some(v => error && error.message && error.message.includes(v))) {
+        if (retries > 0 && NON_BLACKLIST_ERRORS.some(v => error?.message?.includes(v))) {
           return _getInstantAvailable(hashes, apiKey, retries - 1);
         }
         console.warn(`Failed RealDebrid cached [${hashes[0]}] torrent availability request:`, error.message);
@@ -176,12 +175,13 @@ async function _getAllDownloads(RD, page = 1) {
   return RD.downloads.get(page - 1, page, CATALOG_PAGE_SIZE);
 }
 
-export async function resolve({ ip, isBrowser, apiKey, infoHash, cachedEntryInfo, fileIndex }) {
+export async function resolve({ ip, isBrowser, apiKey, infoHash, fileIndex }) {
   console.log(`Unrestricting RealDebrid ${infoHash} [${fileIndex}]`);
   const options = await getDefaultOptions(ip);
   const RD = new RealDebridClient(apiKey, options);
+  const cachedFileIds = await _resolveCachedFileIds(infoHash, fileIndex, apiKey);
 
-  return _resolve(RD, infoHash, cachedEntryInfo, fileIndex, isBrowser)
+  return _resolve(RD, infoHash, cachedFileIds, fileIndex, isBrowser)
       .catch(error => {
         if (accessDeniedError(error)) {
           console.log(`Access denied to RealDebrid ${infoHash} [${fileIndex}]`);
@@ -195,8 +195,15 @@ export async function resolve({ ip, isBrowser, apiKey, infoHash, cachedEntryInfo
       });
 }
 
-async function _resolve(RD, infoHash, cachedEntryInfo, fileIndex, isBrowser) {
-  const torrentId = await _createOrFindTorrentId(RD, infoHash, cachedEntryInfo, fileIndex);
+async function _resolveCachedFileIds(infoHash, fileIndex, apiKey) {
+  const available = await _getInstantAvailable([infoHash], apiKey);
+  const cachedEntry = available?.[infoHash];
+  const cachedIds = _getCachedFileIds(fileIndex, cachedEntry);
+  return cachedIds?.join(',');
+}
+
+async function _resolve(RD, infoHash, cachedFileIds, fileIndex, isBrowser) {
+  const torrentId = await _createOrFindTorrentId(RD, infoHash, cachedFileIds, fileIndex);
   const torrent = await _getTorrentInfo(RD, torrentId);
   if (torrent && statusReady(torrent.status)) {
     return _unrestrictLink(RD, torrent, fileIndex, isBrowser);
@@ -234,7 +241,7 @@ async function _findTorrent(RD, infoHash, fileIndex) {
       .filter(torrent => torrent.hash.toLowerCase() === infoHash)
       .filter(torrent => !statusError(torrent.status));
   const foundTorrent = await _findBestFitTorrent(RD, foundTorrents, fileIndex);
-  return foundTorrent && foundTorrent.id || Promise.reject('No recent torrent found');
+  return foundTorrent?.id || Promise.reject('No recent torrent found');
 }
 
 async function _findBestFitTorrent(RD, torrents, fileIndex) {
@@ -281,7 +288,7 @@ async function _retryCreateTorrent(RD, infoHash, fileIndex) {
 
 async function _selectTorrentFiles(RD, torrent, fileIndex) {
   torrent = statusWaitingSelection(torrent.status) ? torrent : await _openTorrent(RD, torrent.id);
-  if (torrent && torrent.files && statusWaitingSelection(torrent.status)) {
+  if (torrent?.files && statusWaitingSelection(torrent.status)) {
     const videoFileIds = Number.isInteger(fileIndex) ? `${fileIndex + 1}` : torrent.files
         .filter(file => isVideo(file.path))
         .filter(file => file.bytes > MIN_SIZE)
@@ -313,7 +320,7 @@ async function _unrestrictLink(RD, torrent, fileIndex, isBrowser) {
       ? torrent.links[0]
       : torrent.links[selectedFiles.indexOf(targetFile)];
 
-  if (!fileLink || !fileLink.length) {
+  if (!fileLink?.length) {
     console.log(`No RealDebrid links found for ${torrent.hash} [${fileIndex}]`);
     return _retryCreateTorrent(RD, torrent.hash, fileIndex)
   }
@@ -373,7 +380,7 @@ function statusReady(status) {
 }
 
 function accessDeniedError(error) {
-  return [9, 20].includes(error && error.code);
+  return [9, 20].includes(error?.code);
 }
 
 function infringingFile(error) {
