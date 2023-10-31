@@ -1,4 +1,6 @@
-import getRouter from 'stremio-addon-sdk/src/getRouter.js';
+import Router from 'router';
+import cors from 'cors';
+import rateLimit from "express-rate-limit";
 import requestIp from 'request-ip';
 import userAgentParser from 'ua-parser-js';
 import addonInterface from './addon.js';
@@ -8,8 +10,15 @@ import { parseConfiguration, PreConfigurations } from './lib/configuration.js';
 import landingTemplate from './lib/landingTemplate.js';
 import * as moch from './moch/moch.js';
 
-const router = getRouter({ ...addonInterface, manifest: manifest() });
+const router = new Router();
+const limiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 300, // limit each IP to 300 requests per windowMs
+  headers: false,
+  keyGenerator: (req) => requestIp.getClientIp(req)
+})
 
+router.use(cors())
 router.get('/', (_, res) => {
   res.redirect('/configure')
   res.end();
@@ -34,7 +43,7 @@ router.get('/:configuration?/manifest.json', (req, res) => {
   res.end(manifestBuf)
 });
 
-router.get('/:configuration/:resource/:type/:id/:extra?.json', (req, res, next) => {
+router.get('/:configuration?/:resource/:type/:id/:extra?.json', limiter, (req, res, next) => {
   const { configuration, resource, type, id } = req.params;
   const extra = req.params.extra ? qs.parse(req.url.split('/').pop().slice(0, -5)) : {}
   const ip = requestIp.getClientIp(req);

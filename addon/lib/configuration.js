@@ -30,6 +30,9 @@ const keysToSplit = [Providers.key, LanguageOptions.key, QualityFilter.key, Size
 const keysToUppercase = [SizeFilter.key];
 
 export function parseConfiguration(configuration) {
+  if (!configuration) {
+    return undefined;
+  }
   if (PreConfigurations[configuration]) {
     return PreConfigurations[configuration].config;
   }
