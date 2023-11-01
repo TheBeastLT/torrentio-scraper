@@ -140,10 +140,9 @@ export async function getMochItemMeta(mochKey, itemId, config) {
       .then(meta => enrichMeta(meta))
       .then(meta => {
         meta.videos
-            .map(video => video.streams)
-            .reduce((a, b) => a.concat(b), [])
-            .filter(stream => !stream.url.startsWith('http'))
-            .forEach(stream => stream.url = `${config.host}/${moch.key}/${stream.url}`)
+            .map(video => video.streams
+              .filter(stream => !stream.url.startsWith('http'))
+              .forEach(stream => stream.url = `${config.host}/${moch.key}/${stream.url}/${streamFilename(video)}`))
         return meta;
       });
 }

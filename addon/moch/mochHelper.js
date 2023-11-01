@@ -12,10 +12,7 @@ export function chunkArray(arr, size) {
 
 export function streamFilename(stream) {
   const titleParts = stream.title.replace(/\n👤.*/s, '').split('\n');
-  const filePath = titleParts.pop();
-  const filename = titleParts.length
-      ? filePath.split('/').pop()
-      : filePath;
+  const filename = titleParts.pop().split('/').pop();
   return encodeURIComponent(filename)
 }
 
