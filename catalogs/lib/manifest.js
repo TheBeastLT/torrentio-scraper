@@ -1,6 +1,6 @@
-const { Type } = require('../../addon/lib/types');
+import { Type } from '../../addon/lib/types.js';
 
-const genres = [
+export const genres = [
     'Yesterday',
     'This Week',
     'Last Week',
@@ -9,7 +9,7 @@ const genres = [
     'All Time'
 ]
 
-function createManifest() {
+export function createManifest() {
   return {
     id: 'com.stremio.torrentio.catalog.addon',
     version: '1.0.2',
@@ -52,5 +52,3 @@ function createManifest() {
     }
   };
 }
-
-module.exports = { createManifest, genres };

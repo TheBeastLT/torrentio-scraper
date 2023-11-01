@@ -1,8 +1,8 @@
-const { getRouter } = require('stremio-addon-sdk');
-const addonInterface = require('./addon');
-const qs = require('querystring')
-const { parseConfiguration } = require('../addon/lib/configuration');
-const { createManifest } = require('./lib/manifest');
+import getRouter from 'stremio-addon-sdk/src/getRouter.js';
+import addonInterface from './addon.js';
+import qs from 'querystring';
+import { parseConfiguration } from '../addon/lib/configuration.js';
+import { createManifest } from './lib/manifest.js';
 
 const router = getRouter(addonInterface);
 
@@ -60,7 +60,7 @@ router.get('/:configuration/:resource/:type/:id/:extra?.json', (req, res, next) 
       });
 });
 
-module.exports = function (req, res) {
+export default function (req, res) {
   router(req, res, function () {
     res.statusCode = 404;
     res.end();

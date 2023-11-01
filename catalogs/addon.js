@@ -1,11 +1,11 @@
-const Bottleneck = require('bottleneck');
-const moment = require('moment')
-const { addonBuilder } = require('stremio-addon-sdk');
-const { Providers } = require('../addon/lib/filter')
-const { createManifest, genres } = require('./lib/manifest');
-const { getMetas } = require('./lib/metadata');
-const { cacheWrapCatalog, cacheWrapIds } = require('./lib/cache');
-const repository = require('./lib/repository');
+import Bottleneck from 'bottleneck';
+import moment from 'moment';
+import { addonBuilder } from 'stremio-addon-sdk';
+import { Providers } from '../addon/lib/filter.js';
+import { createManifest, genres } from './lib/manifest.js';
+import { getMetas } from './lib/metadata.js';
+import { cacheWrapCatalog, cacheWrapIds } from './lib/cache.js';
+import * as repository from './lib/repository.js';
 
 const CACHE_MAX_AGE = parseInt(process.env.CACHE_MAX_AGE) || 4 * 60 * 60; // 4 hours in seconds
 const STALE_REVALIDATE_AGE = 4 * 60 * 60; // 4 hours
@@ -96,4 +96,4 @@ function createCacheKey(catalogId, providers, genre, offset) {
   return [catalogId, providers.join(','), genre, dateKey, offset].filter(x => x !== undefined).join('|');
 }
 
-module.exports = builder.getInterface();
+export default builder.getInterface();

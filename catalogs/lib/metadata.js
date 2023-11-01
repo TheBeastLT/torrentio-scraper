@@ -1,12 +1,12 @@
-const axios = require('axios');
-const { Type } = require('../../addon/lib/types');
+import axios from 'axios';
+import { Type } from '../../addon/lib/types.js';
 
 const CINEMETA_URL = 'https://v3-cinemeta.strem.io';
 const KITSU_URL = 'https://anime-kitsu.strem.fun';
 const TIMEOUT = 30000;
 const MAX_SIZE = 40;
 
-function getMetas(ids, type) {
+export async function getMetas(ids, type) {
   if (!ids.length || !type) {
     return [];
   }
@@ -39,5 +39,3 @@ function _sanitizeMeta(meta) {
   delete meta.credits_crew;
   return meta;
 }
-
-module.exports = { getMetas };

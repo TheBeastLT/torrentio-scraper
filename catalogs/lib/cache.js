@@ -1,5 +1,5 @@
-const cacheManager = require('cache-manager');
-const mangodbStore = require('cache-manager-mongodb');
+import cacheManager from 'cache-manager';
+import mangodbStore from 'cache-manager-mongodb';
 
 const CATALOG_TTL = process.env.STREAM_TTL || 24 * 60 * 60; // 24 hours
 
@@ -37,13 +37,10 @@ function cacheWrap(cache, key, method, options) {
   return cache.wrap(key, method, options);
 }
 
-function cacheWrapCatalog(key, method) {
+export function cacheWrapCatalog(key, method) {
   return cacheWrap(remoteCache, key, method, { ttl: CATALOG_TTL });
 }
 
-function cacheWrapIds(key, method) {
+export function cacheWrapIds(key, method) {
   return cacheWrap(remoteCache, `ids|${key}`, method, { ttl: CATALOG_TTL });
 }
-
-module.exports = { cacheWrapCatalog, cacheWrapIds };
-

@@ -180,9 +180,9 @@ button:active {
   box-shadow: 0 0.5vh 1vh rgba(0, 0, 0, 0.2);
 }
 `;
-const { Providers } = require('../../addon/lib/filter');
+import { Providers } from '../../addon/lib/filter.js';
 
-function landingTemplate(manifest, config = {}) {
+export default function landingTemplate(manifest, config = {}) {
   const providers = config.providers || [];
 
   const background = manifest.background || 'https://dl.strem.io/addon-background.jpg';
@@ -272,5 +272,3 @@ function landingTemplate(manifest, config = {}) {
 
 	</html>`
 }
-
-module.exports = landingTemplate;

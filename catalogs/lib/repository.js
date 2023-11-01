@@ -1,11 +1,11 @@
-const { Sequelize, QueryTypes } = require('sequelize');
-const { Type } = require('../../addon/lib/types');
+import { Sequelize, QueryTypes } from 'sequelize';
+import { Type } from '../../addon/lib/types.js';
 
 const DATABASE_URI = process.env.DATABASE_URI;
 
 const database = new Sequelize(DATABASE_URI, { logging: false });
 
-async function getIds(providers, type, startDate, endDate) {
+export async function getIds(providers, type, startDate, endDate) {
   const idName = type === Type.ANIME ? 'kitsuId' : 'imdbId';
   const episodeCondition = type === Type.SERIES
       ? 'AND files."imdbSeason" IS NOT NULL AND files."imdbEpisode" IS NOT NULL'
@@ -32,5 +32,3 @@ async function getIds(providers, type, startDate, endDate) {
   const results = await database.query(query, { type: QueryTypes.SELECT });
   return results.map(result => `${result.imdbId || result.kitsuId}`);
 }
-
-module.exports = { getIds };

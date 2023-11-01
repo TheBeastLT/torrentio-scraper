@@ -1,5 +1,5 @@
-const express = require('express');
-const serverless = require('./serverless');
+import express from 'express';
+import serverless from './serverless.js';
 
 const app = express();
 
