@@ -32,7 +32,7 @@ export async function enrichMeta(itemMeta) {
       poster: commonImdbId && `${METAHUB_URL}/poster/medium/${commonImdbId}/img`,
       background: commonImdbId && `${METAHUB_URL}/background/medium/${commonImdbId}/img`,
       videos: itemMeta.videos.map(video => {
-        const file = files.find(file => video.title.includes(file.title));
+        const file = files.find(file => sameFilename(video.title, file.title));
         if (file?.imdbId) {
           if (file.imdbSeason && file.imdbEpisode) {
             video.id = `${file.imdbId}:${file.imdbSeason}:${file.imdbEpisode}`;
@@ -49,6 +49,16 @@ export async function enrichMeta(itemMeta) {
     }
   }
   return itemMeta
+}
+
+function sameFilename(filename, expectedFilename) {
+  const offset = filename.length - expectedFilename.length;
+  for (let i = 0; i < expectedFilename.length; i++) {
+    if (filename[offset + i] !== expectedFilename[i] && expectedFilename[i] !== '�') {
+      return false;
+    }
+  }
+  return true;
 }
 
 function mostCommonValue(array) {
