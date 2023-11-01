@@ -6,12 +6,10 @@ import * as alldebrid from './alldebrid.js';
 import * as debridlink from './debridlink.js';
 import * as offcloud from './offcloud.js';
 import * as putio from './putio.js';
-import StaticResponse from './static.js';
+import StaticResponse, { isStaticUrl } from './static.js';
 import { cacheWrapResolvedUrl } from '../lib/cache.js';
 import { timeout } from '../lib/promises.js';
 import { BadTokenError, streamFilename, AccessDeniedError, enrichMeta } from './mochHelper.js';
-import { isStaticUrl } from './static.js';
-import { toCommonError } from "./realdebrid.js";
 
 const RESOLVE_TIMEOUT = 2 * 60 * 1000; // 2 minutes
 const MIN_API_KEY_SYMBOLS = 15;

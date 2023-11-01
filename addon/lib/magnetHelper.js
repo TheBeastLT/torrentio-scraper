@@ -4,6 +4,7 @@ import { getRandomUserAgent } from './requestHelper.js';
 import { getTorrent } from './repository.js';
 import { Type } from './types.js';
 import { extractProvider } from "./titleHelper.js";
+import { Providers } from "./filter.js";
 
 const TRACKERS_URL = 'https://raw.githubusercontent.com/ngosang/trackerslist/master/trackers_best.txt';
 const DEFAULT_TRACKERS = [
@@ -49,15 +50,12 @@ const RUSSIAN_TRACKERS = [
 // thus it doesn't work on mochs.
 // So it's better to exclude them and try to download through DHT,
 // as the torrent won't start anyway.
-const RUSSIAN_PROVIDERS = [
-  'Rutor',
-  'Rutracker'
-];
-const ANIME_PROVIDERS = [
-  'HorribleSubs',
-  'NyaaSi',
-  'NyaaPantsu'
-];
+const RUSSIAN_PROVIDERS = Providers.options
+    .filter(provider => provider.foreign === '🇷🇺')
+    .map(provider => provider.label);
+const ANIME_PROVIDERS = Providers.options
+    .filter(provider => provider.anime)
+    .map(provider => provider.label);
 let BEST_TRACKERS = [];
 let ALL_ANIME_TRACKERS = [];
 let ALL_RUSSIAN_TRACKERS = [];
@@ -84,8 +82,7 @@ export async function initBestTrackers() {
 async function getBestTrackers(retry = 2) {
   const options = { timeout: 30000, headers: { 'User-Agent': getRandomUserAgent() } };
   return axios.get(TRACKERS_URL, options)
-      .then(response => response.data && response.data.trim())
-      .then(body => body && body.split('\n\n') || [])
+      .then(response => response?.data?.trim()?.split('\n\n') || [])
       .catch(error => {
         if (retry === 0) {
           console.log(`Failed retrieving best trackers: ${error.message}`);

@@ -46,6 +46,16 @@ export const Providers = {
       anime: true
     },
     {
+      key: 'tokyotosho',
+      label: 'TokyoTosho',
+      anime: true
+    },
+    {
+      key: 'anidex',
+      label: 'AniDex',
+      anime: true
+    },
+    {
       key: 'rutor',
       label: 'Rutor',
       foreign: '🇷🇺'
