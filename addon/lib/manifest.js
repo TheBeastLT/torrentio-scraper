@@ -57,6 +57,7 @@ function getCatalogs(config) {
         id: `torrentio-${moch.key}`,
         name: `${moch.name}`,
         type: 'other',
+        extra: [{ name: 'skip' }],
       }));
 }
 
