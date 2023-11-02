@@ -331,7 +331,7 @@ export default function landingTemplate(manifest, config = {}) {
          </div>
          
          <div id="dPutio">
-           <label class="label" for="iPutio">Put.io ClientId and Token (Create new OAuth App <a href='https://app.put.io/settings/account/oauth/apps' target="_blank">here</a>):</label>
+           <label class="label" for="iPutio">Put.io ClientId and Token (Create new OAuth App <a href='https://app.put.io/oauth' target="_blank">here</a>):</label>
            <input type="text" id="iPutioClientId" placeholder="ClientId" onchange="generateInstallLink()" class="input">
            <input type="text" id="iPutioToken" placeholder="Token" onchange="generateInstallLink()" class="input">
          </div>

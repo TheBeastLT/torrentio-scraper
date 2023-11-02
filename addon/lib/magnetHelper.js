@@ -38,7 +38,7 @@ const ANIME_TRACKERS = [
   "http://t.nyaatracker.com:80/announce",
 ];
 const RUSSIAN_TRACKERS = [
-  "udp://opentor.org:2710",
+  "udp://opentor.org:6969",
   "http://retracker.local/announce",
   "http://bt.t-ru.org/ann?magnet",
   "http://bt2.t-ru.org/ann?magnet",

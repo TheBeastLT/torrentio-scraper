@@ -1,9 +1,9 @@
-import PutioAPI from '@putdotio/api-client'
+import PutioClient from '@putdotio/api-client'
 import { isVideo } from '../lib/extension.js';
 import { delay } from '../lib/promises.js';
 import StaticResponse from './static.js';
 import { getMagnetLink } from '../lib/magnetHelper.js';
-import { BadTokenError } from "./mochHelper.js";
+const PutioAPI = PutioClient.default;
 
 export async function getCachedStreams(streams, apiKey) {
   return streams
