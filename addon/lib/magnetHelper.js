@@ -62,9 +62,9 @@ let ALL_RUSSIAN_TRACKERS = [];
 
 export async function getMagnetLink(infoHash) {
   const torrent = await getTorrent(infoHash).catch(() => ({ infoHash }));
-  const torrentTrackers = torrent?.trackers?.split(',');
-  const animeTrackers = torrent.type === Type.ANIME ? ALL_ANIME_TRACKERS : undefined;
-  const providerTrackers = RUSSIAN_PROVIDERS.includes(torrent.provider) && ALL_RUSSIAN_TRACKERS;
+  const torrentTrackers = torrent?.trackers?.split(',') || [];
+  const animeTrackers = torrent.type === Type.ANIME ? ALL_ANIME_TRACKERS : [];
+  const providerTrackers = RUSSIAN_PROVIDERS.includes(torrent.provider) && ALL_RUSSIAN_TRACKERS || [];
   const trackers = unique([].concat(torrentTrackers).concat(animeTrackers).concat(providerTrackers));
 
   return trackers
