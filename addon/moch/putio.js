@@ -3,7 +3,11 @@ import { isVideo } from '../lib/extension.js';
 import { delay } from '../lib/promises.js';
 import StaticResponse from './static.js';
 import { getMagnetLink } from '../lib/magnetHelper.js';
+import { Type } from "../lib/types.js";
+import { decode } from "magnet-uri";
 const PutioAPI = PutioClient.default;
+
+const KEY = 'putio';
 
 export async function getCachedStreams(streams, apiKey) {
   return streams
@@ -20,12 +24,57 @@ export async function getCachedStreams(streams, apiKey) {
       }, {});
 }
 
+export async function getCatalog(apiKey, offset = 0) {
+  if (offset > 0) {
+    return [];
+  }
+  const Putio = createPutioAPI(apiKey)
+  return Putio.Files.Query(0)
+      .then(response => response?.body?.files)
+      .then(files => (files || [])
+          .map(file => ({
+            id: `${KEY}:${file.id}`,
+            type: Type.OTHER,
+            name: file.name
+          })));
+}
+
+export async function getItemMeta(itemId, apiKey) {
+  const Putio = createPutioAPI(apiKey)
+  const infoHash = await _findInfoHash(Putio, itemId)
+  return getFolderContents(Putio, itemId)
+      .then(contents => ({
+        id: `${KEY}:${itemId}`,
+        type: Type.OTHER,
+        name: contents.name,
+        infoHash: infoHash,
+        videos: contents
+            .map((file, index) => ({
+              id: `${KEY}:${file.id}:${index}`,
+              title: file.name,
+              released: new Date(file.created_at).toISOString(),
+              streams: [{ url: `${apiKey}/null/null/${file.id}` }]
+            }))
+      }))
+}
+
+async function getFolderContents(Putio, itemId, folderPrefix = '') {
+  return await Putio.Files.Query(itemId)
+      .then(response => response?.body)
+      .then(body => body?.files?.length ? body.files : [body?.parent].filter(x => x))
+      .then(contents => Promise.all(contents
+              .filter(content => content.file_type === 'FOLDER')
+              .map(content => getFolderContents(Putio, content.id, [folderPrefix, content.name].join('/'))))
+          .then(otherContents => otherContents.reduce((a, b) => a.concat(b), []))
+          .then(otherContents => contents
+              .filter(content => content.file_type === 'VIDEO')
+              .map(content => ({ ...content, name: [folderPrefix, content.name].join('/') }))
+              .concat(otherContents)));
+}
+
 export async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex }) {
   console.log(`Unrestricting Putio ${infoHash} [${fileIndex}]`);
-  const clientId = apiKey.replace(/@.*/, '');
-  const token = apiKey.replace(/.*@/, '');
-  const Putio = new PutioAPI({ clientID: clientId });
-  Putio.setToken(token);
+  const Putio = createPutioAPI(apiKey)
 
   return _resolve(Putio, infoHash, cachedEntryInfo, fileIndex)
       .catch(error => {
@@ -38,6 +87,9 @@ export async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex
 }
 
 async function _resolve(Putio, infoHash, cachedEntryInfo, fileIndex) {
+  if (infoHash === 'null') {
+    return _unrestrictVideo(Putio, fileIndex);
+  }
   const torrent = await _createOrFindTorrent(Putio, infoHash);
   if (torrent && statusReady(torrent.status)) {
     return _unrestrictLink(Putio, torrent, cachedEntryInfo, fileIndex);
@@ -65,10 +117,16 @@ async function _retryCreateTorrent(Putio, infoHash, encodedFileName, fileIndex) 
 
 async function _findTorrent(Putio, infoHash) {
   const torrents = await Putio.Transfers.Query().then(response => response.data.transfers);
-  const foundTorrents = torrents.filter(torrent => torrent.source.toLowerCase().includes(infoHash));
+  const foundTorrents = torrents.filter(torrent => torrent.userfile_exists && torrent.source.toLowerCase().includes(infoHash));
   const nonFailedTorrent = foundTorrents.find(torrent => !statusError(torrent.status));
   const foundTorrent = nonFailedTorrent || foundTorrents[0];
   return foundTorrent || Promise.reject('No recent torrent found in Putio');
+}
+
+async function _findInfoHash(Putio, fileId) {
+  const torrents = await Putio.Transfers.Query().then(response => response?.data?.transfers);
+  const foundTorrent = torrents.find(torrent => `${torrent.file_id}` === fileId);
+  return foundTorrent?.source ? decode(foundTorrent.source).infoHash : undefined;
 }
 
 async function _createTorrent(Putio, infoHash) {
@@ -88,13 +146,17 @@ async function _getNewTorrent(Putio, torrentId, pollCounter = 0, pollRate = 2000
 
 async function _unrestrictLink(Putio, torrent, encodedFileName, fileIndex) {
   const targetVideo = await _getTargetFile(Putio, torrent, encodedFileName, fileIndex);
-  const publicToken = await _getPublicToken(Putio, targetVideo.id);
+  return _unrestrictVideo(Putio, targetVideo.id);
+}
+
+async function _unrestrictVideo(Putio, videoId) {
+  const publicToken = await _getPublicToken(Putio, videoId);
   const publicFile = await Putio.File.Public(publicToken).then(response => response.data.parent);
 
   if (!publicFile?.stream_url?.length) {
-    return Promise.reject(`No Putio links found for [${torrent.hash}] ${encodedFileName}`);
+    return Promise.reject(`No Putio links found for [${videoId}]`);
   }
-  console.log(`Unrestricted Putio ${torrent.hash} [${fileIndex}] to ${publicFile.stream_url}`);
+  console.log(`Unrestricted Putio [${videoId}] to ${publicFile.stream_url}`);
   return publicFile.stream_url;
 }
 
@@ -139,6 +201,14 @@ async function _getPublicToken(Putio, targetVideoId) {
     await Putio.File.RevokePublicLink(publicLinks[0].id);
   }
   return Putio.File.CreatePublicLink(targetVideoId).then(response => response.data.token);
+}
+
+function createPutioAPI(apiKey) {
+  const clientId = apiKey.replace(/@.*/, '');
+  const token = apiKey.replace(/.*@/, '');
+  const Putio = new PutioAPI({ clientID: clientId });
+  Putio.setToken(token);
+  return Putio;
 }
 
 export function toCommonError(error) {

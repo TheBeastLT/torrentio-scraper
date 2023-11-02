@@ -55,7 +55,7 @@ export const MochOptions = {
     instance: putio,
     name: 'Put.io',
     shortName: 'Putio',
-    catalog: false
+    catalog: true
   }
 };
 
