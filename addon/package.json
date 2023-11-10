@@ -11,7 +11,7 @@
   "dependencies": {
     "@putdotio/api-client": "^8.39.0",
     "all-debrid-api": "^1.1.0",
-    "axios": "^1.4.0",
+    "axios": "^1.6.0",
     "bottleneck": "^2.19.5",
     "cache-manager": "^3.4.4",
     "cache-manager-mongodb": "^0.3.0",
