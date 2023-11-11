@@ -183,5 +183,5 @@ function statusReady(status) {
 }
 
 async function getDefaultOptions(ip) {
-  return { timeout: 30000 };
+  return { timeout: 5000 };
 }

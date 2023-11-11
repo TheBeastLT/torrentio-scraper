@@ -135,7 +135,7 @@ async function _unrestrictLink(OC, infoHash, torrent, cachedEntryInfo, fileIndex
 }
 
 async function getDefaultOptions(ip) {
-  return { ip, timeout: 30000 };
+  return { ip, timeout: 5000 };
 }
 
 export function toCommonError(error) {
