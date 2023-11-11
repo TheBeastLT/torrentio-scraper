@@ -59,9 +59,12 @@ export const MochOptions = {
   }
 };
 
-const unrestrictQueue = new namedQueue((task, callback) => task.method()
-    .then(result => callback(false, result))
-    .catch((error => callback(error))), 20);
+const unrestrictQueues = {}
+Object.values(MochOptions)
+    .map(moch => moch.key)
+    .forEach(mochKey => unrestrictQueues[mochKey] = new namedQueue((task, callback) => task.method()
+      .then(result => callback(false, result))
+      .catch((error => callback(error))), 20));
 
 export function hasMochConfigured(config) {
   return Object.keys(MochOptions).find(moch => config?.[moch])
@@ -107,6 +110,7 @@ export async function resolve(parameters) {
         return StaticResponse.FAILED_UNEXPECTED;
       })
       .then(url => isStaticUrl(url) ? `${parameters.host}/${url}` : url);
+  const unrestrictQueue = unrestrictQueues[moch.key];
   return new Promise(((resolve, reject) => {
     unrestrictQueue.push({ id, method }, (error, result) => result ? resolve(result) : reject(error));
   }));
