@@ -482,9 +482,17 @@ export default function landingTemplate(manifest, config = {}) {
                   .map(([key, value]) => key)[0] || configurationValue;
               const configuration = configurationValue && configurationValue.length ? '/' + configurationValue : '';
               const location = window.location.host + configuration + '/manifest.json'
-              navigator.clipboard.writeText('https://' + location);
               installLink.href = 'stremio://' + location;
           }
+
+          installLink.addEventListener('click', ()=>{
+             document.addEventListener('copy', function(e) {
+                e.clipboardData.setData('text/plain', installLink.href);
+                e.preventDefault();
+             }, true);
+ 
+             document.execCommand('copy');
+          });
       </script>
 	</body>
 
