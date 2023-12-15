@@ -38,8 +38,7 @@ const ANIME_TRACKERS = [
   "http://t.nyaatracker.com:80/announce",
 ];
 const RUSSIAN_TRACKERS = [
-  "udp://opentor.org:6969",
-  "http://retracker.local/announce",
+  "udp://opentor.net:6969",
   "http://bt.t-ru.org/ann?magnet",
   "http://bt2.t-ru.org/ann?magnet",
   "http://bt3.t-ru.org/ann?magnet",
@@ -67,9 +66,7 @@ export async function getMagnetLink(infoHash) {
   const providerTrackers = RUSSIAN_PROVIDERS.includes(torrent.provider) && ALL_RUSSIAN_TRACKERS || [];
   const trackers = unique([].concat(torrentTrackers).concat(animeTrackers).concat(providerTrackers));
 
-  return trackers
-      ? magnet.encode({ infoHash: infoHash, announce: trackers })
-      : magnet.encode({ infoHash: infoHash });
+  return magnet.encode({ infoHash: infoHash, name: torrent.title, announce: trackers });
 }
 
 export async function initBestTrackers() {
