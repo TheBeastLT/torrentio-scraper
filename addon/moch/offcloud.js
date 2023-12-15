@@ -121,10 +121,9 @@ async function _createTorrent(OC, infoHash) {
 }
 
 async function _unrestrictLink(OC, infoHash, torrent, cachedEntryInfo, fileIndex) {
-  const targetFileName = decodeURIComponent(cachedEntryInfo);
   const files = await OC.cloud.explore(torrent.requestId)
   const targetFile = Number.isInteger(fileIndex)
-      ? files.find(file => file.includes(targetFileName))
+      ? files.find(file => file.includes(`/${torrent.requestId}/${fileIndex}/`))
       : files.find(file => isVideo(file));
 
   if (!targetFile) {
