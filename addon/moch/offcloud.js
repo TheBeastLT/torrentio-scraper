@@ -117,11 +117,17 @@ async function _findTorrent(OC, infoHash) {
 
 async function _createTorrent(OC, infoHash) {
   const magnetLink = await getMagnetLink(infoHash);
-  return await OC.cloud.download(magnetLink)
+  return OC.cloud.download(magnetLink)
 }
 
 async function _unrestrictLink(OC, infoHash, torrent, cachedEntryInfo, fileIndex) {
   const files = await OC.cloud.explore(torrent.requestId)
+      .catch(error => {
+        if (error === 'Bad archive') {
+          return [`https://${torrent.server}.offcloud.com/cloud/download/${torrent.requestId}/${torrent.fileName}`];
+        }
+        throw error;
+      })
   const targetFile = Number.isInteger(fileIndex)
       ? files.find(file => file.includes(`/${torrent.requestId}/${fileIndex}/`))
       : files.find(file => isVideo(file));
