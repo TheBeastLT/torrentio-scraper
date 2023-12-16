@@ -61,11 +61,13 @@ export async function getItemMeta(itemId, apiKey, ip) {
   const options = await getDefaultOptions();
   const PM = new PremiumizeClient(apiKey, options);
   const rootFolder = await PM.folder.list(itemId, null);
+  const infoHash = await _findInfoHash(PM, itemId);
   return getFolderContents(PM, itemId, ip)
       .then(contents => ({
         id: `${KEY}:${itemId}`,
         type: Type.OTHER,
         name: rootFolder.name,
+        infoHash: infoHash,
         videos: contents
             .map((file, index) => ({
               id: `${KEY}:${file.id}:${index}`,
@@ -96,7 +98,7 @@ export async function resolve({ ip, isBrowser, apiKey, infoHash, cachedEntryInfo
   return _getCachedLink(PM, infoHash, cachedEntryInfo, fileIndex, ip, isBrowser)
       .catch(() => _resolve(PM, infoHash, cachedEntryInfo, fileIndex, ip, isBrowser))
       .catch(error => {
-        if (error && error.message && error.message.includes('Account not premium.')) {
+        if (error?.message?.includes('Account not premium.')) {
           console.log(`Access denied to Premiumize ${infoHash} [${fileIndex}]`);
           return StaticResponse.FAILED_ACCESS;
         }
@@ -149,6 +151,12 @@ async function _findTorrent(PM, infoHash) {
   const nonFailedTorrent = foundTorrents.find(torrent => !statusError(torrent.statusCode));
   const foundTorrent = nonFailedTorrent || foundTorrents[0];
   return foundTorrent || Promise.reject('No recent torrent found');
+}
+
+async function _findInfoHash(PM, itemId) {
+  const torrents = await PM.transfer.list().then(response => response.transfers);
+  const foundTorrent = torrents.find(torrent => `${torrent.file_id}` === itemId || `${torrent.folder_id}` === itemId);
+  return foundTorrent?.src ? magnet.decode(foundTorrent.src).infoHash : undefined;
 }
 
 async function _createTorrent(PM, infoHash) {

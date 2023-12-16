@@ -1,4 +1,5 @@
 import OffcloudClient from 'offcloud-api';
+import magnet from 'magnet-uri';
 import { Type } from '../lib/types.js';
 import { isVideo } from '../lib/extension.js';
 import StaticResponse from './static.js';
@@ -45,7 +46,6 @@ export async function getCatalog(apiKey, offset = 0) {
   return OC.cloud.history()
       .then(torrents => torrents)
       .then(torrents => (torrents || [])
-          .filter(torrent => torrent && statusReady(torrent))
           .map(torrent => ({
             id: `${KEY}:${torrent.requestId}`,
             type: Type.OTHER,
@@ -58,12 +58,14 @@ export async function getItemMeta(itemId, apiKey, ip) {
   const OC = new OffcloudClient(apiKey, options);
   const torrents = await OC.cloud.history();
   const torrent = torrents.find(torrent => torrent.requestId === itemId)
+  const infoHash = torrent && magnet.decode(torrent.originalLink).infoHash
   const createDate = torrent ? new Date(torrent.createdOn) : new Date();
   return _getFileUrls(OC, torrent)
       .then(files => ({
         id: `${KEY}:${itemId}`,
         type: Type.OTHER,
         name: torrent.name,
+        infoHash: infoHash,
         videos: files
             .filter(file => isVideo(file))
             .map((file, index) => ({
