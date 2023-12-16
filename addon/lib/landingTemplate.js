@@ -485,13 +485,8 @@ export default function landingTemplate(manifest, config = {}) {
               installLink.href = 'stremio://' + location;
           }
 
-          installLink.addEventListener('click', ()=>{
-             document.addEventListener('copy', function(e) {
-                e.clipboardData.setData('text/plain', installLink.href);
-                e.preventDefault();
-             }, true);
- 
-             document.execCommand('copy');
+          installLink.addEventListener('click', function() {
+             navigator.clipboard.writeText(installLink.href.replace('stremio://', 'https://'));
           });
       </script>
 	</body>
