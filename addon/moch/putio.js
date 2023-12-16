@@ -5,6 +5,7 @@ import StaticResponse from './static.js';
 import { getMagnetLink } from '../lib/magnetHelper.js';
 import { Type } from "../lib/types.js";
 import { decode } from "magnet-uri";
+import { sameFilename } from "./mochHelper.js";
 const PutioAPI = PutioClient.default;
 
 const KEY = 'putio';
@@ -172,14 +173,14 @@ async function _getTargetFile(Putio, torrent, encodedFileName, fileIndex) {
     // when specific file index is defined search by filename
     // when it's not defined find all videos and take the largest one
     targetFile = Number.isInteger(fileIndex)
-        ? videos.find(video => targetFileName.includes(video.name))
-        : !folders.length && videos.sort((a, b) => b.size - a.size)[0];
+        ? videos.find(video => sameFilename(targetFileName, video.name))
+        : !folders.length && videos.toSorted((a, b) => b.size - a.size)[0];
     files = !targetFile
         ? await Promise.all(folders.map(folder => _getFiles(Putio, folder.id)))
             .then(results => results.reduce((a, b) => a.concat(b), []))
         : [];
   }
-  return targetFile ? targetFile : Promise.reject(`No target file found for Putio [${torrent.hash}] ${targetFileName}`);
+  return targetFile || Promise.reject(`No target file found for Putio [${torrent.hash}] ${targetFileName}`);
 }
 
 async function _getFiles(Putio, fileId) {

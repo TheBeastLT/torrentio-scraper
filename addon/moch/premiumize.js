@@ -4,7 +4,7 @@ import { Type } from '../lib/types.js';
 import { isVideo, isArchive } from '../lib/extension.js';
 import StaticResponse from './static.js';
 import { getMagnetLink } from '../lib/magnetHelper.js';
-import { BadTokenError, chunkArray } from './mochHelper.js';
+import { BadTokenError, chunkArray, sameFilename } from './mochHelper.js';
 
 const KEY = 'premiumize';
 
@@ -126,7 +126,7 @@ async function _getCachedLink(PM, infoHash, encodedFileName, fileIndex, ip, isBr
     const targetFileName = decodeURIComponent(encodedFileName);
     const videos = cachedTorrent.content.filter(file => isVideo(file.path));
     const targetVideo = Number.isInteger(fileIndex)
-        ? videos.find(video => video.path.includes(targetFileName))
+        ? videos.find(video => sameFilename(video.path, targetFileName))
         : videos.sort((a, b) => b.size - a.size)[0];
     if (!targetVideo && videos.every(video => isArchive(video.path))) {
       console.log(`Only Premiumize archive is available for [${infoHash}] ${fileIndex}`)

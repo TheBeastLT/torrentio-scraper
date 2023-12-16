@@ -3,7 +3,7 @@ import { Type } from '../lib/types.js';
 import { isVideo, isArchive } from '../lib/extension.js';
 import StaticResponse from './static.js';
 import { getMagnetLink } from '../lib/magnetHelper.js';
-import { BadTokenError, AccessDeniedError } from './mochHelper.js';
+import { BadTokenError, AccessDeniedError, sameFilename } from './mochHelper.js';
 
 const KEY = 'alldebrid';
 const AGENT = 'torrentio';
@@ -144,7 +144,7 @@ async function _unrestrictLink(AD, torrent, encodedFileName, fileIndex) {
   const targetFileName = decodeURIComponent(encodedFileName);
   const videos = torrent.links.filter(link => isVideo(link.filename));
   const targetVideo = Number.isInteger(fileIndex)
-      ? videos.find(video => targetFileName.includes(video.filename))
+      ? videos.find(video => sameFilename(targetFileName, video.filename))
       : videos.sort((a, b) => b.size - a.size)[0];
 
   if (!targetVideo && torrent.links.every(link => isArchive(link.filename))) {

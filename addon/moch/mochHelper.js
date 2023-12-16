@@ -48,7 +48,7 @@ export async function enrichMeta(itemMeta) {
   return itemMeta
 }
 
-function sameFilename(filename, expectedFilename) {
+export function sameFilename(filename, expectedFilename) {
   const offset = filename.length - expectedFilename.length;
   for (let i = 0; i < expectedFilename.length; i++) {
     if (filename[offset + i] !== expectedFilename[i] && expectedFilename[i] !== '�') {

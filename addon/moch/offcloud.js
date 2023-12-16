@@ -4,7 +4,7 @@ import { Type } from '../lib/types.js';
 import { isVideo } from '../lib/extension.js';
 import StaticResponse from './static.js';
 import { getMagnetLink } from '../lib/magnetHelper.js';
-import { chunkArray, BadTokenError } from './mochHelper.js';
+import { chunkArray, BadTokenError, sameFilename } from './mochHelper.js';
 
 const KEY = 'offcloud';
 
@@ -125,10 +125,11 @@ async function _createTorrent(OC, infoHash) {
 }
 
 async function _unrestrictLink(OC, infoHash, torrent, cachedEntryInfo, fileIndex) {
+  const targetFileName = decodeURIComponent(cachedEntryInfo);
   const files = await _getFileUrls(OC, torrent)
   const targetFile = Number.isInteger(fileIndex)
-      ? files.find(file => file.includes(`/${torrent.requestId}/${fileIndex}/`))
-      : files.find(file => isVideo(file));
+      ? files.find(file => sameFilename(targetFileName, file.split('/').pop()))
+      : files.find(file => isVideo(file)) || files.pop();
 
   if (!targetFile) {
     return Promise.reject(`No Offcloud links found for index ${fileIndex} in: ${JSON.stringify(torrent)}`);
