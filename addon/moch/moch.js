@@ -143,10 +143,12 @@ export async function getMochItemMeta(mochKey, itemId, config) {
   return moch.instance.getItemMeta(itemId, config[moch.key], config.ip)
       .then(meta => enrichMeta(meta))
       .then(meta => {
-        meta.videos
-            .map(video => video.streams
-              .filter(stream => !stream.url.startsWith('http'))
-              .forEach(stream => stream.url = `${config.host}/${moch.key}/${stream.url}/${streamFilename(video)}`))
+        meta.videos.forEach(video => video.streams.forEach(stream => {
+          if (!stream.url.startsWith('http')) {
+            stream.url = `${config.host}/${moch.key}/${stream.url}/${streamFilename(video)}`
+          }
+          stream.behaviorHints = { bingeGroup: itemId }
+        }))
         return meta;
       });
 }
