@@ -91,7 +91,9 @@ export async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex
 }
 
 async function _resolve(OC, infoHash, cachedEntryInfo, fileIndex) {
-  const torrent = await _createOrFindTorrent(OC, infoHash);
+  const torrent = await _createOrFindTorrent(OC, infoHash)
+      .then(info => info.requestId ? OC.cloud.status(info.requestId) : Promise.resolve(info))
+      .then(info => info.status || info);
   if (torrent && statusReady(torrent)) {
     return _unrestrictLink(OC, infoHash, torrent, cachedEntryInfo, fileIndex);
   } else if (torrent && statusDownloading(torrent)) {

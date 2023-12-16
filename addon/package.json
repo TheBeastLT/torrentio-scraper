@@ -21,7 +21,7 @@
     "magnet-uri": "^6.2.0",
     "name-to-imdb": "^3.0.4",
     "named-queue": "^2.2.1",
-    "offcloud-api": "^1.0.1",
+    "offcloud-api": "^1.0.2",
     "parse-torrent-title": "git://github.com/TheBeastLT/parse-torrent-title.git#022408972c2a040f846331a912a6a8487746a654",
     "pg": "^8.10.0",
     "premiumize-api": "^1.0.3",
