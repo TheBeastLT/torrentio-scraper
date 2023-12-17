@@ -127,9 +127,9 @@ async function _createTorrent(OC, infoHash) {
 async function _unrestrictLink(OC, infoHash, torrent, cachedEntryInfo, fileIndex) {
   const targetFileName = decodeURIComponent(cachedEntryInfo);
   const files = await _getFileUrls(OC, torrent)
-  const targetFile = Number.isInteger(fileIndex)
-      ? files.find(file => sameFilename(targetFileName, file.split('/').pop()))
-      : files.find(file => isVideo(file)) || files.pop();
+  const targetFile = files.find(file => sameFilename(targetFileName, file.split('/').pop()))
+      || files.find(file => isVideo(file))
+      || files.pop();
 
   if (!targetFile) {
     return Promise.reject(`No Offcloud links found for index ${fileIndex} in: ${JSON.stringify(torrent)}`);
@@ -149,7 +149,7 @@ async function _getFileUrls(OC, torrent) {
 }
 
 async function getDefaultOptions(ip) {
-  return { ip, timeout: 5000 };
+  return { ip, timeout: 10000 };
 }
 
 export function toCommonError(error) {
@@ -172,5 +172,5 @@ function statusReady(torrent) {
 }
 
 function errorExpiredSubscriptionError(error) {
-  return error && (error.includes('not_available') || error.includes('NOAUTH'));
+  return error?.includes && (error.includes('not_available') || error.includes('NOAUTH'));
 }
