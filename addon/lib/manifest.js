@@ -8,10 +8,11 @@ const DefaultProviders = Providers.options.map(provider => provider.key);
 const CatalogMochs = Object.values(MochOptions).filter(moch => moch.catalog);
 
 export function manifest(config = {}) {
-  const defaultManifest = {
+  const overrideManifest = getManifestOverride(config);
+  const baseManifest = {
     id: 'com.stremio.torrentio.addon',
     version: '0.0.14',
-    name: 'Torrentio',
+    name: getName(overrideManifest, config),
     description: getDescription(config),
     catalogs: getCatalogs(config),
     resources: getResources(config),
@@ -22,9 +23,8 @@ export function manifest(config = {}) {
       configurable: true,
       configurationRequired: false
     }
-  }
-  const overrideManifest = getManifestOverride(config);
-  return Object.assign(defaultManifest, overrideManifest);
+  };
+  return Object.assign(baseManifest, overrideManifest);
 }
 
 export function dummyManifest() {
@@ -32,6 +32,15 @@ export function dummyManifest() {
   manifestDefault.catalogs = [{ id: 'dummy', type: Type.OTHER }];
   manifestDefault.resources = ['stream', 'meta'];
   return manifestDefault;
+}
+
+function getName(manifest, config) {
+  const rootName = manifest?.name || 'Torrentio';
+  const mochSuffix = Object.values(MochOptions)
+      .filter(moch => config[moch.key])
+      .map(moch => moch.shortName)
+      .join('/');
+  return [rootName, mochSuffix].filter(v => v).join(' ');
 }
 
 function getDescription(config) {
