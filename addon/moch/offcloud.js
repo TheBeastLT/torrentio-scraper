@@ -164,7 +164,7 @@ function statusDownloading(torrent) {
 }
 
 function statusError(torrent) {
-  return torrent.status === 'error'
+  return ['error', 'canceled'].includes(torrent.status);
 }
 
 function statusReady(torrent) {
@@ -172,5 +172,5 @@ function statusReady(torrent) {
 }
 
 function errorExpiredSubscriptionError(error) {
-  return error?.includes && (error.includes('not_available') || error.includes('NOAUTH'));
+  return error?.includes && (error.includes('not_available') || error.includes('NOAUTH') || error.includes('premium membership'));
 }
