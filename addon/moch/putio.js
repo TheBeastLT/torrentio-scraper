@@ -151,14 +151,10 @@ async function _unrestrictLink(Putio, torrent, encodedFileName, fileIndex) {
 }
 
 async function _unrestrictVideo(Putio, videoId) {
-  const publicToken = await _getPublicToken(Putio, videoId);
-  const publicFile = await Putio.File.Public(publicToken).then(response => response.data.parent);
-
-  if (!publicFile?.stream_url?.length) {
-    return Promise.reject(`No Putio links found for [${videoId}]`);
-  }
-  console.log(`Unrestricted Putio [${videoId}] to ${publicFile.stream_url}`);
-  return publicFile.stream_url;
+  const response = await Putio.File.GetStorageURL(videoId);
+  const downloadUrl = response.data.url
+  console.log(`Unrestricted Putio [${videoId}] to ${downloadUrl}`);
+  return downloadUrl;
 }
 
 async function _getTargetFile(Putio, torrent, encodedFileName, fileIndex) {
@@ -174,7 +170,7 @@ async function _getTargetFile(Putio, torrent, encodedFileName, fileIndex) {
     // when it's not defined find all videos and take the largest one
     targetFile = Number.isInteger(fileIndex)
         ? videos.find(video => sameFilename(targetFileName, video.name))
-        : !folders.length && videos.toSorted((a, b) => b.size - a.size)[0];
+        : !folders.length && videos.sort((a, b) => b.size - a.size)[0];
     files = !targetFile
         ? await Promise.all(folders.map(folder => _getFiles(Putio, folder.id)))
             .then(results => results.reduce((a, b) => a.concat(b), []))
@@ -189,19 +185,6 @@ async function _getFiles(Putio, fileId) {
   return response.data.files.length
       ? response.data.files
       : [response.data.parent];
-}
-
-async function _getPublicToken(Putio, targetVideoId) {
-  const publicLinks = await Putio.Files.PublicShares().then(response => response.data.links);
-  const alreadySharedLink = publicLinks.find(link => link.user_file.id === targetVideoId);
-  if (alreadySharedLink) {
-    return alreadySharedLink.token;
-  }
-  if (publicLinks.length >= 10) {
-    // maximum public shares reached, revoke last one;
-    await Putio.File.RevokePublicLink(publicLinks[0].id);
-  }
-  return Putio.File.CreatePublicLink(targetVideoId).then(response => response.data.token);
 }
 
 function createPutioAPI(apiKey) {

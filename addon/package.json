@@ -9,7 +9,7 @@
   "author": "TheBeastLT <pauliox@beyond.lt>",
   "license": "MIT",
   "dependencies": {
-    "@putdotio/api-client": "^8.39.0",
+    "@putdotio/api-client": "^8.42.0",
     "all-debrid-api": "^1.1.0",
     "axios": "^1.6.1",
     "bottleneck": "^2.19.5",
