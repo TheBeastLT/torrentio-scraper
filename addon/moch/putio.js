@@ -54,6 +54,7 @@ export async function getItemMeta(itemId, apiKey) {
               id: `${KEY}:${file.id}:${index}`,
               title: file.name,
               released: new Date(file.created_at).toISOString(),
+              thumbnail: file.screenshot,
               streams: [{ url: `${apiKey}/null/null/${file.id}` }]
             }))
       }))
