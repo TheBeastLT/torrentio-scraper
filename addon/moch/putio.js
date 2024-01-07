@@ -36,7 +36,8 @@ export async function getCatalog(apiKey, offset = 0) {
           .map(file => ({
             id: `${KEY}:${file.id}`,
             type: Type.OTHER,
-            name: file.name
+            name: file.name,
+            posterShape: 'landscape'
           })));
 }
 
