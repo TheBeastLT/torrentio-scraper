@@ -64,7 +64,7 @@ Object.values(MochOptions)
     .map(moch => moch.key)
     .forEach(mochKey => unrestrictQueues[mochKey] = new namedQueue((task, callback) => task.method()
       .then(result => callback(false, result))
-      .catch((error => callback(error))), 20));
+      .catch((error => callback(error))), 40));
 
 export function hasMochConfigured(config) {
   return Object.keys(MochOptions).find(moch => config?.[moch])
