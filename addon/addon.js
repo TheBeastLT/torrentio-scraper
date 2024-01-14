@@ -17,8 +17,8 @@ const STALE_ERROR_AGE = 7 * 24 * 60 * 60; // 7 days
 
 const builder = new addonBuilder(dummyManifest());
 const limiter = new Bottleneck({
-  maxConcurrent: process.env.LIMIT_MAX_CONCURRENT || 10,
-  highWater: process.env.LIMIT_QUEUE_SIZE || 30,
+  maxConcurrent: process.env.LIMIT_MAX_CONCURRENT || 30,
+  highWater: process.env.LIMIT_QUEUE_SIZE || 50,
   strategy: Bottleneck.strategy.OVERFLOW
 });
 
