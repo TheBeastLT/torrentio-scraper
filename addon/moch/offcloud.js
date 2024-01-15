@@ -101,6 +101,9 @@ async function _resolve(OC, infoHash, cachedEntryInfo, fileIndex) {
   } else if (torrent && statusDownloading(torrent)) {
     console.log(`Downloading to Offcloud ${infoHash} [${fileIndex}]...`);
     return StaticResponse.DOWNLOADING;
+  } else if (torrent && statusError(torrent)) {
+    console.log(`Retry failed download in Offcloud ${infoHash} [${fileIndex}]...`);
+    return _retryCreateTorrent(OC, infoHash, cachedEntryInfo, fileIndex);
   }
 
   return Promise.reject(`Failed Offcloud adding torrent ${JSON.stringify(torrent)}`);
@@ -122,6 +125,13 @@ async function _findTorrent(OC, infoHash) {
 async function _createTorrent(OC, infoHash) {
   const magnetLink = await getMagnetLink(infoHash);
   return OC.cloud.download(magnetLink)
+}
+
+async function _retryCreateTorrent(OC, infoHash, cachedEntryInfo, fileIndex) {
+  const newTorrent = await _createTorrent(OC, infoHash);
+  return newTorrent && statusReady(newTorrent.status)
+      ? _unrestrictLink(OC, infoHash, newTorrent, cachedEntryInfo, fileIndex)
+      : StaticResponse.FAILED_DOWNLOAD;
 }
 
 async function _unrestrictLink(OC, infoHash, torrent, cachedEntryInfo, fileIndex) {

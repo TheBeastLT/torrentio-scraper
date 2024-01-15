@@ -160,7 +160,7 @@ async function _unrestrictLink(AD, torrent, encodedFileName, fileIndex) {
 }
 
 async function getDefaultOptions(ip) {
-  return { base_agent: AGENT, timeout: 5000 };
+  return { base_agent: AGENT, timeout: 10000 };
 }
 
 export function toCommonError(error) {
