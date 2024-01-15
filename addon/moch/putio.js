@@ -118,9 +118,12 @@ async function _retryCreateTorrent(Putio, infoHash, encodedFileName, fileIndex) 
 
 async function _findTorrent(Putio, infoHash) {
   const torrents = await Putio.Transfers.Query().then(response => response.data.transfers);
-  const foundTorrents = torrents.filter(torrent => torrent.userfile_exists && torrent.source.toLowerCase().includes(infoHash));
+  const foundTorrents = torrents.filter(torrent => torrent.source.toLowerCase().includes(infoHash));
   const nonFailedTorrent = foundTorrents.find(torrent => !statusError(torrent.status));
   const foundTorrent = nonFailedTorrent || foundTorrents[0];
+  if (foundTorrents && !foundTorrents.userfile_exists) {
+    return await Putio.Transfers.Cancel(foundTorrents.id).then(() => Promise.reject())
+  }
   return foundTorrent || Promise.reject('No recent torrent found in Putio');
 }
 
