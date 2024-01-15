@@ -395,5 +395,5 @@ function infringingFile(error) {
 }
 
 async function getDefaultOptions(ip) {
-  return { ip, timeout: 5000 };
+  return { ip, timeout: 10000 };
 }

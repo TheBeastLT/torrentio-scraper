@@ -12,13 +12,14 @@ import StaticLinks from './moch/static.js';
 
 const CACHE_MAX_AGE = parseInt(process.env.CACHE_MAX_AGE) || 60 * 60; // 1 hour in seconds
 const CACHE_MAX_AGE_EMPTY = 60; // 60 seconds
+const CATALOG_CACHE_MAX_AGE = 20 * 60; // 20 minutes
 const STALE_REVALIDATE_AGE = 4 * 60 * 60; // 4 hours
 const STALE_ERROR_AGE = 7 * 24 * 60 * 60; // 7 days
 
 const builder = new addonBuilder(dummyManifest());
 const limiter = new Bottleneck({
-  maxConcurrent: process.env.LIMIT_MAX_CONCURRENT || 50,
-  highWater: process.env.LIMIT_QUEUE_SIZE || 50,
+  maxConcurrent: process.env.LIMIT_MAX_CONCURRENT || 200,
+  highWater: process.env.LIMIT_QUEUE_SIZE || 220,
   strategy: Bottleneck.strategy.OVERFLOW
 });
 
@@ -47,7 +48,7 @@ builder.defineCatalogHandler((args) => {
   return getMochCatalog(mochKey, args.extra)
       .then(metas => ({
         metas: metas,
-        cacheMaxAge: 0
+        cacheMaxAge: CATALOG_CACHE_MAX_AGE
       }))
       .catch(error => {
         return Promise.reject(`Failed retrieving catalog ${args.id}: ${JSON.stringify(error)}`);
