@@ -33,7 +33,8 @@ async function updateSeeders(torrent) {
 
 async function scrapeLatestTorrents() {
   const allowedCategories = [
-    lapumia.Categories.MOVIE
+    lapumia.Categories.MOVIE,
+    lapumia.Categories.TV
   ];
 
   return Promises.sequence(allowedCategories
@@ -102,9 +103,6 @@ function typeMapping() {
 }
 
 function untilPage(category) {
-  if (lapumia.Categories.TV === category) {
-    return 5;
-  }
   if (lapumia.Categories.ANIME === category) {
     return 2;
   }

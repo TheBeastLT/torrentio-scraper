@@ -1,4 +1,3 @@
-const needle = require("needle");
 const axios = require('axios');
 const cheerio = require("cheerio");
 const decode = require("magnet-uri");
@@ -31,7 +30,7 @@ function browse(config = {}, retries = 2) {
 
 function singleRequest(requestUrl, config = {}) {
   const timeout = config.timeout || defaultTimeout;
-  const options = { userAgent: getRandomUserAgent(), timeout: timeout, follow: 2, };
+  const options = { headers: { 'User-Agent': getRandomUserAgent() }, timeout: timeout, };
 
   return axios.get(requestUrl, options).then((response) => {
     const body = response.data;

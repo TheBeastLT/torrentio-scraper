@@ -1,7 +1,6 @@
 const moment = require('moment');
 const Promises = require('./promises')
-const { Sequelize, DataTypes, fn, col, literal } = require('sequelize');
-const Op = Sequelize.Op;
+const { Sequelize, Op, DataTypes, fn, col, literal } = require('sequelize');
 
 const DATABASE_URI = process.env.DATABASE_URI;
 
@@ -177,6 +176,10 @@ function getTorrentsBasedOnQuery(where) {
   return Torrent.findAll({ where: where });
 }
 
+function getFilesBasedOnQuery(where) {
+  return File.findAll({ where: where });
+}
+
 function getTorrentsWithoutSize() {
   return Torrent.findAll({
     where: literal(
@@ -326,6 +329,7 @@ module.exports = {
   getTorrent,
   getTorrentsBasedOnTitle,
   getTorrentsBasedOnQuery,
+  getFilesBasedOnQuery,
   deleteTorrent,
   getUpdateSeedersTorrents,
   getUpdateSeedersNewTorrents,

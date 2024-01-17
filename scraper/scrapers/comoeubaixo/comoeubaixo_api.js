@@ -1,11 +1,11 @@
-const needle = require("needle")
+const axios = require('axios');
 const cheerio = require("cheerio");
 const decode = require('magnet-uri');
 const { escapeHTML } = require('../../lib/metadata');
 const { getRandomUserAgent } = require('../../lib/requestHelper');
 const { isPtDubbed, sanitizePtName, sanitizePtLanguages } = require('../scraperHelper')
 
-const defaultTimeout = 10000;
+const defaultTimeout = 30000;
 const maxSearchPage = 50
 
 const baseUrl = 'https://comoeubaixo.com';
@@ -62,11 +62,11 @@ function browse(config = {}, retries = 2) {
 
 function singleRequest(requestUrl, config = {}) {
   const timeout = config.timeout || defaultTimeout;
-  const options = { userAgent: getRandomUserAgent(), open_timeout: timeout, follow: 2 };
+  const options = { headers: { 'User-Agent': getRandomUserAgent() }, timeout: timeout };
 
-  return needle('get', requestUrl, options)
+  return axios.get(requestUrl, options)
       .then((response) => {
-        const body = response.body;
+        const body = response.data;
         if (!body || (Buffer.isBuffer(body) && !body.size)) {
           throw new Error(`No body: ${requestUrl}`);
         } else if (body.includes('502: Bad gateway') ||
@@ -74,7 +74,8 @@ function singleRequest(requestUrl, config = {}) {
           throw new Error(`Invalid body contents: ${requestUrl}`);
         }
         return body;
-      });
+      })
+      .catch(error => Promise.reject(error.message || error));
 }
 
 function parseTableBody(body) {
@@ -113,13 +114,12 @@ function parseTorrentPage(body) {
     const category = details.find('strong:contains(\'Gêneros: \')').next().attr('href').split('/')[0]
     const torrents = magnets.map(magnetLink => {
       const decodedMagnet = decode(magnetLink);
-      const name = escapeHTML(decodedMagnet.name || '').replace(/\+/g, ' ');
-      const sanitizedTitle = sanitizePtName(name);
+      const name = sanitizePtName(escapeHTML(decodedMagnet.name || '').replace(/\+/g, ' '));
       const originalTitle = details.find('strong:contains(\'Baixar\')')[0].nextSibling.nodeValue.split('-')[0];
       const year = details.find('strong:contains(\'Data de Lançamento: \')').next().text().trim();
-      const fallBackTitle = `${originalTitle.trim()} ${year.trim()} ${sanitizedTitle.trim()}`;
+      const fallBackTitle = `${originalTitle.trim()} ${year.trim()} ${name.trim()}`;
       return {
-        title: sanitizedTitle.length > 5 ? sanitizedTitle : fallBackTitle,
+        title: name.length > 5 ? name : fallBackTitle,
         infoHash: decodedMagnet.infoHash,
         magnetLink: magnetLink,
         category: category,

@@ -6,16 +6,16 @@ const repository = require('../../lib/repository');
 const { createTorrentEntry, checkAndUpdateTorrent } = require('../../lib/torrentEntries');
 
 const NAME = 'YTS';
-const UNTIL_PAGE = 2;
+const UNTIL_PAGE = 10;
 
 const limiter = new Bottleneck({ maxConcurrent: 10 });
 
-async function scrape() {
+async function scrape(maxPage) {
   const scrapeStart = moment();
   const lastScrape = await repository.getProvider({ name: NAME });
   console.log(`[${scrapeStart}] starting ${NAME} scrape...`);
 
-  return scrapeLatestTorrents()
+  return scrapeLatestTorrentsForCategory(maxPage)
       .then(() => {
         lastScrape.lastScraped = scrapeStart;
         return lastScrape.save();
@@ -27,11 +27,7 @@ async function updateSeeders(torrent) {
   return limiter.schedule(() => yts.torrent(torrent.torrentId));
 }
 
-async function scrapeLatestTorrents() {
-  return scrapeLatestTorrentsForCategory();
-}
-
-async function scrapeLatestTorrentsForCategory(page = 1) {
+async function scrapeLatestTorrentsForCategory(maxPage = UNTIL_PAGE, page = 1) {
   console.log(`Scrapping ${NAME} page ${page}`);
   return yts.browse(({ page }))
       .catch(error => {
@@ -39,8 +35,8 @@ async function scrapeLatestTorrentsForCategory(page = 1) {
         return Promise.resolve([]);
       })
       .then(torrents => Promise.all(torrents.map(torrent => limiter.schedule(() => processTorrentRecord(torrent)))))
-      .then(resolved => resolved.length > 0 && page < UNTIL_PAGE
-          ? scrapeLatestTorrentsForCategory(page + 1)
+      .then(resolved => resolved.length > 0 && page < maxPage
+          ? scrapeLatestTorrentsForCategory(maxPage, page + 1)
           : Promise.resolve());
 }
 

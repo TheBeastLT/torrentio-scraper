@@ -1,4 +1,4 @@
-const needle = require('needle');
+const axios = require('axios');
 const Promises = require('../../lib/promises');
 const { getRandomUserAgent } = require('./../../lib/requestHelper');
 
@@ -14,7 +14,7 @@ function torrent(torrentId, config = {}, retries = 2) {
   }
 
   return Promises.first(defaultProxies
-      .map(proxyUrl => singleRequest(`${proxyUrl}/api/v2/movie_details.json?movie_id=${torrentId}`, config)))
+          .map(proxyUrl => singleRequest(`${proxyUrl}/api/v2/movie_details.json?movie_id=${torrentId}`, config)))
       .then(body => parseResults(body))
       .catch(error => torrent(torrentId, config, retries - 1));
 }
@@ -25,7 +25,7 @@ function search(query, config = {}, retries = 2) {
   }
 
   return Promises.first(defaultProxies
-      .map(proxyUrl => singleRequest(`${proxyUrl}/api/v2/list_movies.json?limit=${limit}&query_term=${query}`, config)))
+          .map(proxyUrl => singleRequest(`${proxyUrl}/api/v2/list_movies.json?limit=${limit}&query_term=${query}`, config)))
       .then(results => parseResults(results))
       .catch(error => search(query, config, retries - 1));
 }
@@ -37,21 +37,27 @@ function browse(config = {}, retries = 2) {
   const page = config.page || 1;
 
   return Promises.first(defaultProxies
-      .map(proxyUrl => singleRequest(`${proxyUrl}/api/v2/list_movies.json?limit=${limit}&page=${page}`, config)))
+          .map(proxyUrl => singleRequest(`${proxyUrl}/api/v2/list_movies.json?limit=${limit}&page=${page}`, config)))
       .then(results => parseResults(results))
       .catch(error => browse(config, retries - 1));
 }
 
+function maxPage() {
+  return Promises.first(defaultProxies
+          .map(proxyUrl => singleRequest(`${proxyUrl}/api/v2/list_movies.json?limit=${limit}`)))
+      .then(results => Math.round((results?.data?.movie_count || 0) / limit))
+}
+
 function singleRequest(requestUrl, config = {}) {
   const timeout = config.timeout || defaultTimeout;
-  const options = { userAgent: getRandomUserAgent(), open_timeout: timeout, follow: 2 };
+  const options = { headers: { 'User-Agent': getRandomUserAgent() }, timeout: timeout };
 
-  return needle('get', requestUrl, options)
+  return axios.get(requestUrl, options)
       .then(response => {
-        if (!response.body) {
+        if (!response.data) {
           return Promise.reject(`No body: ${requestUrl}`);
         }
-        return Promise.resolve(response.body);
+        return Promise.resolve(response.data);
       });
 }
 
@@ -89,4 +95,4 @@ function formatType(type) {
   return type.toUpperCase();
 }
 
-module.exports = { torrent, search, browse };
+module.exports = { torrent, search, browse, maxPage };

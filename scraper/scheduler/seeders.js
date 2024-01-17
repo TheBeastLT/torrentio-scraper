@@ -5,6 +5,9 @@ const { updateCurrentSeeders } = require('../lib/torrent')
 const { updateTorrentSeeders } = require('../lib/torrentEntries')
 
 const DELAY_MS = 0; // 0 seconds
+const DELAY_NEW_MS = 30_000; // 30 seconds
+const DELAY_NO_NEW_MS = 300_000; // 300 seconds
+const DELAY_FAILED_TORRENTS_MS = 5_000; // 5 seconds
 const updateLimiter = new Bottleneck({ maxConcurrent: 5 });
 const statistics = {};
 const statisticsNew = {};
@@ -31,18 +34,25 @@ function scheduleUpdateSeedersForNewTorrents() {
       .then(torrents => updateStatistics(torrents, statisticsNew))
       .then(() => console.log('Finished seeders update for new torrents:', statisticsNew))
       .catch(error => console.warn('Failed seeders update for new torrents:', error))
-      .then(() => delay(30_000))
+      .then(() => delay(DELAY_NEW_MS))
       .then(() => scheduleUpdateSeedersForNewTorrents());
 }
 
 async function getTorrents() {
   return repository.getUpdateSeedersTorrents()
-      .catch(() => delay(5000).then(() => getTorrents()))
+      .catch(() => delay(DELAY_FAILED_TORRENTS_MS).then(() => getTorrents()));
 }
 
 async function getNewTorrents() {
   return repository.getUpdateSeedersNewTorrents()
-      .catch(() => delay(5000).then(() => getNewTorrents()))
+      .catch(() => delay(DELAY_FAILED_TORRENTS_MS).then(() => getNewTorrents()))
+      .then(torrents => {
+        if (!torrents.length) {
+          console.log('No new torrents to update seeders')
+          return delay(DELAY_NO_NEW_MS).then(() => getNewTorrents())
+        }
+        return torrents;
+      });
 }
 
 function updateStatistics(updatedTorrents, statisticsObject) {

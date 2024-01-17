@@ -1,5 +1,5 @@
 const torrentStream = require('torrent-stream');
-const needle = require('needle');
+const axios = require('axios');
 const parseTorrent = require('parse-torrent');
 const BTClient = require('bittorrent-tracker')
 const async = require('async');
@@ -113,12 +113,12 @@ async function filesFromTorrentFile(torrent) {
     return Promise.reject(new Error("no torrentLink"));
   }
 
-  return needle('get', torrent.torrentLink, { open_timeout: 10000 })
+  return axios.get(torrent.torrentLink, { timeout: 10000, responseType: 'arraybuffer' })
       .then((response) => {
-        if (!response.body || response.statusCode !== 200) {
+        if (!response.data || response.status !== 200) {
           throw new Error('torrent not found')
         }
-        return response.body
+        return response.data
       })
       .then((body) => parseTorrent(body))
       .then((info) => info.files.map((file, fileId) => ({
@@ -197,8 +197,8 @@ async function getTorrentTrackers(torrent) {
 }
 
 async function getDefaultTrackers(torrent, retry = 3) {
-  return cacheTrackers(() => needle('get', TRACKERS_URL, { open_timeout: SEEDS_CHECK_TIMEOUT })
-      .then(response => response.body && response.body.trim())
+  return cacheTrackers(() => axios.get(TRACKERS_URL, { timeout: SEEDS_CHECK_TIMEOUT })
+      .then(response => response.data && response.data.trim())
       .then(body => body && body.split('\n\n') || []))
       .catch(() => retry > 0 ? delay(5000).then(() => getDefaultTrackers(torrent, retry - 1)) : [])
       .then(trackers => trackers.concat(ADDITIONAL_TRACKERS))

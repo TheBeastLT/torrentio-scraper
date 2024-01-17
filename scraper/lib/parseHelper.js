@@ -43,7 +43,7 @@ function parseSeriesVideo(video, parsedTorrentName) {
   // force episode to any found number if it was not parsed
   if (!videoInfo.episodes && !videoInfo.date) {
     const epMatcher = videoInfo.title.match(
-        /(?<!season\W*|disk\W*|movie\W*|film\W*)(?:^|\W)(\d{1,4})(?:a|b|c|v\d)?(?:\W|$)(?!disk|movie|film)/i);
+        /(?<!season\W*|disk\W*|movie\W*|film\W*)(?:^|\W|_)(\d{1,4})(?:a|b|c|v\d)?(?:_|\W|$)(?!disk|movie|film)/i);
     videoInfo.episodes = epMatcher && [parseInt(epMatcher[1], 10)];
     videoInfo.episode = videoInfo.episodes && videoInfo.episodes[0];
   }

@@ -1,4 +1,4 @@
-const needle = require("needle")
+const axios = require('axios');
 const moment = require("moment")
 const cheerio = require("cheerio");
 const decode = require('magnet-uri');
@@ -21,12 +21,11 @@ function torrent(torrentId, config = {}, retries = 2) {
   if (!torrentId || retries === 0) {
     return Promise.reject(new Error(`Failed ${torrentId} query`));
   }
-  const slug = torrentId.split('?p=')[1];
-  return singleRequest(`${baseUrl}/?p=${slug}`, config)
+  return singleRequest(`${baseUrl}/${torrentId}`, config)
       .then((body) => parseTorrentPage(body))
-      .then((torrent) => torrent.map(el => ({ torrentId: slug, ...el })))
+      .then((torrent) => torrent.map(el => ({ torrentId, ...el })))
       .catch((err) => {
-        console.warn(`Failed Lapumia ${slug} request: `, err);
+        console.warn(`Failed Lapumia ${torrentId} request: `, err);
         return torrent(torrentId, config, retries - 1)
       });
 }
@@ -62,11 +61,11 @@ function browse(config = {}, retries = 2) {
 
 function singleRequest(requestUrl, config = {}) {
   const timeout = config.timeout || defaultTimeout;
-  const options = { userAgent: getRandomUserAgent(), open_timeout: timeout, follow: 2 };
+  const options = { userAgent: getRandomUserAgent(), timeout: timeout, follow: 2 };
 
-  return needle('get', requestUrl, options)
+  return axios.get(requestUrl, options)
       .then((response) => {
-        const body = response.body;
+        const body = response.data;
         if (!body) {
           throw new Error(`No body: ${requestUrl}`);
         } else if (body.includes('502: Bad gateway') ||
@@ -74,7 +73,8 @@ function singleRequest(requestUrl, config = {}) {
           throw new Error(`Invalid body contents: ${requestUrl}`);
         }
         return body;
-      });
+      })
+      .catch(error => Promise.reject(error.message || error));
 }
 
 function parseTableBody(body) {
@@ -89,10 +89,14 @@ function parseTableBody(body) {
 
     $('div.post').each((i, element) => {
       const row = $(element);
-      torrents.push({
-        name: row.find("div > a").text(),
-        torrentId: row.find("div > a").attr("href")
-      });
+      try {
+        torrents.push({
+          name: row.find("div > a").text(),
+          torrentId: row.find("div > a").attr("href").split('/')[3]
+        });
+      } catch (e) {
+        console.log("Failed parsing Lupumia table entry")
+      }
     });
     resolve(torrents);
   });
@@ -112,7 +116,7 @@ function parseTorrentPage(body) {
         .map((i, section) => $(section).attr("href")).get();
     const category = parseCategory($('div.category').html());
     const details = $('div.content')
-    const torrents = magnets.map(magnetLink => ({
+    const torrents = magnets.filter(magnetLink => decode(magnetLink).name).map(magnetLink => ({
       title: sanitizePtName(escapeHTML(decode(magnetLink).name.replace(/\+/g, ' '))),
       originalName: sanitizePtOriginalName(details.find('b:contains(\'Titulo Original:\')')[0].nextSibling.nodeValue),
       year: details.find('b:contains(\'Ano de Lançamento:\')')[0].nextSibling.nodeValue.trim(),

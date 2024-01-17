@@ -1,4 +1,4 @@
-const needle = require('needle');
+const axios = require('axios');
 const { escapeHTML } = require('../../lib/metadata');
 
 const baseUrl = 'https://apibay.org';
@@ -102,10 +102,10 @@ function browse(config = {}, retries = 2) {
 
 async function _request(endpoint) {
   const url = `${baseUrl}/${endpoint}`;
-  return needle('get', url, { open_timeout: timeout })
+  return axios.get(url, { timeout: timeout })
       .then(response => {
-        if (typeof response.body === 'object') {
-          return response.body;
+        if (typeof response.data === 'object') {
+          return response.data;
         }
         return Promise.reject(`Unexpected response body`);
       });

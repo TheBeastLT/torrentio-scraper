@@ -107,12 +107,6 @@ function typeMapping() {
 }
 
 function untilPage(category) {
-  if (ondebaixa.Categories.DESENHOS === category) {
-    return 5;
-  }
-  if (ondebaixa.Categories.TV === category) {
-    return 5;
-  }
   return UNTIL_PAGE;
 }
 

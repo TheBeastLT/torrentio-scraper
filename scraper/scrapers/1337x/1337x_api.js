@@ -1,10 +1,11 @@
+const axios = require('axios');
 const cheerio = require('cheerio');
-const needle = require('needle');
 const Sugar = require('sugar-date');
 const decode = require('magnet-uri');
 const Promises = require('../../lib/promises');
 const { escapeHTML } = require('../../lib/metadata');
 const { getRandomUserAgent } = require('../../lib/requestHelper');
+const { parseSize } = require("../scraperHelper");
 
 const defaultProxies = [
   'https://1337x.to'
@@ -32,7 +33,7 @@ function torrent(torrentId, config = {}, retries = 2) {
   const slug = torrentId.startsWith('/torrent/') ? torrentId.replace('/torrent/', '') : torrentId;
 
   return Promises.first(proxyList
-      .map((proxyUrl) => singleRequest(`${proxyUrl}/torrent/${slug}`, config)))
+          .map((proxyUrl) => singleRequest(`${proxyUrl}/torrent/${slug}`, config)))
       .then((body) => parseTorrentPage(body))
       .then((torrent) => ({ torrentId: slug, ...torrent }))
       .catch((err) => torrent(slug, config, retries - 1));
@@ -51,7 +52,7 @@ function search(keyword, config = {}, retries = 2) {
       : `${proxyUrl}/search/${keyword}/${page}/`;
 
   return Promises.first(proxyList
-      .map(proxyUrl => singleRequest(requestUrl(proxyUrl), config)))
+          .map(proxyUrl => singleRequest(requestUrl(proxyUrl), config)))
       .then(body => parseTableBody(body))
       .then(torrents => torrents.length === 40 && page < extendToPage
           ? search(keyword, { ...config, page: page + 1 }).catch(() => [])
@@ -73,18 +74,18 @@ function browse(config = {}, retries = 2) {
       : `${proxyUrl}/cat/${category}/${page}/`;
 
   return Promises.first(proxyList
-      .map((proxyUrl) => singleRequest(requestUrl(proxyUrl), config)))
+          .map((proxyUrl) => singleRequest(requestUrl(proxyUrl), config)))
       .then((body) => parseTableBody(body))
       .catch((err) => browse(config, retries - 1));
 }
 
 function singleRequest(requestUrl, config = {}) {
   const timeout = config.timeout || defaultTimeout;
-  const options = { userAgent: getRandomUserAgent(), open_timeout: timeout, follow: 2 };
+  const options = { headers: { 'User-Agent': getRandomUserAgent() }, timeout: timeout };
 
-  return needle('get', requestUrl, options)
+  return axios.get(requestUrl, options)
       .then((response) => {
-        const body = response.body;
+        const body = response.data;
         if (!body) {
           throw new Error(`No body: ${requestUrl}`);
         } else if (body.includes('502: Bad gateway') ||
@@ -162,21 +163,6 @@ function parseDate(dateString) {
     return Sugar.Date.create('10 years ago');
   }
   return Sugar.Date.create(dateString);
-}
-
-function parseSize(sizeText) {
-  if (!sizeText) {
-    return undefined;
-  }
-  let scale = 1;
-  if (sizeText.includes('GB')) {
-    scale = 1024 * 1024 * 1024
-  } else if (sizeText.includes('MB')) {
-    scale = 1024 * 1024;
-  } else if (sizeText.includes('KB')) {
-    scale = 1024;
-  }
-  return Math.floor(parseFloat(sizeText.replace(/,/g, '')) * scale);
 }
 
 module.exports = { torrent, search, browse, Categories };

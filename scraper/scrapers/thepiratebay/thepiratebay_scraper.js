@@ -7,7 +7,6 @@ const Promises = require('../../lib/promises');
 const { createTorrentEntry, checkAndUpdateTorrent } = require('../../lib/torrentEntries');
 
 const NAME = 'ThePirateBay';
-const UNTIL_PAGE = 5;
 
 const limiter = new Bottleneck({ maxConcurrent: 10 });
 
@@ -54,7 +53,7 @@ async function scrapeLatestTorrentsForCategory(category, page = 1) {
         return Promise.resolve([]);
       })
       .then(torrents => Promise.all(torrents.map(torrent => limiter.schedule(() => processTorrentRecord(torrent)))))
-      .then(resolved => resolved.length > 0 && page < UNTIL_PAGE
+      .then(resolved => resolved.length > 0 && page < getUntilPage(category)
           ? scrapeLatestTorrentsForCategory(category, page + 1)
           : Promise.resolve());
 }
@@ -82,6 +81,18 @@ async function processTorrentRecord(record) {
   };
 
   return createTorrentEntry(torrent);
+}
+
+function getUntilPage(category) {
+  switch (category) {
+    case thepiratebay.Categories.VIDEO.MOVIES_3D:
+      return 1;
+    case thepiratebay.Categories.VIDEO.TV_SHOWS:
+    case thepiratebay.Categories.VIDEO.TV_SHOWS_HD:
+      return 10;
+    default:
+      return 5;
+  }
 }
 
 module.exports = { scrape, updateSeeders, NAME };

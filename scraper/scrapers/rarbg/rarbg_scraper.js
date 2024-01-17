@@ -36,21 +36,17 @@ async function scrapeLatestTorrents() {
     rarbg.Options.category.MOVIES_XVID,
     rarbg.Options.category.MOVIES_XVID_720P,
     rarbg.Options.category.MOVIES_X265_1080P,
-    rarbg.Options.category.MOVIES_X265_4K,
-    rarbg.Options.category.MOVIES_X265_4K_HDR,
     rarbg.Options.category.MOVIES_X264,
     rarbg.Options.category.MOVIES_X264_720P,
     rarbg.Options.category.MOVIES_X264_1080P,
-    rarbg.Options.category.MOVIES_X264_3D,
-    rarbg.Options.category.MOVIES_X264_4K,
-    rarbg.Options.category.MOVIES_BD_REMUX,
+    rarbg.Options.category.MOVIES_HIGH_RES,
     rarbg.Options.category.TV_EPISODES,
     rarbg.Options.category.TV_UHD_EPISODES,
     rarbg.Options.category.TV_HD_EPISODES
   ];
 
   return Promises.sequence(allowedCategories
-      .map(category => () => limiter.schedule(() => scrapeLatestTorrentsForCategory(category))))
+          .map(category => () => limiter.schedule(() => scrapeLatestTorrentsForCategory(category))))
       .then(entries => entries.reduce((a, b) => a.concat(b), []));
 }
 
