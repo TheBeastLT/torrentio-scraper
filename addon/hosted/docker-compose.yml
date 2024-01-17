@@ -9,6 +9,7 @@ services:
       - 'mongodb_data:/bitnami/mongodb'
   scraper:
     build: ./
+    restart: always
     volumes:
       - 'sqlite_data:/sqlite'
   torrentio:

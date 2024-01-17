@@ -80,58 +80,62 @@ def process_links(links):
     print(f"Checking links...({len(links)})")
     counter = 1
     for link in links:
-        print(f"Processing: {BASE_URL}{link[0]} {counter}/{len(links)}")
-        req = requests.get(f"{BASE_URL}{link[0]}", headers={'User-Agent': 'Mozilla/5.0'})
-        torrent_html = req.text
-        t = {}
-        soup = BeautifulSoup(torrent_html, "html.parser")
-        t['title'] = soup.find("h1").text.strip()
-        t['size'] = 0
-        t['magnets'] = []
-        t['torrents'] = []
-        all_a = soup.find_all("a")
-        for a in all_a:
-            if a.get("href").startswith("https://www.imdb.com/title"):
-                t['imdbid'] = a.get("href").rstrip("\\").split('/')[-1]
-            if a.get("href").startswith("magnet:"):
-                t['magnets'].append(a.get("href"))
-            if a.get("href").startswith(TORRENT_CACHES):
-                t['torrents'].append(a.get("href"))
-        all_li = soup.find_all("li")
-        for li in all_li:
-            if "Total size" in li.text:
-                size = li.findChildren("span")[0].text
-                mb = False
-                if "MB" in size: mb = True
-                size = re.sub('\s(GB|MB)', '', size).split('.')[0].replace(',','')
-                if mb:
-                    t['size'] = math.trunc(float(size) * 107374182)
+        try:
+            print(f"Processing: {BASE_URL}{link[0]} {counter}/{len(links)}")
+            req = requests.get(f"{BASE_URL}{link[0]}", headers={'User-Agent': 'Mozilla/5.0'})
+            torrent_html = req.text
+            t = {}
+            soup = BeautifulSoup(torrent_html, "html.parser")
+            t['title'] = soup.find("h1").text.strip()
+            t['size'] = 0
+            t['magnets'] = []
+            t['torrents'] = []
+            all_a = soup.find_all("a")
+            for a in all_a:
+                if a.get("href").startswith("https://www.imdb.com/title"):
+                    t['imdbid'] = a.get("href").rstrip("\\").split('/')[-1]
+                if a.get("href").startswith("magnet:"):
+                    t['magnets'].append(a.get("href"))
+                if a.get("href").startswith(TORRENT_CACHES):
+                    t['torrents'].append(a.get("href"))
+            all_li = soup.find_all("li")
+            for li in all_li:
+                if "Total size" in li.text:
+                    size = li.findChildren("span")[0].text
+                    mb = False
+                    if "MB" in size: mb = True
+                    size = re.sub('\s(GB|MB)', '', size).split('.')[0].replace(',','')
+                    if mb:
+                        t['size'] = math.trunc(float(size) * 107374182)
+                    else:
+                        t['size'] = math.trunc(float(size) * 1073741824)
+            t['seeders'] = soup.find("span", {"class": "seeds"}).text
+            all_p = soup.find_all("p")
+            for p in all_p:
+                if "Infohash :" in p.text:
+                    t['infoHash'] = p.findChildren("span")[0].text.lower()
+            t['files'] = []
+            file_div = soup.find("div", {"id":"files"})
+            for li in file_div.findChildren("li"):
+                f = re.sub('\s\(.*\)', '', li.text)
+                t["files"].append(f)
+            t['trackers'] = []
+            tracker_div = soup.find("div", {"id":"tracker-list"})
+            for tracker in tracker_div.findChildren("li"):
+                t['trackers'].append(tracker.text.strip())
+            if not 'imdbid' in t or t['imdbid'] == '':
+                found = re.search("https:\/\/www\.imdb\.com\/title\/tt\d+", torrent_html)
+                if found is not None:
+                    t['imdbid'] = found.group(0).rstrip("\\").split('/')[-1]
                 else:
-                    t['size'] = math.trunc(float(size) * 1073741824)
-        t['seeders'] = soup.find("span", {"class": "seeds"}).text
-        all_p = soup.find_all("p")
-        for p in all_p:
-            if "Infohash :" in p.text:
-                t['infoHash'] = p.findChildren("span")[0].text.lower()
-        t['files'] = []
-        file_div = soup.find("div", {"id":"files"})
-        for li in file_div.findChildren("li"):
-            f = re.sub('\s\(.*\)', '', li.text)
-            t["files"].append(f)
-        t['trackers'] = []
-        tracker_div = soup.find("div", {"id":"tracker-list"})
-        for tracker in tracker_div.findChildren("li"):
-            t['trackers'].append(tracker.text.strip())
-        if not 'imdbid' in t or t['imdbid'] == '':
-            found = re.search("https:\/\/www\.imdb\.com\/title\/tt\d+", torrent_html)
-            if found is not None:
-                t['imdbid'] = found.group(0).rstrip("\\").split('/')[-1]
-            else:
-                new_id = imdb_find(link[1])
-                if new_id is not None:
-                    t['imdbid'] = f"tt{new_id}"
-                else:
-                    print(f"{t['title']} has no IMDB Id")
-                    continue
-        build_and_write(t)
+                    new_id = imdb_find(link[1])
+                    if new_id is not None:
+                        t['imdbid'] = f"tt{new_id}"
+                    else:
+                        print(f"{t['title']} has no IMDB Id")
+                        continue
+            build_and_write(t)
+        except:
+            counter += 1
+            continue
         counter += 1
