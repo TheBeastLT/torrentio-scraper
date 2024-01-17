@@ -4,7 +4,7 @@ import { mapLanguages } from './languages.js';
 import { enrichStreamSources, getSources } from './magnetHelper.js';
 import { getSubtitles } from './subtitles.js';
 
-const ADDON_NAME = 'Torrentio';
+const ADDON_NAME = 'Torrentio-sh';
 const SIZE_DELTA = 0.02;
 const UNKNOWN_SIZE = 300000000;
 const CAM_SOURCES = ['CAM', 'TeleSync', 'TeleCine', 'SCR'];

@@ -10,14 +10,14 @@ const CatalogMochs = Object.values(MochOptions).filter(moch => moch.catalog);
 export function manifest(config = {}) {
   const overrideManifest = getManifestOverride(config);
   const baseManifest = {
-    id: 'com.stremio.torrentio.addon',
+    id: 'com.stremio.torrentio-sh.addon',
     version: '0.0.14',
     name: getName(overrideManifest, config),
     description: getDescription(config),
     catalogs: getCatalogs(config),
     resources: getResources(config),
     types: [Type.MOVIE, Type.SERIES, Type.ANIME, Type.OTHER],
-    background: `https://i.ibb.co/VtSfFP9/t8wVwcg.jpg`,
+    background: `https://images6.alphacoders.com/134/1344105.png`,
     logo: `https://i.ibb.co/w4BnkC9/GwxAcDV.png`,
     behaviorHints: {
       configurable: true,
@@ -35,7 +35,7 @@ export function dummyManifest() {
 }
 
 function getName(manifest, config) {
-  const rootName = manifest?.name || 'Torrentio';
+  const rootName = manifest?.name || 'Torrentio-sh';
   const mochSuffix = Object.values(MochOptions)
       .filter(moch => config[moch.key])
       .map(moch => moch.shortName)
