@@ -2,30 +2,43 @@ version: '2'
 
 services:
   mongodb:
+    restart: always
     image: docker.io/bitnami/mongodb:7.0
     ports:
       - "27017:27017"
     volumes:
       - 'mongodb_data:/bitnami/mongodb'
   scraper:
-    build: ./
+    build: ../../scraper/ 
     restart: always
-    volumes:
-      - 'sqlite_data:/sqlite'
+    ports:
+      - "7001:7001"
+    environment:
+      - PORT=7001
+      - MONGODB_URI=mongodb://mongodb:27017/torrentio
+      - DATABASE_URI=postgres://postgres@postgres:5432/torrentio
   torrentio:
     build: ../
-    volumes:
-      - 'sqlite_data:/sqlite'
+    restart: always
     ports:
       - "7000:7000"
-    links:
-      - "mongodb:mongodb"
     environment:
       - MONGODB_URI=mongodb://mongodb:27017/torrentio
-      - DATABASE_URI=sqlite:/sqlite/torrentio.sqlite
+      - DATABASE_URI=postgres://postgres@postgres:5432/torrentio
+  postgres:
+    image: postgres:14-alpine
+    ports:
+      - 5432:5432
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - './init:/docker-entrypoint-initdb.d'
+    environment:
+      - POSTGRES_HOST_AUTH_METHOD=trust
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=torrentio
 
 volumes:
   mongodb_data:
     driver: local
-  sqlite_data:
+  pg_data:
     driver: local

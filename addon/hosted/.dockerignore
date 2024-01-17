@@ -1,4 +1,0 @@
-*.lock
-*/scrape-cache
-Dockerfile
-docker-compose.yml

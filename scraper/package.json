@@ -2,7 +2,7 @@
   "name": "stremio-torrentio",
   "version": "1.0.14",
   "exports": "./index.js",
-  "type": "module",
+  "type": "commonjs",
   "scripts": {
     "start": "node index.js"
   },
@@ -18,9 +18,17 @@
     "cors": "^2.8.5",
     "debrid-link-api": "^1.0.1",
     "express-rate-limit": "^6.7.0",
+    "google-it": "^1.6.4",
+    "google-sr": "^3.2.1",
+    "he": "^1.2.0",
+    "jaro-winkler": "^0.2.8",
     "magnet-uri": "^6.2.0",
     "name-to-imdb": "^3.0.4",
     "named-queue": "^2.2.1",
+    "needle": "^3.3.1",
+    "node-schedule": "^2.1.1",
+    "nodejs-bing": "^0.1.0",
+    "nyaapi": "^2.4.4",
     "offcloud-api": "^1.0.2",
     "parse-torrent-title": "git://github.com/TheBeastLT/parse-torrent-title.git#022408972c2a040f846331a912a6a8487746a654",
     "pg": "^8.11.3",
@@ -32,7 +40,9 @@
     "router": "^1.3.8",
     "sequelize": "^6.31.1",
     "stremio-addon-sdk": "^1.6.10",
+    "sugar-date": "^2.0.6",
     "swagger-stats": "^0.99.7",
+    "torrent-stream": "^1.2.1",
     "ua-parser-js": "^1.0.36",
     "user-agents": "^1.0.1444"
   }
