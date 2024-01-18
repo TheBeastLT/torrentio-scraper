@@ -4,7 +4,6 @@
 
 ## Self-hosted quickstart
 ```
-cd addon/hosted
 docker-compose up -d
 ```
 Then open your browser to `127.0.0.1:7000`

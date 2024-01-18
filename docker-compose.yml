@@ -1,44 +1,49 @@
-version: '2'
+---
+
+version: '3.9'
+name: torrentio-self-host
 
 services:
+
   mongodb:
-    restart: always
+    restart: unless-stopped
     image: docker.io/bitnami/mongodb:7.0
     ports:
       - "27017:27017"
     volumes:
-      - 'mongodb_data:/bitnami/mongodb'
+      - mongo-data:/bitnami/mongodb
+  
   scraper:
-    build: ../../scraper/ 
-    restart: always
-    ports:
-      - "7001:7001"
+    build: ./scraper
+    restart: unless-stopped
     environment:
       - PORT=7001
       - MONGODB_URI=mongodb://mongodb:27017/torrentio
       - DATABASE_URI=postgres://postgres@postgres:5432/torrentio
+      - ENABLE_SYNC=true
+  
   torrentio:
-    build: ../
-    restart: always
+    build: ./addon
+    restart: unless-stopped
     ports:
       - "7000:7000"
     environment:
       - MONGODB_URI=mongodb://mongodb:27017/torrentio
       - DATABASE_URI=postgres://postgres@postgres:5432/torrentio
+      - ENABLE_SYNC=true
+  
   postgres:
     image: postgres:14-alpine
+    restart: unless-stopped
     ports:
       - 5432:5432
     volumes:
-      - pg_data:/var/lib/postgresql/data
-      - './init:/docker-entrypoint-initdb.d'
+      - postgres-data:/var/lib/postgresql/data
     environment:
       - POSTGRES_HOST_AUTH_METHOD=trust
       - POSTGRES_USER=postgres
       - POSTGRES_DB=torrentio
 
 volumes:
-  mongodb_data:
-    driver: local
-  pg_data:
-    driver: local
+  mongo-data:
+  postgres-data:
