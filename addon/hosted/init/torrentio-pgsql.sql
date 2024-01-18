@@ -1,7 +1,7 @@
 CREATE TABLE "torrents" (
 	"infoHash" 	varchar(64) PRIMARY KEY,
 	"provider"	varchar(32) NOT NULL,
-	"torrentId"	varchar(128),
+	"torrentId"	varchar(256),
 	"title"	varchar(256) NOT NULL,
 	"size"	bigint,
 	"type"	varchar(16) NOT NULL,
