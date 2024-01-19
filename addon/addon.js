@@ -22,13 +22,14 @@ const limiter = new Bottleneck({
   highWater: process.env.LIMIT_QUEUE_SIZE || 220,
   strategy: Bottleneck.strategy.OVERFLOW
 });
+const limiterOptions = { expiration: 2 * 60 * 1000 }
 
 builder.defineStreamHandler((args) => {
   if (!args.id.match(/tt\d+/i) && !args.id.match(/kitsu:\d+/i)) {
     return Promise.resolve({ streams: [] });
   }
 
-  return cacheWrapStream(args.id, () => limiter.schedule(() => streamHandler(args)
+  return cacheWrapStream(args.id, () => limiter.schedule(limiterOptions, () => streamHandler(args)
       .then(records => records
           .sort((a, b) => b.torrent.seeders - a.torrent.seeders || b.torrent.uploadDate - a.torrent.uploadDate)
           .map(record => toStreamInfo(record)))))
