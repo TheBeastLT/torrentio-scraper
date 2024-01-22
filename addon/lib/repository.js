@@ -3,7 +3,7 @@ const Op = Sequelize.Op;
 
 const DATABASE_URI = process.env.DATABASE_URI;
 
-const database = new Sequelize(DATABASE_URI, { logging: false });
+const database = new Sequelize(DATABASE_URI, { logging: false, pool: { max: 50 } });
 
 const Torrent = database.define('torrent',
     {

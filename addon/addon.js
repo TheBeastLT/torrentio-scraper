@@ -18,17 +18,18 @@ const STALE_ERROR_AGE = 7 * 24 * 60 * 60; // 7 days
 
 const builder = new addonBuilder(dummyManifest());
 const limiter = new Bottleneck({
-  maxConcurrent: process.env.LIMIT_MAX_CONCURRENT || 200,
-  highWater: process.env.LIMIT_QUEUE_SIZE || 220,
+  maxConcurrent: process.env.LIMIT_MAX_CONCURRENT || 100,
+  highWater: process.env.LIMIT_QUEUE_SIZE || 120,
   strategy: Bottleneck.strategy.OVERFLOW
 });
+const limiterOptions = { expiration: 2 * 60 * 1000 }
 
 builder.defineStreamHandler((args) => {
   if (!args.id.match(/tt\d+/i) && !args.id.match(/kitsu:\d+/i)) {
     return Promise.resolve({ streams: [] });
   }
 
-  return cacheWrapStream(args.id, () => limiter.schedule(() => streamHandler(args)
+  return cacheWrapStream(args.id, () => limiter.schedule(limiterOptions, () => streamHandler(args)
       .then(records => records
           .sort((a, b) => b.torrent.seeders - a.torrent.seeders || b.torrent.uploadDate - a.torrent.uploadDate)
           .map(record => toStreamInfo(record)))))

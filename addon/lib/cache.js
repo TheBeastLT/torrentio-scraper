@@ -29,7 +29,8 @@ function initiateRemoteCache() {
       uri: MONGO_URI,
       options: {
         collection: 'torrentio_addon_collection',
-        socketTimeoutMS: 120000,
+        socketTimeoutMS: 30000,
+        poolSize: 150,
         useNewUrlParser: true,
         useUnifiedTopology: false,
         ttl: STREAM_EMPTY_TTL
