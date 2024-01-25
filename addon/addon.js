@@ -18,7 +18,7 @@ const STALE_REVALIDATE_AGE = 4 * 60 * 60; // 4 hours
 const STALE_ERROR_AGE = 7 * 24 * 60 * 60; // 7 days
 
 const builder = new addonBuilder(dummyManifest());
-const requestQueue = createNamedQueue(200);
+const requestQueue = createNamedQueue(Infinity);
 const limiter = new Bottleneck({
   maxConcurrent: process.env.LIMIT_MAX_CONCURRENT || 40,
   highWater: process.env.LIMIT_QUEUE_SIZE || 100,
