@@ -70,10 +70,18 @@ builder.defineMetaHandler((args) => {
 })
 
 async function streamHandler(args) {
+  console.log(`Current stats: `, limiter.counts())
+  const start = Date.now();
   if (args.type === Type.MOVIE) {
-    return movieRecordsHandler(args);
+    return movieRecordsHandler(args).then(result => {
+      console.log(`Execution time: ${Date.now() - start} ms`);
+      return result;
+    });
   } else if (args.type === Type.SERIES) {
-    return seriesRecordsHandler(args);
+    return seriesRecordsHandler(args).then(result => {
+      console.log(`Execution time: ${Date.now() - start} ms`);
+      return result;
+    });
   }
   return Promise.reject('not supported type');
 }
