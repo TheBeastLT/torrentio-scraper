@@ -10,6 +10,7 @@ import StaticResponse, { isStaticUrl } from './static.js';
 import { cacheWrapResolvedUrl } from '../lib/cache.js';
 import { timeout } from '../lib/promises.js';
 import { BadTokenError, streamFilename, AccessDeniedError, enrichMeta } from './mochHelper.js';
+import { createNamedQueue } from "../lib/namedQueue.js";
 
 const RESOLVE_TIMEOUT = 2 * 60 * 1000; // 2 minutes
 const MIN_API_KEY_SYMBOLS = 15;
@@ -62,9 +63,7 @@ export const MochOptions = {
 const unrestrictQueues = {}
 Object.values(MochOptions)
     .map(moch => moch.key)
-    .forEach(mochKey => unrestrictQueues[mochKey] = new namedQueue((task, callback) => task.method()
-      .then(result => callback(false, result))
-      .catch((error => callback(error))), 200));
+    .forEach(mochKey => unrestrictQueues[mochKey] = createNamedQueue(50));
 
 export function hasMochConfigured(config) {
   return Object.keys(MochOptions).find(moch => config?.[moch])
@@ -110,10 +109,7 @@ export async function resolve(parameters) {
         return StaticResponse.FAILED_UNEXPECTED;
       })
       .then(url => isStaticUrl(url) ? `${parameters.host}/${url}` : url);
-  const unrestrictQueue = unrestrictQueues[moch.key];
-  return new Promise(((resolve, reject) => {
-    unrestrictQueue.push({ id, method }, (error, result) => result ? resolve(result) : reject(error));
-  }));
+  return unrestrictQueues[moch.key].wrap(id, method);
 }
 
 export async function getMochCatalog(mochKey, config) {
