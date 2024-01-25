@@ -31,7 +31,7 @@ builder.defineStreamHandler((args) => {
     return Promise.resolve({ streams: [] });
   }
 
-  return requestQueue.wrap(args, () => resolveStreams(args))
+  return requestQueue.wrap(args.id, () => resolveStreams(args))
       .then(streams => applyFilters(streams, args.extra))
       .then(streams => applySorting(streams, args.extra, args.type))
       .then(streams => applyStaticInfo(streams))
