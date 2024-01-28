@@ -10,6 +10,7 @@ import applyFilters from './lib/filter.js';
 import { applyMochs, getMochCatalog, getMochItemMeta } from './moch/moch.js';
 import StaticLinks from './moch/static.js';
 import { createNamedQueue } from "./lib/namedQueue.js";
+import pLimit from "p-limit";
 
 const CACHE_MAX_AGE = parseInt(process.env.CACHE_MAX_AGE) || 60 * 60; // 1 hour in seconds
 const CACHE_MAX_AGE_EMPTY = 60; // 60 seconds
@@ -24,6 +25,7 @@ const limiter = new Bottleneck({
   highWater: process.env.LIMIT_QUEUE_SIZE || 100,
   strategy: Bottleneck.strategy.OVERFLOW
 });
+const newLimiter = pLimit(40)
 const limiterOptions = { expiration: 2 * 60 * 1000 }
 
 builder.defineStreamHandler((args) => {
@@ -69,14 +71,14 @@ builder.defineMetaHandler((args) => {
 })
 
 async function resolveStreams(args) {
-  return cacheWrapStream(args.id, () => limiter.schedule(limiterOptions, () => streamHandler(args)
+  return cacheWrapStream(args.id, () => newLimiter(() => streamHandler(args)
       .then(records => records
           .sort((a, b) => b.torrent.seeders - a.torrent.seeders || b.torrent.uploadDate - a.torrent.uploadDate)
           .map(record => toStreamInfo(record)))));
 }
 
 async function streamHandler(args) {
-  console.log(`Current stats: `, limiter.counts())
+  console.log(`Pending count: ${newLimiter.pendingCount}, active count: ${newLimiter.activeCount}`, )
   if (args.type === Type.MOVIE) {
     return movieRecordsHandler(args);
   } else if (args.type === Type.SERIES) {
