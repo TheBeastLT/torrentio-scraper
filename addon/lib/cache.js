@@ -30,7 +30,7 @@ function initiateRemoteCache() {
       options: {
         collection: 'torrentio_addon_collection',
         socketTimeoutMS: 30000,
-        poolSize: 150,
+        poolSize: 300,
         useNewUrlParser: true,
         useUnifiedTopology: false,
         ttl: STREAM_EMPTY_TTL
