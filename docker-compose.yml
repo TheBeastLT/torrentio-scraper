@@ -49,6 +49,12 @@ services:
       - POSTGRES_HOST_AUTH_METHOD=trust
       - POSTGRES_USER=postgres
       - POSTGRES_DB=torrentio
+  
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    restart: unless-stopped
+    ports:
+      - 8191:8191
 
 volumes:
   mongo-data:
