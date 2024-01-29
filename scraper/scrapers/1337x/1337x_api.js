@@ -83,9 +83,16 @@ function singleRequest(requestUrl, config = {}) {
   const timeout = config.timeout || defaultTimeout;
   const options = { headers: { 'User-Agent': getRandomUserAgent() }, timeout: timeout };
 
-  return axios.get(requestUrl, options)
+  return axios.post('http://flaresolverr:8191/v1', {
+    cmd: 'request.get',
+    url: requestUrl,
+  }, options)
       .then((response) => {
-        const body = response.data;
+        if (response.data.status !== 'ok'){
+          throw new Error(`FlareSolverr did not return status 'ok': ${response.data.message}`)
+        }
+        
+        const body = response.data.solution.response;
         if (!body) {
           throw new Error(`No body: ${requestUrl}`);
         } else if (body.includes('502: Bad gateway') ||
