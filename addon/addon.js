@@ -71,7 +71,7 @@ async function resolveStreams(args) {
 }
 
 async function streamHandler(args) {
-  console.log(`Pending count: ${newLimiter.pendingCount}, active count: ${newLimiter.activeCount}`, )
+  // console.log(`Pending count: ${newLimiter.pendingCount}, active count: ${newLimiter.activeCount}`, )
   if (args.type === Type.MOVIE) {
     return movieRecordsHandler(args);
   } else if (args.type === Type.SERIES) {
