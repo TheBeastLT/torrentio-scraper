@@ -12,10 +12,10 @@ jobs:
     strategy:
       matrix:
         include:
-          - ssh-host: ${{ secrets.SSH_HOST }}
-            ssh-key: ${{ secrets.SSH_KEY }}
-          - ssh-host: ${{ secrets.SSH_HOST_2 }}
-            ssh-key: ${{ secrets.SSH_KEY_2 }}
+          - ssh-host: SSH_HOST
+            ssh-key: SSH_KEY
+          - ssh-host: SSH_HOST_2
+            ssh-key: SSH_KEY_2
 
     steps:
       - uses: actions/checkout@v1
@@ -28,10 +28,10 @@ jobs:
       - name: Upload Docker image
         uses: appleboy/scp-action@master
         with:
-          host: ${{ matrix.ssh-host }}
+          host: ${{ secrets[matrix.matrix.ssh-host] }}
           username: ${{ secrets.SSH_USERNAME }}
           port: ${{ secrets.SSH_PORT }}
-          key: ${{ matrix.ssh-key }}
+          key: ${{ secrets[matrix.matrix.ssh-key] }}
           source: torrentio_addon_latest.tar
           target: /tmp/docker
           overwrite: true
@@ -39,10 +39,10 @@ jobs:
       - name: Deploy Docker image
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ matrix.ssh-host }}
+          host: ${{ secrets[matrix.matrix.ssh-host] }}
           username: ${{ secrets.SSH_USERNAME }}
           port: ${{ secrets.SSH_PORT }}
-          key: ${{ matrix.ssh-key }}
+          key: ${{ secrets[matrix.matrix.ssh-key] }}
           script: |
             docker load -i /tmp/docker/torrentio_addon_latest.tar
             docker stop torrentio-addon
