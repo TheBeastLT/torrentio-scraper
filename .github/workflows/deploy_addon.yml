@@ -5,6 +5,7 @@ on:
     branches: master
     paths:
       - 'addon/**'
+      - '.github/**'
 
 jobs:
   build:
@@ -28,10 +29,10 @@ jobs:
       - name: Upload Docker image
         uses: appleboy/scp-action@master
         with:
-          host: ${{ secrets[matrix.matrix.ssh-host] }}
+          host: ${{ secrets[matrix.ssh-host] }}
           username: ${{ secrets.SSH_USERNAME }}
           port: ${{ secrets.SSH_PORT }}
-          key: ${{ secrets[matrix.matrix.ssh-key] }}
+          key: ${{ secrets[matrix.ssh-key] }}
           source: torrentio_addon_latest.tar
           target: /tmp/docker
           overwrite: true
@@ -39,10 +40,10 @@ jobs:
       - name: Deploy Docker image
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ secrets[matrix.matrix.ssh-host] }}
+          host: ${{ secrets[matrix.ssh-host] }}
           username: ${{ secrets.SSH_USERNAME }}
           port: ${{ secrets.SSH_PORT }}
-          key: ${{ secrets[matrix.matrix.ssh-key] }}
+          key: ${{ secrets[matrix.ssh-key] }}
           script: |
             docker load -i /tmp/docker/torrentio_addon_latest.tar
             docker stop torrentio-addon
