@@ -1,4 +1,3 @@
-import Bottleneck from 'bottleneck';
 import { addonBuilder } from 'stremio-addon-sdk';
 import { Type } from './lib/types.js';
 import { dummyManifest } from './lib/manifest.js';
@@ -20,13 +19,7 @@ const STALE_ERROR_AGE = 7 * 24 * 60 * 60; // 7 days
 
 const builder = new addonBuilder(dummyManifest());
 const requestQueue = createNamedQueue(Infinity);
-const limiter = new Bottleneck({
-  maxConcurrent: process.env.LIMIT_MAX_CONCURRENT || 40,
-  highWater: process.env.LIMIT_QUEUE_SIZE || 100,
-  strategy: Bottleneck.strategy.OVERFLOW
-});
 const newLimiter = pLimit(40)
-const limiterOptions = { expiration: 2 * 60 * 1000 }
 
 builder.defineStreamHandler((args) => {
   if (!args.id.match(/tt\d+/i) && !args.id.match(/kitsu:\d+/i)) {
