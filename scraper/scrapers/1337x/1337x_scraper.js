@@ -22,7 +22,11 @@ async function scrape() {
         lastScrape.lastScraped = scrapeStart;
         return lastScrape.save();
       })
-      .then(() => console.log(`[${moment()}] finished ${NAME} scrape`));
+      .then(() => console.log(`[${moment()}] finished ${NAME} scrape`))
+      .then(() => {
+        leetx.FlaresolverrCookies = '';
+        leetx.FlaresolverrUserAgent = '';
+      });
 }
 
 async function updateSeeders(torrent) {

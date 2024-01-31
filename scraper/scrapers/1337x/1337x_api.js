@@ -13,8 +13,8 @@ const defaultProxies = [
 const defaultTimeout = 50000;
 const maxSearchPage = 50;
 
-let flaresolverrUserAgent = '';
-let flaresolverrCookies = '';
+let FlaresolverrUserAgent = '';
+let FlaresolverrCookies = '';
 
 const Categories = {
   MOVIE: 'Movies',
@@ -89,7 +89,7 @@ function singleRequest(requestUrl, config = {}) {
   const timeout = config.timeout || defaultTimeout;
   let options = { headers: { 'User-Agent': getRandomUserAgent() }, timeout: timeout };
 
-  if (flaresolverrUserAgent === '' || flaresolverrCookies === '') {
+  if (FlaresolverrUserAgent === '' || FlaresolverrCookies === '') {
     console.log("using flaresolverr");
     return axios.post('http://flaresolverr:8191/v1', {
       cmd: 'request.get',
@@ -108,9 +108,9 @@ function singleRequest(requestUrl, config = {}) {
           !(body.includes('1337x</title>'))) {
           throw new Error(`Invalid body contents: ${requestUrl}`);
         }
-        flaresolverrUserAgent = response.data.solution.userAgent;
+        FlaresolverrUserAgent = response.data.solution.userAgent;
         response.data.solution.cookies.forEach(cookie => {
-          flaresolverrCookies = flaresolverrCookies + `${cookie.name}=${cookie.value}; `;
+          FlaresolverrCookies = FlaresolverrCookies + `${cookie.name}=${cookie.value}; `;
         });
 
         return body;
@@ -118,8 +118,8 @@ function singleRequest(requestUrl, config = {}) {
   }
   else {
     console.log("using direct request");
-    options.headers['User-Agent'] = flaresolverrUserAgent;
-    options.headers['Cookie'] = flaresolverrCookies;
+    options.headers['User-Agent'] = FlaresolverrUserAgent;
+    options.headers['Cookie'] = FlaresolverrCookies;
     return axios.get(requestUrl, options)
       .then((response) => {
         const body = response.data;
@@ -203,4 +203,4 @@ function parseDate(dateString) {
   return Sugar.Date.create(dateString);
 }
 
-module.exports = { torrent, search, browse, Categories };
+module.exports = { torrent, search, browse, Categories, FlaresolverrCookies, FlaresolverrUserAgent };
