@@ -21,7 +21,7 @@ export async function getCachedStreams(streams, apiKey) {
       .reduce((mochStreams, stream) => {
         const cachedEntry = available[stream.infoHash];
         const cachedIds = _getCachedFileIds(stream.fileIdx, cachedEntry);
-        mochStreams[stream.infoHash] = {
+        mochStreams[`${stream.infoHash}@${stream.fileIdx}`] = {
           url: `${apiKey}/${stream.infoHash}/null/${stream.fileIdx}`,
           cached: !!cachedIds.length
         };

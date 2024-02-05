@@ -169,7 +169,7 @@ function processMochResults(streams, config, results) {
 
 function populateCachedLinks(streams, mochResult, config) {
   return streams.map(stream => {
-    const cachedEntry = stream.infoHash && mochResult.mochStreams[stream.infoHash];
+    const cachedEntry = stream.infoHash && mochResult.mochStreams[`${stream.infoHash}@${stream.fileIdx}`];
     if (cachedEntry?.cached) {
       return {
         name: `[${mochResult.moch.shortName}+] ${stream.name}`,
@@ -186,7 +186,7 @@ function populateDownloadLinks(streams, mochResults, config) {
   const torrentStreams = streams.filter(stream => stream.infoHash);
   const seededStreams = streams.filter(stream => !stream.title.includes('👤 0'));
   torrentStreams.forEach(stream => mochResults.forEach(mochResult => {
-    const cachedEntry = mochResult.mochStreams[stream.infoHash];
+    const cachedEntry = mochResult.mochStreams[`${stream.infoHash}@${stream.fileIdx}`];
     const isCached = cachedEntry?.cached;
     if (!isCached && isHealthyStreamForDebrid(seededStreams, stream)) {
       streams.push({

@@ -17,7 +17,7 @@ export async function getCachedStreams(streams, apiKey) {
         const fileName = streamTitleParts[streamTitleParts.length - 1];
         const fileIndex = streamTitleParts.length === 2 ? stream.fileIdx : null;
         const encodedFileName = encodeURIComponent(fileName);
-        mochStreams[stream.infoHash] = {
+        mochStreams[`${stream.infoHash}@${stream.fileIdx}`] = {
           url: `${apiKey}/${stream.infoHash}/${encodedFileName}/${fileIndex}`,
           cached: false
         };
