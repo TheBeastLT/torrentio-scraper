@@ -27,10 +27,9 @@ export async function getCachedStreams(streams, apiKey) {
         const isCached = available.includes(stream.infoHash);
         const streamTitleParts = stream.title.replace(/\n👤.*/s, '').split('\n');
         const fileName = streamTitleParts[streamTitleParts.length - 1];
-        const fileIndex = streamTitleParts.length === 2 ? stream.fileIdx : null;
         const encodedFileName = encodeURIComponent(fileName);
         mochStreams[`${stream.infoHash}@${stream.fileIdx}`] = {
-          url: `${apiKey}/${stream.infoHash}/${encodedFileName}/${fileIndex}`,
+          url: `${apiKey}/${stream.infoHash}/${encodedFileName}/${stream.fileIdx}`,
           cached: isCached
         };
         return mochStreams;
@@ -137,7 +136,8 @@ async function _retryCreateTorrent(OC, infoHash, cachedEntryInfo, fileIndex) {
 async function _unrestrictLink(OC, infoHash, torrent, cachedEntryInfo, fileIndex) {
   const targetFileName = decodeURIComponent(cachedEntryInfo);
   const files = await _getFileUrls(OC, torrent)
-  const targetFile = files.find(file => sameFilename(targetFileName, file.split('/').pop()))
+  const targetFile = files.find(file => file.includes(`/${torrent.requestId}/${fileIndex}/`))
+      || files.find(file => sameFilename(targetFileName, file.split('/').pop()))
       || files.find(file => isVideo(file))
       || files.pop();
 
