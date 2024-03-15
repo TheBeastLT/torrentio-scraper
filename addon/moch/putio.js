@@ -168,12 +168,12 @@ async function _getTargetFile(Putio, torrent, encodedFileName, fileIndex) {
 
   while (!targetFile && files.length) {
     const folders = files.filter(file => file.file_type === 'FOLDER');
-    videos = videos.concat(files.filter(file => isVideo(file.name)));
+    videos = videos.concat(files.filter(file => isVideo(file.name))).sort((a, b) => b.size - a.size);
     // when specific file index is defined search by filename
     // when it's not defined find all videos and take the largest one
     targetFile = Number.isInteger(fileIndex)
         ? videos.find(video => sameFilename(targetFileName, video.name))
-        : !folders.length && videos.sort((a, b) => b.size - a.size)[0];
+        : !folders.length && videos[0];
     files = !targetFile
         ? await Promise.all(folders.map(folder => _getFiles(Putio, folder.id)))
             .then(results => results.reduce((a, b) => a.concat(b), []))

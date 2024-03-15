@@ -124,10 +124,10 @@ async function _getCachedLink(PM, infoHash, encodedFileName, fileIndex, ip, isBr
   const cachedTorrent = await PM.transfer.directDownload(magnet.encode({ infoHash }), ip);
   if (cachedTorrent?.content?.length) {
     const targetFileName = decodeURIComponent(encodedFileName);
-    const videos = cachedTorrent.content.filter(file => isVideo(file.path));
+    const videos = cachedTorrent.content.filter(file => isVideo(file.path)).sort((a, b) => b.size - a.size);
     const targetVideo = Number.isInteger(fileIndex)
         ? videos.find(video => sameFilename(video.path, targetFileName))
-        : videos.sort((a, b) => b.size - a.size)[0];
+        : videos[0];
     if (!targetVideo && videos.every(video => isArchive(video.path))) {
       console.log(`Only Premiumize archive is available for [${infoHash}] ${fileIndex}`)
       return StaticResponse.FAILED_RAR;

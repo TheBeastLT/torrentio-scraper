@@ -142,10 +142,10 @@ async function _createTorrent(AD, infoHash) {
 
 async function _unrestrictLink(AD, torrent, encodedFileName, fileIndex) {
   const targetFileName = decodeURIComponent(encodedFileName);
-  const videos = torrent.links.filter(link => isVideo(link.filename));
+  const videos = torrent.links.filter(link => isVideo(link.filename)).sort((a, b) => b.size - a.size);
   const targetVideo = Number.isInteger(fileIndex)
       ? videos.find(video => sameFilename(targetFileName, video.filename))
-      : videos.sort((a, b) => b.size - a.size)[0];
+      : videos[0];
 
   if (!targetVideo && torrent.links.every(link => isArchive(link.filename))) {
     console.log(`Only AllDebrid archive is available for [${torrent.hash}] ${encodedFileName}`)
