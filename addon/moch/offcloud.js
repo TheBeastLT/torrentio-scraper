@@ -136,8 +136,8 @@ async function _retryCreateTorrent(OC, infoHash, cachedEntryInfo, fileIndex) {
 async function _unrestrictLink(OC, infoHash, torrent, cachedEntryInfo, fileIndex) {
   const targetFileName = decodeURIComponent(cachedEntryInfo);
   const files = await _getFileUrls(OC, torrent)
-  const targetFile = files.find(file => file.includes(`/${torrent.requestId}/${fileIndex}/`))
-      || files.find(file => sameFilename(targetFileName, file.split('/').pop()))
+  const targetFile = files.find(file => sameFilename(targetFileName, file.split('/').pop()))
+      || files.find(file => file.includes(`/${torrent.requestId}/${fileIndex}/`))
       || files.find(file => isVideo(file))
       || files.pop();
 
