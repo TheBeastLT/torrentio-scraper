@@ -39,7 +39,11 @@ export default function sortStreams(streams, config, type) {
     // No need to filter english since it's hard to predict which entries are english
     const streamsWithLanguage = streams.filter(stream => containsLanguage(stream, languages));
     const streamsNoLanguage = streams.filter(stream => !streamsWithLanguage.includes(stream));
-    return _sortStreams(streamsWithLanguage, config, type).concat(_sortStreams(streamsNoLanguage, config, type));
+    const sortedStreams = _sortStreams(streamsWithLanguage, config, type);
+    const shouldExcludeOtherLanguages = config[ShouldExcludeLanguages.key] || false;
+    return shouldExcludeOtherLanguages
+      ? sortedStreams
+      : sortedStreams.concat(_sortStreams(streamsNoLanguage, config, type));
   }
   return _sortStreams(streams, config, type);
 }

@@ -286,6 +286,9 @@ export default function landingTemplate(manifest, config = {}) {
          <select id="iLanguages" class="input" onchange="generateInstallLink()" name="languages[]" multiple="multiple" title="Streams with the selected dubs/subs language will be shown on the top">
            ${languagesOptionsHTML}
          </select>
+
+         <label class="label" for="iExcludeLanguages">Exclude all other languages</label>
+         <input id="iExcludeLanguages" onchange="generateInstallLink()" type="checkbox">
          
          <label class="label" for="iQualityFilter">Exclude qualities/resolutions:</label>
          <select id="iQualityFilter" class="input" onchange="generateInstallLink()" name="qualityFilters[]" multiple="multiple">
@@ -431,6 +434,7 @@ export default function landingTemplate(manifest, config = {}) {
               const qualityFilterValue = $('#iQualityFilter').val().join(',') || '';
               const sortValue = $('#iSort').val() || '';
               const languagesValue = $('#iLanguages').val().join(',') || [];
+              const shouldExcludeLanguages = $('#iExcludeLanguages').is(':checked');
               const limitValue = $('#iLimit').val() || '';
               const sizeFilterValue = $('#iSizeFilter').val() || '';
               
@@ -466,6 +470,7 @@ export default function landingTemplate(manifest, config = {}) {
                     ['${Providers.key}', providers],
                     ['${SortOptions.key}', sort],
                     ['${LanguageOptions.key}', languages],
+                    ['${ShouldExcludeLanguages.key}', shouldExcludeLanguages]
                     ['${QualityFilter.key}', qualityFilters],
                     ['limit', limit],
                     ['${SizeFilter.key}', sizeFilter],

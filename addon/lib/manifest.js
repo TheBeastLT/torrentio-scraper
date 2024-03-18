@@ -11,7 +11,7 @@ export function manifest(config = {}) {
   const overrideManifest = getManifestOverride(config);
   const baseManifest = {
     id: 'com.stremio.torrentio.addon',
-    version: '0.0.14',
+    version: '0.0.15',
     name: getName(overrideManifest, config),
     description: getDescription(config),
     catalogs: getCatalogs(config),
