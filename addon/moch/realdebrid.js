@@ -274,12 +274,12 @@ async function _recreateTorrentId(RD, infoHash, fileIndex, force = false) {
   return newTorrentId;
 }
 
-async function _retryCreateTorrent(RD, infoHash, fileIndex) {
+async function _retryCreateTorrent(RD, infoHash, fileIndex, shouldRetry = false) {
   console.log(`Retry failed download in RealDebrid ${infoHash} [${fileIndex}]...`);
   const newTorrentId = await _recreateTorrentId(RD, infoHash, fileIndex, true);
   const newTorrent = await _getTorrentInfo(RD, newTorrentId);
   return newTorrent && statusReady(newTorrent.status)
-      ? _unrestrictLink(RD, newTorrent, fileIndex)
+      ? _unrestrictLink(RD, newTorrent, fileIndex, false, shouldRetry)
       : StaticResponse.FAILED_DOWNLOAD;
 }
 
@@ -305,7 +305,7 @@ async function _openTorrent(RD, torrentId, pollCounter = 0, pollRate = 2000, max
           : torrent);
 }
 
-async function _unrestrictLink(RD, torrent, fileIndex, isBrowser) {
+async function _unrestrictLink(RD, torrent, fileIndex, isBrowser, shouldRetry = true) {
   const targetFile = torrent.files.find(file => file.id === fileIndex + 1)
       || torrent.files.filter(file => file.selected).sort((a, b) => b.bytes - a.bytes)[0];
   if (!targetFile.selected) {
@@ -319,19 +319,19 @@ async function _unrestrictLink(RD, torrent, fileIndex, isBrowser) {
       ? torrent.links[0]
       : torrent.links[selectedFiles.indexOf(targetFile)];
 
-  if (!fileLink?.length) {
+  if (shouldRetry && !fileLink?.length) {
     console.log(`No RealDebrid links found for ${torrent.hash} [${fileIndex}]`);
     return _retryCreateTorrent(RD, torrent.hash, fileIndex)
   }
 
-  return _unrestrictFileLink(RD, fileLink, torrent, fileIndex, isBrowser);
+  return _unrestrictFileLink(RD, fileLink, torrent, fileIndex, isBrowser, shouldRetry);
 }
 
-async function _unrestrictFileLink(RD, fileLink, torrent, fileIndex, isBrowser) {
+async function _unrestrictFileLink(RD, fileLink, torrent, fileIndex, isBrowser, shouldRetry) {
   return RD.unrestrict.link(fileLink)
       .then(response => {
         if (isArchive(response.download)) {
-          if (torrent.files.filter(file => file.selected).length > 1) {
+          if (shouldRetry && Number.isInteger(fileIndex) && torrent.files.filter(file => file.selected).length > 1) {
             console.log(`Only archive is available, try to download single file for ${torrent.hash} [${fileIndex}]`);
             return _retryCreateTorrent(RD, torrent.hash, fileIndex)
           }
@@ -348,7 +348,7 @@ async function _unrestrictFileLink(RD, fileLink, torrent, fileIndex, isBrowser) 
         return unrestrictedLink;
       })
       .catch(error => {
-        if (error.code === 19) {
+        if (shouldRetry && error.code === 19) {
           console.log(`Retry download as hoster is unavailable for ${torrent.hash} [${fileIndex}]`);
           return _retryCreateTorrent(RD, torrent.hash.toLowerCase(), fileIndex);
         }
