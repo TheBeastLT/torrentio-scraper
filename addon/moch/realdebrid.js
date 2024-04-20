@@ -258,25 +258,25 @@ async function _getTorrentInfo(RD, torrentId) {
   return RD.torrents.info(torrentId);
 }
 
-async function _createTorrentId(RD, infoHash, fileIndex) {
+async function _createTorrentId(RD, infoHash, fileIndex, force = false) {
   const magnetLink = await getMagnetLink(infoHash);
   const addedMagnet = await RD.torrents.addMagnet(magnetLink);
-  const cachedFileIds = await _resolveCachedFileIds(RD, infoHash, fileIndex);
+  const cachedFileIds = !force && await _resolveCachedFileIds(RD, infoHash, fileIndex);
   if (cachedFileIds && !['null', 'undefined'].includes(cachedFileIds)) {
     await RD.torrents.selectFiles(addedMagnet.id, cachedFileIds);
   }
   return addedMagnet.id;
 }
 
-async function _recreateTorrentId(RD, infoHash, fileIndex) {
-  const newTorrentId = await _createTorrentId(RD, infoHash, fileIndex);
+async function _recreateTorrentId(RD, infoHash, fileIndex, force = false) {
+  const newTorrentId = await _createTorrentId(RD, infoHash, fileIndex, force);
   await _selectTorrentFiles(RD, { id: newTorrentId }, fileIndex);
   return newTorrentId;
 }
 
-async function _retryCreateTorrent(RD, infoHash, fileIndex) {
+async function _retryCreateTorrent(RD, infoHash, fileIndex, force = false) {
   console.log(`Retry failed download in RealDebrid ${infoHash} [${fileIndex}]...`);
-  const newTorrentId = await _recreateTorrentId(RD, infoHash, fileIndex);
+  const newTorrentId = await _recreateTorrentId(RD, infoHash, fileIndex, force);
   const newTorrent = await _getTorrentInfo(RD, newTorrentId);
   return newTorrent && statusReady(newTorrent.status)
       ? _unrestrictLink(RD, newTorrent, fileIndex)
@@ -332,7 +332,7 @@ async function _unrestrictFileLink(RD, fileLink, torrent, fileIndex, isBrowser) 
       .then(response => {
         if (isArchive(response.download)) {
           if (torrent.files.filter(file => file.selected).length > 1) {
-            return _retryCreateTorrent(RD, torrent.hash, fileIndex)
+            return _retryCreateTorrent(RD, torrent.hash, fileIndex, true)
           }
           return StaticResponse.FAILED_RAR;
         }
