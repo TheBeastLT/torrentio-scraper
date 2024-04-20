@@ -274,9 +274,9 @@ async function _recreateTorrentId(RD, infoHash, fileIndex, force = false) {
   return newTorrentId;
 }
 
-async function _retryCreateTorrent(RD, infoHash, fileIndex, force = false) {
+async function _retryCreateTorrent(RD, infoHash, fileIndex) {
   console.log(`Retry failed download in RealDebrid ${infoHash} [${fileIndex}]...`);
-  const newTorrentId = await _recreateTorrentId(RD, infoHash, fileIndex, force);
+  const newTorrentId = await _recreateTorrentId(RD, infoHash, fileIndex, true);
   const newTorrent = await _getTorrentInfo(RD, newTorrentId);
   return newTorrent && statusReady(newTorrent.status)
       ? _unrestrictLink(RD, newTorrent, fileIndex)
@@ -332,7 +332,8 @@ async function _unrestrictFileLink(RD, fileLink, torrent, fileIndex, isBrowser) 
       .then(response => {
         if (isArchive(response.download)) {
           if (torrent.files.filter(file => file.selected).length > 1) {
-            return _retryCreateTorrent(RD, torrent.hash, fileIndex, true)
+            console.log(`Only archive is available, try to download single file for ${torrent.hash} [${fileIndex}]`);
+            return _retryCreateTorrent(RD, torrent.hash, fileIndex)
           }
           return StaticResponse.FAILED_RAR;
         }
@@ -348,6 +349,7 @@ async function _unrestrictFileLink(RD, fileLink, torrent, fileIndex, isBrowser) 
       })
       .catch(error => {
         if (error.code === 19) {
+          console.log(`Retry download as hoster is unavailable for ${torrent.hash} [${fileIndex}]`);
           return _retryCreateTorrent(RD, torrent.hash.toLowerCase(), fileIndex);
         }
         return Promise.reject(error);
