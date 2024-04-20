@@ -15,8 +15,10 @@ const KEY = 'realdebrid';
 const DEBRID_DOWNLOADS = 'Downloads';
 
 export async function getCachedStreams(streams, apiKey) {
+  const options = await getDefaultOptions();
+  const RD = new RealDebridClient(apiKey, options);
   const hashes = streams.map(stream => stream.infoHash);
-  const available = await _getInstantAvailable(hashes, apiKey);
+  const available = await _getInstantAvailable(hashes, RD);
   return available && streams
       .reduce((mochStreams, stream) => {
         const cachedEntry = available[stream.infoHash];
@@ -29,14 +31,12 @@ export async function getCachedStreams(streams, apiKey) {
       }, {})
 }
 
-async function _getInstantAvailable(hashes, apiKey, retries = 3, maxChunkSize = 150) {
+async function _getInstantAvailable(hashes, RD, retries = 3, maxChunkSize = 150) {
   const cachedResults = await getCachedAvailabilityResults(hashes);
   const missingHashes = hashes.filter(infoHash => !cachedResults[infoHash]);
   if (!missingHashes.length) {
     return cachedResults
   }
-  const options = await getDefaultOptions();
-  const RD = new RealDebridClient(apiKey, options);
   const hashBatches = chunkArray(missingHashes, maxChunkSize)
   return Promise.all(hashBatches.map(batch => RD.torrents.instantAvailability(batch)
           .then(response => {
@@ -55,10 +55,10 @@ async function _getInstantAvailable(hashes, apiKey, retries = 3, maxChunkSize = 
         if (!error && maxChunkSize !== 1) {
           // sometimes due to large response size RD responds with an empty body. Reduce chunk size to reduce body
           console.log(`Reducing chunk size for availability request: ${hashes[0]}`);
-          return _getInstantAvailable(hashes, apiKey, retries - 1, Math.ceil(maxChunkSize / 10));
+          return _getInstantAvailable(hashes, RD, retries - 1, Math.ceil(maxChunkSize / 10));
         }
         if (retries > 0 && NON_BLACKLIST_ERRORS.some(v => error?.message?.includes(v))) {
-          return _getInstantAvailable(hashes, apiKey, retries - 1);
+          return _getInstantAvailable(hashes, RD, retries - 1);
         }
         console.warn(`Failed RealDebrid cached [${hashes[0]}] torrent availability request:`, error.message);
         return undefined;
@@ -176,9 +176,8 @@ export async function resolve({ ip, isBrowser, apiKey, infoHash, fileIndex }) {
   console.log(`Unrestricting RealDebrid ${infoHash} [${fileIndex}]`);
   const options = await getDefaultOptions(ip);
   const RD = new RealDebridClient(apiKey, options);
-  const cachedFileIds = await _resolveCachedFileIds(infoHash, fileIndex, apiKey);
 
-  return _resolve(RD, infoHash, cachedFileIds, fileIndex, isBrowser)
+  return _resolve(RD, infoHash, fileIndex, isBrowser)
       .catch(error => {
         if (accessDeniedError(error)) {
           console.log(`Access denied to RealDebrid ${infoHash} [${fileIndex}]`);
@@ -192,15 +191,15 @@ export async function resolve({ ip, isBrowser, apiKey, infoHash, fileIndex }) {
       });
 }
 
-async function _resolveCachedFileIds(infoHash, fileIndex, apiKey) {
-  const available = await _getInstantAvailable([infoHash], apiKey);
+async function _resolveCachedFileIds(RD, infoHash, fileIndex) {
+  const available = await _getInstantAvailable([infoHash], RD);
   const cachedEntry = available?.[infoHash];
   const cachedIds = _getCachedFileIds(fileIndex, cachedEntry);
   return cachedIds?.join(',');
 }
 
-async function _resolve(RD, infoHash, cachedFileIds, fileIndex, isBrowser) {
-  const torrentId = await _createOrFindTorrentId(RD, infoHash, cachedFileIds, fileIndex);
+async function _resolve(RD, infoHash, fileIndex, isBrowser) {
+  const torrentId = await _createOrFindTorrentId(RD, infoHash, fileIndex);
   const torrent = await _getTorrentInfo(RD, torrentId);
   if (torrent && statusReady(torrent.status)) {
     return _unrestrictLink(RD, torrent, fileIndex, isBrowser);
@@ -227,9 +226,9 @@ async function _resolve(RD, infoHash, cachedFileIds, fileIndex, isBrowser) {
   return Promise.reject(`Failed RealDebrid adding torrent ${JSON.stringify(torrent)}`);
 }
 
-async function _createOrFindTorrentId(RD, infoHash, cachedFileIds, fileIndex) {
+async function _createOrFindTorrentId(RD, infoHash, fileIndex) {
   return _findTorrent(RD, infoHash, fileIndex)
-      .catch(() => _createTorrentId(RD, infoHash, cachedFileIds));
+      .catch(() => _createTorrentId(RD, infoHash, fileIndex));
 }
 
 async function _findTorrent(RD, infoHash, fileIndex) {
@@ -259,9 +258,10 @@ async function _getTorrentInfo(RD, torrentId) {
   return RD.torrents.info(torrentId);
 }
 
-async function _createTorrentId(RD, infoHash, cachedFileIds) {
+async function _createTorrentId(RD, infoHash, fileIndex) {
   const magnetLink = await getMagnetLink(infoHash);
   const addedMagnet = await RD.torrents.addMagnet(magnetLink);
+  const cachedFileIds = await _resolveCachedFileIds(RD, infoHash, fileIndex);
   if (cachedFileIds && !['null', 'undefined'].includes(cachedFileIds)) {
     await RD.torrents.selectFiles(addedMagnet.id, cachedFileIds);
   }
@@ -269,7 +269,7 @@ async function _createTorrentId(RD, infoHash, cachedFileIds) {
 }
 
 async function _recreateTorrentId(RD, infoHash, fileIndex) {
-  const newTorrentId = await _createTorrentId(RD, infoHash);
+  const newTorrentId = await _createTorrentId(RD, infoHash, fileIndex);
   await _selectTorrentFiles(RD, { id: newTorrentId }, fileIndex);
   return newTorrentId;
 }
@@ -292,6 +292,8 @@ async function _selectTorrentFiles(RD, torrent, fileIndex) {
         .map(file => file.id)
         .join(',');
     return RD.torrents.selectFiles(torrent.id, videoFileIds);
+  } else if (statusReady(torrent.status) || statusDownloading(torrent.status)) {
+    return torrent;
   }
   return Promise.reject('Failed RealDebrid torrent file selection')
 }
