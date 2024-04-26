@@ -10,7 +10,7 @@
   "license": "MIT",
   "dependencies": {
     "@putdotio/api-client": "^8.42.0",
-    "all-debrid-api": "^1.1.0",
+    "all-debrid-api": "^1.2.0",
     "axios": "^1.6.1",
     "bottleneck": "^2.19.5",
     "cache-manager": "^3.4.4",

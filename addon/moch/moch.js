@@ -80,7 +80,7 @@ export async function applyMochs(streams, config) {
         if (isInvalidToken(config[moch.key], moch.key)) {
           return { moch, error: BadTokenError };
         }
-        return moch.instance.getCachedStreams(streams, config[moch.key])
+        return moch.instance.getCachedStreams(streams, config[moch.key], config.ip)
             .then(mochStreams => ({ moch, mochStreams }))
             .catch(rawError => {
               const error = moch.instance.toCommonError(rawError) || rawError;

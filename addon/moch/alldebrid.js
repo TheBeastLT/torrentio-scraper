@@ -8,8 +8,8 @@ import { BadTokenError, AccessDeniedError, sameFilename } from './mochHelper.js'
 const KEY = 'alldebrid';
 const AGENT = 'torrentio';
 
-export async function getCachedStreams(streams, apiKey) {
-  const options = await getDefaultOptions();
+export async function getCachedStreams(streams, apiKey, ip) {
+  const options = await getDefaultOptions(ip);
   const AD = new AllDebridClient(apiKey, options);
   const hashes = streams.map(stream => stream.infoHash);
   const available = await AD.magnet.instant(hashes)
@@ -35,11 +35,11 @@ export async function getCachedStreams(streams, apiKey) {
       }, {})
 }
 
-export async function getCatalog(apiKey, offset = 0) {
+export async function getCatalog(apiKey, offset = 0, ip) {
   if (offset > 0) {
     return [];
   }
-  const options = await getDefaultOptions();
+  const options = await getDefaultOptions(ip);
   const AD = new AllDebridClient(apiKey, options);
   return AD.magnet.status()
       .then(response => response.data.magnets)
@@ -52,8 +52,8 @@ export async function getCatalog(apiKey, offset = 0) {
           })));
 }
 
-export async function getItemMeta(itemId, apiKey) {
-  const options = await getDefaultOptions();
+export async function getItemMeta(itemId, apiKey, ip) {
+  const options = await getDefaultOptions(ip);
   const AD = new AllDebridClient(apiKey, options);
   return AD.magnet.status(itemId)
       .then(response => response.data.magnets)
@@ -160,7 +160,7 @@ async function _unrestrictLink(AD, torrent, encodedFileName, fileIndex) {
 }
 
 async function getDefaultOptions(ip) {
-  return { base_agent: AGENT, timeout: 10000 };
+  return { ip, base_agent: AGENT, timeout: 10000 };
 }
 
 export function toCommonError(error) {
