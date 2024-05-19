@@ -120,6 +120,14 @@ export const QualityFilter = {
       }
     },
     {
+      key: 'dolbyvisionwithhdr',
+      label: 'Dolby Vision + HDR',
+      test(quality) {
+        const hdrProfiles = quality?.split(' ')?.slice(1)?.join() || '';
+        return hdrProfiles.includes('DV') && hdrProfiles.includes('HDR');
+      }
+    },
+    {
       key: '4k',
       label: '4k',
       items: ['4k'],
