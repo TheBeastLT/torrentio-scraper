@@ -128,6 +128,22 @@ export const QualityFilter = {
       }
     },
     {
+      key: 'threed',
+      label: '3D',
+      test(quality) {
+        const hdrProfiles = quality?.split(' ')?.slice(1)?.join() || '';
+        return hdrProfiles.includes('3D');
+      }
+    },
+    {
+      key: 'nonthreed',
+      label: 'Non 3D',
+      test(quality) {
+        const hdrProfiles = quality?.split(' ')?.slice(1)?.join() || '';
+        return !hdrProfiles.includes('3D');
+      }
+    },
+    {
       key: '4k',
       label: '4k',
       items: ['4k'],
