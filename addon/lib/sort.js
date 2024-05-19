@@ -113,12 +113,14 @@ function sortByVideoQuality(streams, nestedSort, limit) {
 function extractQuality(title) {
   const qualityDesc = title.split('\n')[1];
   const resolutionMatch = qualityDesc?.match(/\d+p/);
+  const isHDR = qualityDesc?.match(/HDR|DV/);
+  const withHDRScore = resolution => isHDR ? resolution.replace('0p', '1p') : resolution;
   if (resolutionMatch) {
-    return resolutionMatch[0];
+    return withHDRScore(resolutionMatch[0]);
   } else if (/8k/i.test(qualityDesc)) {
-    return '4320p'
+    return withHDRScore('4320p');
   } else if (/4k|uhd/i.test(qualityDesc)) {
-    return '2060p'
+    return withHDRScore('2060p');
   } else if (CAM_QUALITIES.test(qualityDesc)) {
     return CAM_QUALITIES.label;
   } else if (OTHER_QUALITIES.test(qualityDesc)) {
