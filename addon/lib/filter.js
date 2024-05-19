@@ -86,6 +86,11 @@ export const Providers = {
       foreign: '🇪🇸'
     },
     {
+      key: 'wolfmax4k',
+      label: 'Wolfmax4k',
+      foreign: '🇪🇸'
+    },
+    {
       key: 'cinecalidad',
       label: 'Cinecalidad',
       foreign: '🇲🇽'
