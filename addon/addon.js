@@ -13,7 +13,7 @@ import pLimit from "p-limit";
 
 const CACHE_MAX_AGE = parseInt(process.env.CACHE_MAX_AGE) || 60 * 60; // 1 hour in seconds
 const CACHE_MAX_AGE_EMPTY = 60; // 60 seconds
-const CATALOG_CACHE_MAX_AGE = 20 * 60; // 20 minutes
+const CATALOG_CACHE_MAX_AGE = 0; // 0 minutes
 const STALE_REVALIDATE_AGE = 4 * 60 * 60; // 4 hours
 const STALE_ERROR_AGE = 7 * 24 * 60 * 60; // 7 days
 
