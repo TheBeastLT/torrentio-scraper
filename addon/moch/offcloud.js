@@ -137,7 +137,7 @@ async function _unrestrictLink(OC, infoHash, torrent, cachedEntryInfo, fileIndex
   const targetFileName = decodeURIComponent(cachedEntryInfo);
   const files = await _getFileUrls(OC, torrent)
   const targetFile = files.find(file => sameFilename(targetFileName, file.split('/').pop()))
-      || files.find(file => file.includes(`/${torrent.requestId}/${fileIndex}/`))
+      || files.find(file => file.includes(`/${torrent.requestId}/${fileIndex + 1}/`) && isVideo(file))
       || files.find(file => isVideo(file))
       || files.pop();
 
