@@ -3,7 +3,7 @@ import { Type } from '../lib/types.js';
 import { isVideo, isArchive } from '../lib/extension.js';
 import StaticResponse from './static.js';
 import { getMagnetLink } from '../lib/magnetHelper.js';
-import { BadTokenError, AccessDeniedError, sameFilename } from './mochHelper.js';
+import { BadTokenError, AccessDeniedError, sameFilename, streamFilename } from './mochHelper.js';
 
 const KEY = 'alldebrid';
 const AGENT = 'torrentio';
@@ -23,12 +23,9 @@ export async function getCachedStreams(streams, apiKey, ip) {
   return available?.data?.magnets && streams
       .reduce((mochStreams, stream) => {
         const cachedEntry = available.data.magnets.find(magnet => stream.infoHash === magnet.hash.toLowerCase());
-        const streamTitleParts = stream.title.replace(/\n👤.*/s, '').split('\n');
-        const fileName = streamTitleParts[streamTitleParts.length - 1];
-        const fileIndex = streamTitleParts.length === 2 ? stream.fileIdx : null;
-        const encodedFileName = encodeURIComponent(fileName);
+        const filename = streamFilename(stream);
         mochStreams[`${stream.infoHash}@${stream.fileIdx}`] = {
-          url: `${apiKey}/${stream.infoHash}/${encodedFileName}/${fileIndex}`,
+          url: `${apiKey}/${stream.infoHash}/${filename}/${stream.fileIdx}`,
           cached: cachedEntry?.instant
         }
         return mochStreams;
@@ -144,8 +141,8 @@ async function _unrestrictLink(AD, torrent, encodedFileName, fileIndex) {
   const targetFileName = decodeURIComponent(encodedFileName);
   const videos = torrent.links.filter(link => isVideo(link.filename)).sort((a, b) => b.size - a.size);
   const targetVideo = Number.isInteger(fileIndex)
-      ? videos.find(video => sameFilename(targetFileName, video.filename))
-      : videos[0];
+      && videos.find(video => sameFilename(targetFileName, video.filename))
+      || videos[0];
 
   if (!targetVideo && torrent.links.every(link => isArchive(link.filename))) {
     console.log(`Only AllDebrid archive is available for [${torrent.hash}] ${encodedFileName}`)

@@ -4,7 +4,7 @@ import { Type } from '../lib/types.js';
 import { isVideo, isArchive } from '../lib/extension.js';
 import StaticResponse from './static.js';
 import { getMagnetLink } from '../lib/magnetHelper.js';
-import { BadTokenError, chunkArray, sameFilename } from './mochHelper.js';
+import { BadTokenError, chunkArray, sameFilename, streamFilename } from './mochHelper.js';
 
 const KEY = 'premiumize';
 
@@ -28,12 +28,9 @@ async function _getCachedStreams(PM, apiKey, streams) {
       })
       .then(available => streams
           .reduce((mochStreams, stream, index) => {
-            const streamTitleParts = stream.title.replace(/\n👤.*/s, '').split('\n');
-            const fileName = streamTitleParts[streamTitleParts.length - 1];
-            const fileIndex = streamTitleParts.length === 2 ? stream.fileIdx : null;
-            const encodedFileName = encodeURIComponent(fileName);
+            const filename = streamFilename(stream);
             mochStreams[`${stream.infoHash}@${stream.fileIdx}`] = {
-              url: `${apiKey}/${stream.infoHash}/${encodedFileName}/${fileIndex}`,
+              url: `${apiKey}/${stream.infoHash}/${filename}/${stream.fileIdx}`,
               cached: available?.response[index]
             };
             return mochStreams;
@@ -126,8 +123,8 @@ async function _getCachedLink(PM, infoHash, encodedFileName, fileIndex, ip, isBr
     const targetFileName = decodeURIComponent(encodedFileName);
     const videos = cachedTorrent.content.filter(file => isVideo(file.path)).sort((a, b) => b.size - a.size);
     const targetVideo = Number.isInteger(fileIndex)
-        ? videos.find(video => sameFilename(video.path, targetFileName))
-        : videos[0];
+        && videos.find(video => sameFilename(video.path, targetFileName))
+        || videos[0];
     if (!targetVideo && videos.every(video => isArchive(video.path))) {
       console.log(`Only Premiumize archive is available for [${infoHash}] ${fileIndex}`)
       return StaticResponse.FAILED_RAR;

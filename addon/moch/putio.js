@@ -5,7 +5,7 @@ import StaticResponse from './static.js';
 import { getMagnetLink } from '../lib/magnetHelper.js';
 import { Type } from "../lib/types.js";
 import { decode } from "magnet-uri";
-import { sameFilename } from "./mochHelper.js";
+import { sameFilename, streamFilename } from "./mochHelper.js";
 const PutioAPI = PutioClient.default;
 
 const KEY = 'putio';
@@ -13,12 +13,9 @@ const KEY = 'putio';
 export async function getCachedStreams(streams, apiKey) {
   return streams
       .reduce((mochStreams, stream) => {
-        const streamTitleParts = stream.title.replace(/\n👤.*/s, '').split('\n');
-        const fileName = streamTitleParts[streamTitleParts.length - 1];
-        const fileIndex = streamTitleParts.length === 2 ? stream.fileIdx : null;
-        const encodedFileName = encodeURIComponent(fileName);
+        const filename = streamFilename(stream);
         mochStreams[`${stream.infoHash}@${stream.fileIdx}`] = {
-          url: `${apiKey}/${stream.infoHash}/${encodedFileName}/${fileIndex}`,
+          url: `${apiKey}/${stream.infoHash}/${filename}/${stream.fileIdx}`,
           cached: false
         };
         return mochStreams;
@@ -172,8 +169,8 @@ async function _getTargetFile(Putio, torrent, encodedFileName, fileIndex) {
     // when specific file index is defined search by filename
     // when it's not defined find all videos and take the largest one
     targetFile = Number.isInteger(fileIndex)
-        ? videos.find(video => sameFilename(targetFileName, video.name))
-        : !folders.length && videos[0];
+        && videos.find(video => sameFilename(targetFileName, video.name))
+        || !folders.length && videos[0];
     files = !targetFile
         ? await Promise.all(folders.map(folder => _getFiles(Putio, folder.id)))
             .then(results => results.reduce((a, b) => a.concat(b), []))

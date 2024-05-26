@@ -4,7 +4,7 @@ import { Type } from '../lib/types.js';
 import { isVideo } from '../lib/extension.js';
 import StaticResponse from './static.js';
 import { getMagnetLink } from '../lib/magnetHelper.js';
-import { chunkArray, BadTokenError, sameFilename } from './mochHelper.js';
+import { chunkArray, BadTokenError, sameFilename, streamFilename } from './mochHelper.js';
 
 const KEY = 'offcloud';
 
@@ -25,11 +25,9 @@ export async function getCachedStreams(streams, apiKey) {
   return available && streams
       .reduce((mochStreams, stream) => {
         const isCached = available.includes(stream.infoHash);
-        const streamTitleParts = stream.title.replace(/\n👤.*/s, '').split('\n');
-        const fileName = streamTitleParts[streamTitleParts.length - 1];
-        const encodedFileName = encodeURIComponent(fileName);
+        const fileName = streamFilename(stream);
         mochStreams[`${stream.infoHash}@${stream.fileIdx}`] = {
-          url: `${apiKey}/${stream.infoHash}/${encodedFileName}/${stream.fileIdx}`,
+          url: `${apiKey}/${stream.infoHash}/${fileName}/${stream.fileIdx}`,
           cached: isCached
         };
         return mochStreams;
