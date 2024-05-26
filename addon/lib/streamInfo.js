@@ -42,7 +42,8 @@ export function toStreamInfo(record) {
   );
   const bingeGroupParts = getBingeGroupParts(record, sameInfo, quality, torrentInfo, fileInfo);
   const bingeGroup = joinDetailParts(bingeGroupParts, "torrentio|", "|")
-  const behaviorHints = bingeGroup ? { bingeGroup } : undefined;
+  const filename = Number.isInteger(record.fileIndex) ? record.title.split('/').pop() : undefined;
+  const behaviorHints = bingeGroup || filename ? cleanOutputObject({ bingeGroup, filename }) : undefined;
 
   return cleanOutputObject({
     name: name,
