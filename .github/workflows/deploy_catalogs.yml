@@ -32,10 +32,10 @@ jobs:
       - name: Deploy Docker image
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ secrets.SCRAPER_SSH_HOST }}
-          username: ${{ secrets.SCRAPER_SSH_USERNAME }}
-          port: ${{ secrets.SCRAPER_SSH_PORT }}
-          key: ${{ secrets.SCRAPER_SSH_KEY }}
+          host: ${{ secrets.SSH_HOST_3 }}
+          username: ${{ secrets.SSH_USERNAME }}
+          port: ${{ secrets.SSH_PORT }}
+          key: ${{ secrets.SSH_KEY_3 }}
           script: |
             docker load -i /tmp/docker/torrentio_catalogs_latest.tar
             docker stop torrentio-catalogs
