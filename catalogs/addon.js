@@ -28,9 +28,9 @@ builder.defineCatalogHandler((args) => {
   const genre = args.extra.genre || 'default';
   const catalog = manifest.catalogs.find(c => c.id === args.id);
   const providers = defaultProviders;
-  console.log(`Incoming catalog ${args.id} request with genre=${genre} and skip=${offset}`)
+  console.log(`Incoming catalog ${args.id} request with genre=${genre} and skip=${offset}`);
   if (!catalog) {
-    return Promise.reject(`No catalog found for with id: ${args.id}`)
+    return Promise.reject(`No catalog found for with id: ${args.id}`);
   }
 
   const cacheKey = createCacheKey(catalog.id, providers, genre, offset);
