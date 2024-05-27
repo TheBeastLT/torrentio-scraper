@@ -28,9 +28,9 @@ function _requestMetadata(ids, type) {
 function _getUrl(ids, type) {
   const joinedIds = ids.slice(0, MAX_SIZE).join(',');
   if (type === Type.ANIME) {
-    return `${KITSU_URL}/catalog/${type}/kitsu-anime-list/lastVideosIds=${joinedIds}.json`
+    return `${KITSU_URL}/catalog/${type}/kitsu-anime-list/lastVideosIds=${joinedIds}.json`;
   }
-  return `${CINEMETA_URL}/catalog/${type}/last-videos/lastVideosIds=${joinedIds}.json`
+  return `${CINEMETA_URL}/catalog/${type}/last-videos/lastVideosIds=${joinedIds}.json`;
 }
 
 function _sanitizeMeta(meta) {
