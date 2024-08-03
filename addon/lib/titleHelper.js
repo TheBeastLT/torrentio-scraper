@@ -10,7 +10,7 @@ export function extractSize(title) {
 
 export function extractProvider(title) {
   const match = title.match(/⚙.* ([^ \n]+)/);
-  return match?.[1]?.toLowerCase();
+  return match?.[1];
 }
 
 export function parseSize(sizeText) {

@@ -233,7 +233,7 @@ function filterByProvider(streams, config) {
     return streams;
   }
   return streams.filter(stream => {
-    const provider = extractProvider(stream.title)
+    const provider = extractProvider(stream.title).toLowerCase();
     return providers.includes(provider);
   })
 }
