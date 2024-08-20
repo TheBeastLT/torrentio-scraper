@@ -7,6 +7,7 @@ import { extractProvider } from "./titleHelper.js";
 import { Providers } from "./filter.js";
 
 const TRACKERS_URL = 'https://raw.githubusercontent.com/ngosang/trackerslist/master/trackers_best.txt';
+const TRACKERS_BACKUP = 'https://web.archive.org/web/20240809235027/https://raw.githubusercontent.com/ngosang/trackerslist/master/trackers_best.txt'
 const ANIME_TRACKERS = [
   "http://nyaa.tracker.wf:7777/announce",
   "http://anidex.moe:6969/announce",
@@ -54,14 +55,19 @@ export async function initBestTrackers() {
   console.log('Retrieved best trackers: ', BEST_TRACKERS);
 }
 
-async function getBestTrackers(retry = 2) {
+async function getBestTrackers(retry = 2, altURL="") {
+  if (altURL) console.log(`Attempting to load alternative tracker list from ${altURL}`);
   const options = { timeout: 30000, headers: { 'User-Agent': getRandomUserAgent() } };
-  return axios.get(TRACKERS_URL, options)
+  return axios.get(altURL ? altURL : TRACKERS_URL, options)
       .then(response => response?.data?.trim()?.split('\n\n') || [])
       .catch(error => {
         if (retry === 0) {
-          console.log(`Failed retrieving best trackers: ${error.message}`);
-          throw error;
+          if (altURL != TRACKERS_BACKUP){
+            console.log(`Failed retrieving best trackers: ${error.message}`);
+            return getBestTrackers(retry = 1, altURL=TRACKERS_BACKUP)
+          } else {
+            console.log(`Failed retrieving backup trackers: ${error.message}`);
+          }
         }
         return getBestTrackers(retry - 1);
       });

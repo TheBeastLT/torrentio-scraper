@@ -11,9 +11,22 @@ const SEEDED_SEEDERS = 1;
 const MIN_HEALTHY_COUNT = 50;
 const MAX_UNHEALTHY_COUNT = 5;
 
+// Putting these here for future use... Ideally will give the user
+// the ability to define a custom sort, but needs a front-end first
+const WEIGHTS = {
+  seeders: 1,
+  size: 1,
+  quality: 1,
+  language: 10,
+}; 
+
 export const SortOptions = {
   key: 'sort',
   options: {
+    points: {
+      key: 'points',
+      description: 'Smart (seeders * quality/size)',
+    },
     qualitySeeders: {
       key: 'quality',
       description: 'By quality then seeders'
@@ -52,9 +65,34 @@ function _sortStreams(streams, config, type) {
     return sortedStreams.slice(0, limit);
   } else if (sort === SortOptions.options.size.key) {
     return sortBySize(sortedStreams, limit);
+  } else if (sort === SortOptions.options.points.key) {
+    return sortByPoints(sortedStreams, limit);
   }
   const nestedSort = sort === SortOptions.options.qualitySize.key ? sortBySize : noopSort;
   return sortByVideoQuality(sortedStreams, nestedSort, limit)
+}
+
+function sortByPoints(streams, limit) {
+  return streams
+    .map(stream => {
+      const seedersScore = extractSeeders(stream.title) * WEIGHTS.seeders;
+      const sizeScore = extractSize(stream.title) * WEIGHTS.size;
+      const qualityScore = getQualityScore(stream) * WEIGHTS.quality;
+      const totalScore = seedersScore * (qualityScore/sizeScore); // seeders * (quality/size)
+      return { ...stream, totalScore };
+    })
+    .sort((a, b) => b.totalScore - a.totalScore)
+    .slice(0, limit);
+}
+
+function getQualityScore(stream) {
+  const quality = extractQuality(stream.name);
+  if (/8k/i.test(quality)) return 5; // highest score for 8k
+  if (/4k|uhd/i.test(quality)) return 4;
+  if (quality.match(/\d+p/)) return parseInt(quality, 10) / 1000; // scale resolution to score
+  if (CAM_QUALITIES.test(quality)) return 0.1; // low score for cam quality
+  if (OTHER_QUALITIES.test(quality)) return 0.2;
+  return 1; // fallback score
 }
 
 function noopSort(streams) {
@@ -78,36 +116,36 @@ function sortBySeeders(streams, config, type) {
 
 function sortBySize(streams, limit) {
   return streams
-      .sort((a, b) => {
-        const aSize = extractSize(a.title);
-        const bSize = extractSize(b.title);
-        return bSize - aSize;
+    .sort((a, b) => {
+      const aSize = extractSize(a.title);
+      const bSize = extractSize(b.title);
+      return bSize - aSize;
       }).slice(0, limit);
 }
 
 function sortByVideoQuality(streams, nestedSort, limit) {
   const qualityMap = streams
       .reduce((map, stream) => {
-        const quality = extractQuality(stream.name);
-        map[quality] = (map[quality] || []).concat(stream);
-        return map;
-      }, {});
+    const quality = extractQuality(stream.name);
+    map[quality] = (map[quality] || []).concat(stream);
+    return map;
+  }, {});
   const sortedQualities = Object.keys(qualityMap)
       .sort((a, b) => {
-        const aResolution = a?.match(/\d+p/) && parseInt(a, 10);
-        const bResolution = b?.match(/\d+p/) && parseInt(b, 10);
-        if (aResolution && bResolution) {
+    const aResolution = a?.match(/\d+p/) && parseInt(a, 10);
+    const bResolution = b?.match(/\d+p/) && parseInt(b, 10);
+    if (aResolution && bResolution) {
           return bResolution - aResolution; // higher resolution first;
-        } else if (aResolution) {
+    } else if (aResolution) {
           return -1; // remain higher if resolution is there
-        } else if (bResolution) {
+    } else if (bResolution) {
           return 1; // move downward if other stream has resolution
-        }
+    }
         return a < b ? -1 : b < a ? 1 : 0; // otherwise sort by alphabetic order
-      });
+  });
   return sortedQualities
-      .map(quality => nestedSort(qualityMap[quality]).slice(0, limit))
-      .reduce((a, b) => a.concat(b), []);
+    .map(quality => nestedSort(qualityMap[quality]).slice(0, limit))
+    .reduce((a, b) => a.concat(b), []);
 }
 
 function extractQuality(title) {
