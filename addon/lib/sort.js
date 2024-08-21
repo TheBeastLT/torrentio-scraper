@@ -76,7 +76,7 @@ function sortByPoints(streams, limit) {
   return streams
     .map(stream => {
       const seedersScore = extractSeeders(stream.title) * WEIGHTS.seeders;
-      const sizeScore = extractSize(stream.title) * WEIGHTS.size;
+      const sizeScore = extractSize(stream.title)/1000000000 * WEIGHTS.size; //in GB
       const qualityScore = getQualityScore(stream) * WEIGHTS.quality;
       const totalScore = seedersScore * (qualityScore/sizeScore); // seeders * (quality/size)
       return { ...stream, totalScore };
@@ -87,10 +87,10 @@ function sortByPoints(streams, limit) {
 
 function getQualityScore(stream) {
   const quality = extractQuality(stream.name);
-  if (/8k/i.test(quality)) return 5; // highest score for 8k
-  if (/4k|uhd/i.test(quality)) return 4;
-  if (quality.match(/\d+p/)) return parseInt(quality, 10) / 1000; // scale resolution to score
-  if (CAM_QUALITIES.test(quality)) return 0.1; // low score for cam quality
+  if (quality.match(/8k/i)) return 4; // highest score for 8k
+  if (quality.match(/(2060p|2160p|4k)/i)) return 2.5;
+  if (quality.match(/\d+p/)) return Math.pow(parseInt(quality, 10) / 1000, 2.5); // scale resolution to score, pow to make scores exponential
+  if (CAM_QUALITIES.test(quality)) return 0.1; // low score for CAM quality
   if (OTHER_QUALITIES.test(quality)) return 0.2;
   return 1; // fallback score
 }
