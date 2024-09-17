@@ -142,7 +142,7 @@ export const QualityFilter = {
     },
     {
       key: 'nonthreed',
-      label: 'Non 3D',
+      label: 'Non 3D (DO NOT SELECT IF NOT SURE)',
       test(quality) {
         const hdrProfiles = quality?.split(' ')?.slice(1)?.join() || '';
         return !hdrProfiles.includes('3D');
