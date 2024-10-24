@@ -81,6 +81,11 @@ export const Providers = {
       foreign: '🇫🇷'
     },
     {
+      key: 'ilcorsaronero',
+      label: 'ilCorSaRoNeRo',
+      foreign: '🇮🇹'
+    },
+    {
       key: 'mejortorrent',
       label: 'MejorTorrent',
       foreign: '🇪🇸'
