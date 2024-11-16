@@ -7,20 +7,19 @@
     "start": "node index.js"
   },
   "engines": {
-    "node": "16.x"
+    "node": ">=16.x"
   },
   "author": "TheBeastLT <pauliox@beyond.lt>",
   "license": "MIT",
   "dependencies": {
-    "axios": "^1.6.1",
+    "@keyv/mongo": "^3.0.1",
+    "axios": "^1.7.7",
     "bottleneck": "^2.19.5",
-    "cache-manager": "^3.4.4",
-    "cache-manager-mongodb": "^0.3.0",
-    "moment": "^2.29.4",
-    "pg": "^8.8.0",
+    "moment": "^2.30.1",
+    "pg": "^8.13.1",
     "pg-hstore": "^2.3.4",
     "request-ip": "^3.3.0",
-    "sequelize": "^6.29.0",
+    "sequelize": "^6.37.5",
     "stremio-addon-sdk": "^1.6.10"
   }
 }

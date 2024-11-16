@@ -1,46 +1,28 @@
-import cacheManager from 'cache-manager';
-import mangodbStore from 'cache-manager-mongodb';
+import KeyvMongo from "@keyv/mongo";
 
-const CATALOG_TTL = process.env.STREAM_TTL || 24 * 60 * 60; // 24 hours
+const CATALOG_TTL = 24 * 60 * 60 * 1000; // 24 hours
 
 const MONGO_URI = process.env.MONGODB_URI;
 
-const remoteCache = initiateRemoteCache();
+const remoteCache = MONGO_URI && new KeyvMongo(MONGO_URI, { collection: 'torrentio_catalog_collection' });
 
-function initiateRemoteCache() {
-  if (MONGO_URI) {
-    return cacheManager.caching({
-      store: mangodbStore,
-      uri: MONGO_URI,
-      options: {
-        collection: 'torrentio_catalog_collection',
-        socketTimeoutMS: 120000,
-        useNewUrlParser: true,
-        useUnifiedTopology: false,
-        ttl: CATALOG_TTL
-      },
-      ttl: CATALOG_TTL,
-      ignoreCacheErrors: true
-    });
-  } else {
-    return cacheManager.caching({
-      store: 'memory',
-      ttl: CATALOG_TTL
-    });
-  }
-}
-
-function cacheWrap(cache, key, method, options) {
+async function cacheWrap(cache, key, method, ttl) {
   if (!cache) {
     return method();
   }
-  return cache.wrap(key, method, options);
+  const value = await remoteCache.get(key);
+  if (value !== undefined) {
+    return value;
+  }
+  const result = await method();
+  await remoteCache.set(key, result, ttl);
+  return result;
 }
 
 export function cacheWrapCatalog(key, method) {
-  return cacheWrap(remoteCache, key, method, { ttl: CATALOG_TTL });
+  return cacheWrap(remoteCache, key, method, CATALOG_TTL);
 }
 
 export function cacheWrapIds(key, method) {
-  return cacheWrap(remoteCache, `ids|${key}`, method, { ttl: CATALOG_TTL });
+  return cacheWrap(remoteCache, `ids|${key}`, method, CATALOG_TTL);
 }
