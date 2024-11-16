@@ -10,12 +10,12 @@ async function cacheWrap(cache, key, method, ttl) {
   if (!cache) {
     return method();
   }
-  const value = await remoteCache.get(key);
+  const value = await cache.get(key);
   if (value !== undefined) {
     return value;
   }
   const result = await method();
-  await remoteCache.set(key, result, ttl);
+  await cache.set(key, result, ttl);
   return result;
 }
 
