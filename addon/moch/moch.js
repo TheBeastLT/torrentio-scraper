@@ -235,7 +235,7 @@ function errorStreamResponse(mochKey, error, config) {
   if (error === AccessBlockedError) {
     return {
       name: `Torrentio\n${MochOptions[mochKey].shortName} error`,
-      title: `Access to ${MochOptions[mochKey].name} is blocked!\nCheck you account or email.`,
+      title: `Access to ${MochOptions[mochKey].name} is blocked!\nCheck your account or email.`,
       url: `${config.host}/${StaticResponse.FAILED_ACCESS}`
     };
   }
