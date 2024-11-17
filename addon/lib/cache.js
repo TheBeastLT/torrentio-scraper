@@ -18,7 +18,12 @@ const MESSAGE_VIDEO_URL_TTL = 60 * 1000; // 1 minutes
 const MONGO_URI = process.env.MONGODB_URI;
 
 const memoryCache = new KeyvCacheableMemory({ ttl: MESSAGE_VIDEO_URL_TTL, lruSize: Infinity });
-const remoteCache = MONGO_URI && new KeyvMongo(MONGO_URI, { collection: 'torrentio_addon_collection' });
+const remoteCache = MONGO_URI && new KeyvMongo(MONGO_URI, {
+  collection: 'torrentio_addon_collection',
+  minPoolSize: 50,
+  maxPoolSize: 200,
+  maxConnecting: 5,
+});
 
 async function cacheWrap(cache, key, method, ttl) {
   if (!cache) {
