@@ -3,7 +3,7 @@ import { Type } from '../lib/types.js';
 import { isVideo, isArchive } from '../lib/extension.js';
 import StaticResponse from './static.js';
 import { getMagnetLink } from '../lib/magnetHelper.js';
-import { BadTokenError, AccessDeniedError, sameFilename, streamFilename } from './mochHelper.js';
+import { BadTokenError, AccessDeniedError, sameFilename, streamFilename, AccessBlockedError } from './mochHelper.js';
 
 const KEY = 'alldebrid';
 const AGENT = 'torrentio';
@@ -166,6 +166,9 @@ export function toCommonError(error) {
   }
   if (error && error.code === 'AUTH_USER_BANNED') {
     return AccessDeniedError;
+  }
+  if (error && error.code === 'AUTH_BLOCKED') {
+    return AccessBlockedError;
   }
   return undefined;
 }

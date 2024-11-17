@@ -9,7 +9,7 @@ import * as putio from './putio.js';
 import StaticResponse, { isStaticUrl } from './static.js';
 import { cacheWrapResolvedUrl } from '../lib/cache.js';
 import { timeout } from '../lib/promises.js';
-import { BadTokenError, streamFilename, AccessDeniedError, enrichMeta } from './mochHelper.js';
+import { BadTokenError, streamFilename, AccessDeniedError, enrichMeta, AccessBlockedError } from './mochHelper.js';
 import { createNamedQueue } from "../lib/namedQueue.js";
 
 const RESOLVE_TIMEOUT = 2 * 60 * 1000; // 2 minutes
@@ -229,6 +229,13 @@ function errorStreamResponse(mochKey, error, config) {
     return {
       name: `Torrentio\n${MochOptions[mochKey].shortName} error`,
       title: `Expired/invalid ${MochOptions[mochKey].name} subscription!`,
+      url: `${config.host}/${StaticResponse.FAILED_ACCESS}`
+    };
+  }
+  if (error === AccessBlockedError) {
+    return {
+      name: `Torrentio\n${MochOptions[mochKey].shortName} error`,
+      title: `Access to ${MochOptions[mochKey].name} is blocked!\nCheck you account or email.`,
       url: `${config.host}/${StaticResponse.FAILED_ACCESS}`
     };
   }
