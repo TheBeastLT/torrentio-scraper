@@ -5,20 +5,17 @@ import { delay } from '../lib/promises.js';
 import { cacheAvailabilityResults, getCachedAvailabilityResults } from '../lib/cache.js';
 import StaticResponse from './static.js';
 import { getMagnetLink } from '../lib/magnetHelper.js';
-import { chunkArray, BadTokenError, AccessDeniedError } from './mochHelper.js';
+import { BadTokenError, AccessDeniedError } from './mochHelper.js';
 
 const MIN_SIZE = 5 * 1024 * 1024; // 5 MB
 const CATALOG_MAX_PAGE = 1;
 const CATALOG_PAGE_SIZE = 100;
-const NON_BLACKLIST_ERRORS = ['ESOCKETTIMEDOUT', 'EAI_AGAIN', '504 Gateway Time-out'];
 const KEY = 'realdebrid';
 const DEBRID_DOWNLOADS = 'Downloads';
 
 export async function getCachedStreams(streams, apiKey) {
-  const options = await getDefaultOptions();
-  const RD = new RealDebridClient(apiKey, options);
   const hashes = streams.map(stream => stream.infoHash);
-  const available = await _getInstantAvailable(hashes, RD);
+  const available = await getCachedAvailabilityResults(hashes);
   return available && streams
       .reduce((mochStreams, stream) => {
         const cachedEntry = available[stream.infoHash];
@@ -31,67 +28,13 @@ export async function getCachedStreams(streams, apiKey) {
       }, {})
 }
 
-async function _getInstantAvailable(hashes, RD, retries = 3, maxChunkSize = 150) {
-  const cachedResults = await getCachedAvailabilityResults(hashes);
-  const missingHashes = hashes.filter(infoHash => !cachedResults[infoHash]);
-  if (!missingHashes.length) {
-    return cachedResults
-  }
-  const hashBatches = chunkArray(missingHashes, maxChunkSize)
-  return Promise.all(hashBatches.map(batch => RD.torrents.instantAvailability(batch)
-          .then(response => {
-            if (typeof response !== 'object') {
-              return Promise.reject(new Error('RD returned non JSON response: ' + response));
-            }
-            return processAvailabilityResults(response);
-          })))
-      .then(results => results.reduce((all, result) => Object.assign(all, result), {}))
-      .then(results => cacheAvailabilityResults(results))
-      .then(results => Object.assign(cachedResults, results))
-      .catch(error => {
-        if (toCommonError(error)) {
-          return Promise.reject(error);
-        }
-        if (!error && maxChunkSize !== 1) {
-          // sometimes due to large response size RD responds with an empty body. Reduce chunk size to reduce body
-          console.log(`Reducing chunk size for availability request: ${hashes[0]}`);
-          return _getInstantAvailable(hashes, RD, retries - 1, Math.ceil(maxChunkSize / 10));
-        }
-        if (retries > 0 && NON_BLACKLIST_ERRORS.some(v => error?.message?.includes(v))) {
-          return _getInstantAvailable(hashes, RD, retries - 1);
-        }
-        console.warn(`Failed RealDebrid cached [${hashes[0]}] torrent availability request:`, error.message);
-        return undefined;
-      });
-}
-
-function processAvailabilityResults(availabilityResults) {
-  const processedResults = {};
-  Object.entries(availabilityResults)
-      .forEach(([infoHash, hosterResults]) => processedResults[infoHash] = getCachedIds(hosterResults));
-  return processedResults;
-}
-
-function getCachedIds(hosterResults) {
-  if (!hosterResults || Array.isArray(hosterResults)) {
-    return [];
-  }
-  // if not all cached files are videos, then the torrent will be zipped to a rar
-  return Object.values(hosterResults)
-      .reduce((a, b) => a.concat(b), [])
-      .filter(cached => Object.keys(cached).length && Object.values(cached).every(file => isVideo(file.filename)))
-      .map(cached => Object.keys(cached))
-      .sort((a, b) => b.length - a.length)
-      .filter((cached, index, array) => index === 0 || cached.some(id => !array[0].includes(id)));
-}
-
 function _getCachedFileIds(fileIndex, cachedResults) {
   if (!cachedResults || !Array.isArray(cachedResults)) {
     return [];
   }
 
   const cachedIds = Number.isInteger(fileIndex)
-      ? cachedResults.find(ids => ids.includes(`${fileIndex + 1}`))
+      ? cachedResults.find(ids => Array.isArray(ids) && ids.includes(fileIndex + 1))
       : cachedResults[0];
   return cachedIds || [];
 }
@@ -191,8 +134,8 @@ export async function resolve({ ip, isBrowser, apiKey, infoHash, fileIndex }) {
       });
 }
 
-async function _resolveCachedFileIds(RD, infoHash, fileIndex) {
-  const available = await _getInstantAvailable([infoHash], RD);
+async function _resolveCachedFileIds(infoHash, fileIndex) {
+  const available = await getCachedAvailabilityResults([infoHash]);
   const cachedEntry = available?.[infoHash];
   const cachedIds = _getCachedFileIds(fileIndex, cachedEntry);
   return cachedIds?.join(',');
@@ -261,9 +204,11 @@ async function _getTorrentInfo(RD, torrentId) {
 async function _createTorrentId(RD, infoHash, fileIndex, force = false) {
   const magnetLink = await getMagnetLink(infoHash);
   const addedMagnet = await RD.torrents.addMagnet(magnetLink);
-  const cachedFileIds = !force && await _resolveCachedFileIds(RD, infoHash, fileIndex);
+  const cachedFileIds = !force && await _resolveCachedFileIds(infoHash, fileIndex);
   if (cachedFileIds && !['null', 'undefined'].includes(cachedFileIds)) {
     await RD.torrents.selectFiles(addedMagnet.id, cachedFileIds);
+  } else if (!force) {
+    await _selectTorrentFiles(RD, { id: addedMagnet.id });
   }
   return addedMagnet.id;
 }
@@ -345,6 +290,8 @@ async function _unrestrictFileLink(RD, fileLink, torrent, fileIndex, isBrowser, 
       })
       .then(unrestrictedLink => {
         console.log(`Unrestricted RealDebrid ${torrent.hash} [${fileIndex}] to ${unrestrictedLink}`);
+        const cachedFileIds = torrent.files.filter(file => file.selected).map(file => file.id);
+        cacheAvailabilityResults(torrent.hash.toLowerCase(), cachedFileIds); // no need to await can happen async
         return unrestrictedLink;
       })
       .catch(error => {

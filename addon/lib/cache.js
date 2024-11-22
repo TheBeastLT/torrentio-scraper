@@ -11,7 +11,6 @@ const STREAM_TTL = 24 * 60 * 60 * 1000; // 24 hours
 const STREAM_EMPTY_TTL = 60 * 1000; // 1 minute
 const RESOLVED_URL_TTL = 3 * 60 * 60 * 1000; // 3 hours
 const AVAILABILITY_TTL = 8 * 60 * 60 * 1000; // 8 hours
-const AVAILABILITY_EMPTY_TTL = 30 * 60 * 1000; // 30 minutes
 const MESSAGE_VIDEO_URL_TTL = 60 * 1000; // 1 minutes
 // When the streams are empty we want to cache it for less time in case of timeouts or failures
 
@@ -49,21 +48,24 @@ export function cacheWrapResolvedUrl(id, method) {
   return cacheWrap(remoteCache, `${RESOLVED_URL_KEY_PREFIX}:${id}`, method, ttl);
 }
 
-export function cacheAvailabilityResults(results) {
-  const items = Object.keys(results)
-      .map(infoHash => {
-        const key = `${AVAILABILITY_KEY_PREFIX}:${infoHash}`;
-        const value = results[infoHash];
-        const ttl = value?.length ? AVAILABILITY_TTL : AVAILABILITY_EMPTY_TTL;
-        return {key, value, ttl };
-      });
-  memoryCache.setMany(items);
-  return results;
+export function cacheAvailabilityResults(infoHash, fileIds) {
+  const key = `${AVAILABILITY_KEY_PREFIX}:${infoHash}`;
+  const fileIdsString = fileIds.toString();
+  const containsFileIds = (array) => array.some(ids => ids.toString() === fileIdsString)
+  return remoteCache.get(key)
+      .then(result => {
+        const newResult = result || [];
+        if (!containsFileIds(newResult)) {
+          newResult.push(fileIds);
+          return remoteCache.set(key, newResult, AVAILABILITY_TTL);
+        }
+        return newResult
+      })
 }
 
 export function getCachedAvailabilityResults(infoHashes) {
   const keys = infoHashes.map(infoHash => `${AVAILABILITY_KEY_PREFIX}:${infoHash}`)
-  return memoryCache.getMany(keys)
+  return remoteCache.getMany(keys)
       .then(result => {
         const availabilityResults = {};
         infoHashes.forEach((infoHash, index) => {
