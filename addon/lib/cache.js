@@ -10,7 +10,7 @@ const RESOLVED_URL_KEY_PREFIX = `${GLOBAL_KEY_PREFIX}|resolved`;
 const STREAM_TTL = 24 * 60 * 60 * 1000; // 24 hours
 const STREAM_EMPTY_TTL = 60 * 1000; // 1 minute
 const RESOLVED_URL_TTL = 3 * 60 * 60 * 1000; // 3 hours
-const AVAILABILITY_TTL = 8 * 60 * 60 * 1000; // 8 hours
+const AVAILABILITY_TTL = 24 * 60 * 60 * 1000; // 24 hours
 const MESSAGE_VIDEO_URL_TTL = 60 * 1000; // 1 minutes
 // When the streams are empty we want to cache it for less time in case of timeouts or failures
 
@@ -57,10 +57,23 @@ export function cacheAvailabilityResults(infoHash, fileIds) {
         const newResult = result || [];
         if (!containsFileIds(newResult)) {
           newResult.push(fileIds);
-          return remoteCache.set(key, newResult, AVAILABILITY_TTL);
+          newResult.sort((a, b) => b.length - a.length);
         }
-        return newResult
-      })
+        return remoteCache.set(key, newResult, AVAILABILITY_TTL);
+      });
+}
+
+export function removeAvailabilityResults(infoHash, fileIds) {
+  const key = `${AVAILABILITY_KEY_PREFIX}:${infoHash}`;
+  const fileIdsString = fileIds.toString();
+  return remoteCache.get(key)
+      .then(result => {
+        const storedIndex = result?.findIndex(ids => ids.toString() === fileIdsString);
+        if (storedIndex >= 0) {
+          result.splice(storedIndex, 1);
+          return remoteCache.set(key, result, AVAILABILITY_TTL);
+        }
+      });
 }
 
 export function getCachedAvailabilityResults(infoHashes) {

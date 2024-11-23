@@ -2,7 +2,7 @@ import RealDebridClient from 'real-debrid-api';
 import { Type } from '../lib/types.js';
 import { isVideo, isArchive } from '../lib/extension.js';
 import { delay } from '../lib/promises.js';
-import { cacheAvailabilityResults, getCachedAvailabilityResults } from '../lib/cache.js';
+import { cacheAvailabilityResults, getCachedAvailabilityResults, removeAvailabilityResults } from '../lib/cache.js';
 import StaticResponse from './static.js';
 import { getMagnetLink } from '../lib/magnetHelper.js';
 import { BadTokenError, AccessDeniedError } from './mochHelper.js';
@@ -148,6 +148,8 @@ async function _resolve(RD, infoHash, fileIndex, isBrowser) {
     return _unrestrictLink(RD, torrent, fileIndex, isBrowser);
   } else if (torrent && statusDownloading(torrent.status)) {
     console.log(`Downloading to RealDebrid ${infoHash} [${fileIndex}]...`);
+    const cachedFileIds = torrent.files.filter(file => file.selected).map(file => file.id);
+    removeAvailabilityResults(infoHash, cachedFileIds);
     return StaticResponse.DOWNLOADING;
   } else if (torrent && statusMagnetError(torrent.status)) {
     console.log(`Failed RealDebrid opening torrent ${infoHash} [${fileIndex}] due to magnet error`);
