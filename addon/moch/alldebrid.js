@@ -178,6 +178,6 @@ function statusReady(statusCode) {
 }
 
 function errorExpiredSubscriptionError(error) {
-  return ['AUTH_BAD_APIKEY', 'MUST_BE_PREMIUM', 'MAGNET_MUST_BE_PREMIUM', 'FREE_TRIAL_LIMIT_REACHED', 'AUTH_USER_BANNED']
+  return ['AUTH_BAD_APIKEY', 'AUTH_BLOCKED', 'MUST_BE_PREMIUM', 'MAGNET_MUST_BE_PREMIUM', 'FREE_TRIAL_LIMIT_REACHED', 'AUTH_USER_BANNED']
       .includes(error.code);
 }
