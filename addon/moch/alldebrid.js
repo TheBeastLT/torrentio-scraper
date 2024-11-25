@@ -9,24 +9,12 @@ const KEY = 'alldebrid';
 const AGENT = 'torrentio';
 
 export async function getCachedStreams(streams, apiKey, ip) {
-  const options = await getDefaultOptions(ip);
-  const AD = new AllDebridClient(apiKey, options);
-  const hashes = streams.map(stream => stream.infoHash);
-  const available = await AD.magnet.instant(hashes)
-      .catch(error => {
-        if (toCommonError(error)) {
-          return Promise.reject(error);
-        }
-        console.warn(`Failed AllDebrid cached [${hashes[0]}] torrent availability request:`, error);
-        return undefined;
-      });
-  return available?.data?.magnets && streams
+  return streams
       .reduce((mochStreams, stream) => {
-        const cachedEntry = available.data.magnets.find(magnet => stream.infoHash === magnet.hash.toLowerCase());
         const filename = streamFilename(stream);
         mochStreams[`${stream.infoHash}@${stream.fileIdx}`] = {
           url: `${apiKey}/${stream.infoHash}/${filename}/${stream.fileIdx}`,
-          cached: cachedEntry?.instant
+          cached: false
         }
         return mochStreams;
       }, {})
