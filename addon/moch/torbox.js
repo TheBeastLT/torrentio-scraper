@@ -37,9 +37,6 @@ export async function getCachedStreams(streams, apiKey, ip) {
 }
 
 export async function getCatalog(apiKey, type, config) {
-  if (config.skip > 0) {
-    return [];
-  }
   return getItemList(apiKey, type, null, config.skip)
       .then(items => (items || [])
           .filter(item => statusReady(item))
@@ -93,7 +90,7 @@ async function _resolve(apiKey, infoHash, cachedEntryInfo, fileIndex, ip) {
   }
   const torrent = await _createOrFindTorrent(apiKey, infoHash);
   if (torrent && statusReady(torrent)) {
-    return _unrestrictLink(apiKey, infoHash, torrent, cachedEntryInfo, fileIndex);
+    return _unrestrictLink(apiKey, infoHash, torrent, cachedEntryInfo, fileIndex, ip);
   } else if (torrent && statusDownloading(torrent)) {
     console.log(`Downloading to TorBox ${infoHash} [${fileIndex}]...`);
     return StaticResponse.DOWNLOADING;
@@ -139,7 +136,7 @@ async function _retryCreateTorrent(apiKey, infoHash, cachedEntryInfo, fileIndex)
       : StaticResponse.FAILED_DOWNLOAD;
 }
 
-async function _unrestrictLink(apiKey, infoHash, torrent, cachedEntryInfo, fileIndex) {
+async function _unrestrictLink(apiKey, infoHash, torrent, cachedEntryInfo, fileIndex, ip) {
   const targetFileName = decodeURIComponent(cachedEntryInfo);
   const videos = torrent.files
       .filter(file => isVideo(file.short_name))
@@ -151,7 +148,7 @@ async function _unrestrictLink(apiKey, infoHash, torrent, cachedEntryInfo, fileI
   if (!targetVideo) {
     return Promise.reject(`No TorBox file found for index ${fileIndex} in: ${JSON.stringify(torrent)}`);
   }
-  return getDownloadLink(apiKey, 'torrents', torrent.id, targetVideo.id);
+  return getDownloadLink(apiKey, 'torrents', torrent.id, targetVideo.id, ip);
 }
 
 async function getAvailabilityResponse(apiKey, hashes) {
