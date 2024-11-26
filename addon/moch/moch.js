@@ -164,14 +164,13 @@ function processMochResults(streams, config, results) {
     return errorResults;
   }
 
-  const includeTorrentLinks = options.includeTorrentLinks(config);
   const excludeDownloadLinks = options.excludeDownloadLinks(config);
   const mochResults = results.filter(result => result?.mochStreams);
 
   const cachedStreams = mochResults
       .reduce((resultStreams, mochResult) => populateCachedLinks(resultStreams, mochResult, config), streams);
   const resultStreams = excludeDownloadLinks ? cachedStreams : populateDownloadLinks(cachedStreams, mochResults, config);
-  return includeTorrentLinks ? resultStreams : resultStreams.filter(stream => stream.url);
+  return resultStreams.filter(stream => stream.url);
 }
 
 function populateCachedLinks(streams, mochResult, config) {
