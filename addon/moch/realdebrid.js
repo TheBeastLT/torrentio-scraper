@@ -42,12 +42,13 @@ function _getCachedFileIds(fileIndex, cachedResults) {
 export async function getCatalog(apiKey, catalogId, config) {
   const options = await getDefaultOptions(config.ip);
   const RD = new RealDebridClient(apiKey, options);
-  const downloadsMeta = {
+  const page = Math.floor((config.skip || 0) / 100) + 1;
+  const downloadsMeta = page === 1 ? [{
     id: `${KEY}:${DEBRID_DOWNLOADS}`,
     type: Type.OTHER,
     name: DEBRID_DOWNLOADS
-  };
-  const torrentMetas = await _getAllTorrents(RD)
+  }] : [];
+  const torrentMetas = await _getAllTorrents(RD, page)
       .then(torrents => Array.isArray(torrents) ? torrents : [])
       .then(torrents => torrents
           .filter(torrent => torrent && statusReady(torrent.status))
@@ -56,7 +57,7 @@ export async function getCatalog(apiKey, catalogId, config) {
             type: Type.OTHER,
             name: torrent.filename
           })));
-  return [downloadsMeta].concat(torrentMetas)
+  return downloadsMeta.concat(torrentMetas)
 }
 
 export async function getItemMeta(itemId, apiKey, ip) {
