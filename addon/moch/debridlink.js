@@ -3,31 +3,16 @@ import { Type } from '../lib/types.js';
 import { isVideo, isArchive } from '../lib/extension.js';
 import StaticResponse from './static.js';
 import { getMagnetLink } from '../lib/magnetHelper.js';
-import { chunkArray, BadTokenError } from './mochHelper.js';
+import { BadTokenError } from './mochHelper.js';
 
 const KEY = 'debridlink';
 
 export async function getCachedStreams(streams, apiKey) {
-  const options = await getDefaultOptions();
-  const DL = new DebridLinkClient(apiKey, options);
-  const hashBatches = chunkArray(streams.map(stream => stream.infoHash), 50)
-      .map(batch => batch.join(','));
-  const available = await Promise.all(hashBatches.map(hashes => DL.seedbox.cached(hashes)))
-      .then(results => results.map(result => result.value))
-      .then(results => results.reduce((all, result) => Object.assign(all, result), {}))
-      .catch(error => {
-        if (toCommonError(error)) {
-          return Promise.reject(error);
-        }
-        console.warn('Failed DebridLink cached torrent availability request:', error);
-        return undefined;
-      });
-  return available && streams
+  return streams
       .reduce((mochStreams, stream) => {
-        const cachedEntry = available[stream.infoHash];
         mochStreams[`${stream.infoHash}@${stream.fileIdx}`] = {
           url: `${apiKey}/${stream.infoHash}/null/${stream.fileIdx}`,
-          cached: !!cachedEntry
+          cached: false
         };
         return mochStreams;
       }, {})
