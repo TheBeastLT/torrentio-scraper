@@ -65,10 +65,15 @@ export async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex
 
   return _resolve(AD, infoHash, cachedEntryInfo, fileIndex)
       .catch(error => {
-        if (errorExpiredSubscriptionError(error)) {
+        if (isExpiredSubscriptionError(error)) {
           console.log(`Access denied to AllDebrid ${infoHash} [${fileIndex}]`);
           return StaticResponse.FAILED_ACCESS;
-        } else if (error.code === 'MAGNET_TOO_MANY') {
+        }
+        if (isBlockedAccessError(error)) {
+          console.log(`Access blocked to AllDebrid ${infoHash} [${fileIndex}]`);
+          return StaticResponse.BLOCKED_ACCESS;
+        }
+        if (error.code === 'MAGNET_TOO_MANY') {
           console.log(`Deleting and retrying adding to AllDebrid ${infoHash} [${fileIndex}]...`);
           return _deleteAndRetry(AD, infoHash, cachedEntryInfo, fileIndex);
         }
@@ -177,7 +182,11 @@ function statusReady(statusCode) {
   return statusCode === 4;
 }
 
-function errorExpiredSubscriptionError(error) {
-  return ['AUTH_BAD_APIKEY', 'AUTH_BLOCKED', 'MUST_BE_PREMIUM', 'MAGNET_MUST_BE_PREMIUM', 'FREE_TRIAL_LIMIT_REACHED', 'AUTH_USER_BANNED']
+function isExpiredSubscriptionError(error) {
+  return ['AUTH_BAD_APIKEY', 'MUST_BE_PREMIUM', 'MAGNET_MUST_BE_PREMIUM', 'FREE_TRIAL_LIMIT_REACHED', 'AUTH_USER_BANNED']
       .includes(error.code);
+}
+
+function isBlockedAccessError(error) {
+  return ['AUTH_BLOCKED'].includes(error.code);
 }
