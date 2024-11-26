@@ -22,8 +22,8 @@ export async function getCachedStreams(streams, apiKey) {
       }, {});
 }
 
-export async function getCatalog(apiKey, offset = 0) {
-  if (offset > 0) {
+export async function getCatalog(apiKey, catalogId, config) {
+  if (config.skip > 0) {
     return [];
   }
   const Putio = createPutioAPI(apiKey)

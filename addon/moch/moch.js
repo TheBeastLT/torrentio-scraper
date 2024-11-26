@@ -1,10 +1,10 @@
-import namedQueue from 'named-queue';
 import * as options from './options.js';
 import * as realdebrid from './realdebrid.js';
 import * as premiumize from './premiumize.js';
 import * as alldebrid from './alldebrid.js';
 import * as debridlink from './debridlink.js';
 import * as offcloud from './offcloud.js';
+import * as torbox from './torbox.js';
 import * as putio from './putio.js';
 import StaticResponse, { isStaticUrl } from './static.js';
 import { cacheWrapResolvedUrl } from '../lib/cache.js';
@@ -21,42 +21,49 @@ export const MochOptions = {
     instance: realdebrid,
     name: "RealDebrid",
     shortName: 'RD',
-    catalog: true
+    catalogs: ['']
   },
   premiumize: {
     key: 'premiumize',
     instance: premiumize,
     name: 'Premiumize',
     shortName: 'PM',
-    catalog: true
+    catalogs: ['']
   },
   alldebrid: {
     key: 'alldebrid',
     instance: alldebrid,
     name: 'AllDebrid',
     shortName: 'AD',
-    catalog: true
+    catalogs: ['']
   },
   debridlink: {
     key: 'debridlink',
     instance: debridlink,
     name: 'DebridLink',
     shortName: 'DL',
-    catalog: true
+    catalogs: ['']
   },
   offcloud: {
     key: 'offcloud',
     instance: offcloud,
     name: 'Offcloud',
     shortName: 'OC',
-    catalog: true
+    catalogs: ['']
+  },
+  torbox: {
+    key: 'torbox',
+    instance: torbox,
+    name: 'TorBox',
+    shortName: 'TB',
+    catalogs: [`Torrents`, `Usenet`, `WebDL`]
   },
   putio: {
     key: 'putio',
     instance: putio,
     name: 'Put.io',
     shortName: 'Putio',
-    catalog: true
+    catalogs: ['']
   }
 };
 
@@ -112,7 +119,7 @@ export async function resolve(parameters) {
   return unrestrictQueues[moch.key].wrap(id, method);
 }
 
-export async function getMochCatalog(mochKey, config) {
+export async function getMochCatalog(mochKey, catalogId, config, ) {
   const moch = MochOptions[mochKey];
   if (!moch) {
     return Promise.reject(new Error(`Not a valid moch provider: ${mochKey}`));
@@ -120,7 +127,7 @@ export async function getMochCatalog(mochKey, config) {
   if (isInvalidToken(config[mochKey], mochKey)) {
     return Promise.reject(new Error(`Invalid API key for moch provider: ${mochKey}`));
   }
-  return moch.instance.getCatalog(config[moch.key], config.skip, config.ip)
+  return moch.instance.getCatalog(config[moch.key], catalogId, config)
       .catch(rawError => {
         const commonError = moch.instance.toCommonError(rawError);
         if (commonError === BadTokenError) {

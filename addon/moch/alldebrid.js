@@ -20,11 +20,11 @@ export async function getCachedStreams(streams, apiKey, ip) {
       }, {})
 }
 
-export async function getCatalog(apiKey, offset = 0, ip) {
-  if (offset > 0) {
+export async function getCatalog(apiKey, catalogId, config) {
+  if (config.skip > 0) {
     return [];
   }
-  const options = await getDefaultOptions(ip);
+  const options = await getDefaultOptions(config.ip);
   const AD = new AllDebridClient(apiKey, options);
   return AD.magnet.status()
       .then(response => response.data.magnets)

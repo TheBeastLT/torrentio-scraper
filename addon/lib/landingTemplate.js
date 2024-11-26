@@ -206,6 +206,7 @@ export default function landingTemplate(manifest, config = {}) {
   const allDebridApiKey = config[MochOptions.alldebrid.key] || '';
   const debridLinkApiKey = config[MochOptions.debridlink.key] || '';
   const offcloudApiKey = config[MochOptions.offcloud.key] || '';
+  const torboxApiKey = config[MochOptions.torbox.key] || '';
   const putioKey = config[MochOptions.putio.key] || '';
   const putioClientId = putioKey.replace(/@.*/, '');
   const putioToken = putioKey.replace(/.*@/, '');
@@ -330,6 +331,11 @@ export default function landingTemplate(manifest, config = {}) {
            <input type="text" id="iOffcloud" onchange="generateInstallLink()" class="input">
          </div>
          
+         <div id="dTorbox">
+           <label class="label" for="iTorbox">TorBox API Key (Find it <a href='https://torbox.app/settings' target="_blank">here</a>):</label>
+           <input type="text" id="iTorbox" onchange="generateInstallLink()" class="input">
+         </div>
+         
          <div id="dPutio">
            <label class="label" for="iPutio">Put.io ClientId and Token (Create new OAuth App <a href='https://app.put.io/oauth' target="_blank">here</a>):</label>
            <input type="text" id="iPutioClientId" placeholder="ClientId" onchange="generateInstallLink()" class="input">
@@ -396,6 +402,7 @@ export default function landingTemplate(manifest, config = {}) {
               $('#iAllDebrid').val("${allDebridApiKey}");
               $('#iDebridLink').val("${debridLinkApiKey}");
               $('#iOffcloud').val("${offcloudApiKey}");
+              $('#iTorbox').val("${torboxApiKey}");
               $('#iPutioClientId').val("${putioClientId}");
               $('#iPutioToken').val("${putioToken}");
               $('#iSort').val("${sort}");
@@ -422,6 +429,7 @@ export default function landingTemplate(manifest, config = {}) {
             $('#dAllDebrid').toggle(provider === '${MochOptions.alldebrid.key}');
             $('#dDebridLink').toggle(provider === '${MochOptions.debridlink.key}');
             $('#dOffcloud').toggle(provider === '${MochOptions.offcloud.key}');
+            $('#dTorbox').toggle(provider === '${MochOptions.torbox.key}');
             $('#dPutio').toggle(provider === '${MochOptions.putio.key}');
           }
           
@@ -439,7 +447,8 @@ export default function landingTemplate(manifest, config = {}) {
               const allDebridValue = $('#iAllDebrid').val() || '';
               const debridLinkValue = $('#iDebridLink').val() || ''
               const premiumizeValue = $('#iPremiumize').val() || '';
-              const offcloudValue = $('#iOffcloud').val() || ''
+              const offcloudValue = $('#iOffcloud').val() || '';
+              const torboxValue = $('#iTorbox').val() || '';
               const putioClientIdValue = $('#iPutioClientId').val() || '';
               const putioTokenValue = $('#iPutioToken').val() || '';
               
@@ -457,6 +466,7 @@ export default function landingTemplate(manifest, config = {}) {
               const allDebrid = allDebridValue.length && allDebridValue.trim();
               const debridLink = debridLinkValue.length && debridLinkValue.trim();
               const offcloud = offcloudValue.length && offcloudValue.trim();
+              const torbox = torboxValue.length && torboxValue.trim();
               const putio = putioClientIdValue.length && putioTokenValue.length && putioClientIdValue.trim() + '@' + putioTokenValue.trim();
 
               const preConfigurations = { 
@@ -475,6 +485,7 @@ export default function landingTemplate(manifest, config = {}) {
                     ['${MochOptions.alldebrid.key}', allDebrid],
                     ['${MochOptions.debridlink.key}', debridLink],
                     ['${MochOptions.offcloud.key}', offcloud],
+                    ['${MochOptions.torbox.key}', torbox],
                     ['${MochOptions.putio.key}', putio]
                   ].filter(([_, value]) => value.length).map(([key, value]) => key + '=' + value).join('|');
               configurationValue = Object.entries(preConfigurations)

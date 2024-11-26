@@ -5,7 +5,7 @@ import { getManifestOverride } from './configuration.js';
 import { Type } from './types.js';
 
 const DefaultProviders = Providers.options.map(provider => provider.key);
-const CatalogMochs = Object.values(MochOptions).filter(moch => moch.catalog);
+const MochProviders = Object.values(MochOptions);
 
 export function manifest(config = {}) {
   const overrideManifest = getManifestOverride(config);
@@ -36,7 +36,7 @@ export function dummyManifest() {
 
 function getName(manifest, config) {
   const rootName = manifest?.name || 'Torrentio';
-  const mochSuffix = Object.values(MochOptions)
+  const mochSuffix = MochProviders
       .filter(moch => config[moch.key])
       .map(moch => moch.shortName)
       .join('/');
@@ -48,11 +48,11 @@ function getDescription(config) {
   const enabledProvidersDesc = Providers.options
       .map(provider => `${provider.label}${providersList.includes(provider.key) ? '(+)' : '(-)'}`)
       .join(', ')
-  const enabledMochs = Object.values(MochOptions)
+  const enabledMochs = MochProviders
       .filter(moch => config[moch.key])
       .map(moch => moch.name)
       .join(' & ');
-  const possibleMochs = Object.values(MochOptions).map(moch => moch.name).join('/')
+  const possibleMochs = MochProviders.map(moch => moch.name).join('/')
   const mochsDesc = enabledMochs ? ` and ${enabledMochs} enabled` : '';
   return 'Provides torrent streams from scraped torrent providers.'
       + ` Currently supports ${enabledProvidersDesc}${mochsDesc}.`
@@ -60,14 +60,15 @@ function getDescription(config) {
 }
 
 function getCatalogs(config) {
-  return CatalogMochs
+  return MochProviders
       .filter(moch => showDebridCatalog(config) && config[moch.key])
-      .map(moch => ({
-        id: `torrentio-${moch.key}`,
-        name: `${moch.name}`,
+      .map(moch => moch.catalogs.map(catalogName => ({
+        id: catalogName ? `torrentio-${moch.key}-${catalogName.toLowerCase()}` : `torrentio-${moch.key}`,
+        name: catalogName ? `${moch.name} ${catalogName}` : `${moch.name}`,
         type: 'other',
         extra: [{ name: 'skip' }],
-      }));
+      })))
+      .reduce((a, b) => a.concat(b), []);
 }
 
 function getResources(config) {
@@ -79,9 +80,9 @@ function getResources(config) {
   const metaResource = {
     name: 'meta',
     types: [Type.OTHER],
-    idPrefixes: CatalogMochs.filter(moch => config[moch.key]).map(moch => moch.key)
+    idPrefixes: MochProviders.filter(moch => config[moch.key]).map(moch => moch.key)
   };
-  if (showDebridCatalog(config) && CatalogMochs.filter(moch => config[moch.key]).length) {
+  if (showDebridCatalog(config) && MochProviders.filter(moch => config[moch.key]).length) {
     return [streamResource, metaResource];
   }
   return [streamResource];

@@ -38,9 +38,9 @@ builder.defineStreamHandler((args) => {
 });
 
 builder.defineCatalogHandler((args) => {
-  const mochKey = args.id.replace("torrentio-", '');
+  const [_, mochKey, catalogId] = args.id.split('-');
   console.log(`Incoming catalog ${args.id} request with skip=${args.extra.skip || 0}`)
-  return getMochCatalog(mochKey, args.extra)
+  return getMochCatalog(mochKey, catalogId, args.extra)
       .then(metas => ({
         metas: metas,
         cacheMaxAge: CATALOG_CACHE_MAX_AGE

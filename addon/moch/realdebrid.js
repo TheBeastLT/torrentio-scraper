@@ -39,11 +39,8 @@ function _getCachedFileIds(fileIndex, cachedResults) {
   return cachedIds || [];
 }
 
-export async function getCatalog(apiKey, offset, ip) {
-  if (offset > 0) {
-    return [];
-  }
-  const options = await getDefaultOptions(ip);
+export async function getCatalog(apiKey, catalogId, config) {
+  const options = await getDefaultOptions(config.ip);
   const RD = new RealDebridClient(apiKey, options);
   const downloadsMeta = {
     id: `${KEY}:${DEBRID_DOWNLOADS}`,
