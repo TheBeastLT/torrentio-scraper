@@ -99,6 +99,10 @@ export async function resolve({ ip, isBrowser, apiKey, infoHash, cachedEntryInfo
           console.log(`Access denied to Premiumize ${infoHash} [${fileIndex}]`);
           return StaticResponse.FAILED_ACCESS;
         }
+        if (isLimitExceededError(error)) {
+          console.log(`Limits exceeded in Premiumize ${infoHash} [${fileIndex}]`);
+          return StaticResponse.LIMITS_EXCEEDED;
+        }
         return Promise.reject(`Failed Premiumize adding torrent ${JSON.stringify(error)}`);
       });
 }
