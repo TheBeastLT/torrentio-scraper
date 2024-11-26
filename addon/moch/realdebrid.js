@@ -120,13 +120,17 @@ export async function resolve({ ip, isBrowser, apiKey, infoHash, fileIndex }) {
 
   return _resolve(RD, infoHash, fileIndex, isBrowser)
       .catch(error => {
-        if (accessDeniedError(error)) {
+        if (isAccessDeniedError(error)) {
           console.log(`Access denied to RealDebrid ${infoHash} [${fileIndex}]`);
           return StaticResponse.FAILED_ACCESS;
         }
-        if (infringingFile(error)) {
+        if (isInfringingFileError(error)) {
           console.log(`Infringing file removed from RealDebrid ${infoHash} [${fileIndex}]`);
           return StaticResponse.FAILED_INFRINGEMENT;
+        }
+        if (isLimitExceededError(error)) {
+          console.log(`Limits exceeded in RealDebrid ${infoHash} [${fileIndex}]`);
+          return StaticResponse.LIMITS_EXCEEDED;
         }
         return Promise.reject(`Failed RealDebrid adding torrent ${JSON.stringify(error)}`);
       });
@@ -307,7 +311,7 @@ export function toCommonError(error) {
   if (error && error.code === 8) {
     return BadTokenError;
   }
-  if (error && accessDeniedError(error)) {
+  if (error && isAccessDeniedError(error)) {
     return AccessDeniedError;
   }
   return undefined;
@@ -337,12 +341,16 @@ function statusReady(status) {
   return ['downloaded', 'dead'].includes(status);
 }
 
-function accessDeniedError(error) {
-  return [9, 20].includes(error?.code);
+function isAccessDeniedError(error) {
+  return [8, 9, 20].includes(error?.code);
 }
 
-function infringingFile(error) {
-  return error && error.code === 35;
+function isInfringingFileError(error) {
+  return [35].includes(error?.code);
+}
+
+function isLimitExceededError(error) {
+  return [21, 23, 26, 29, 36].includes(error?.code);
 }
 
 async function getDefaultOptions(ip) {

@@ -95,7 +95,7 @@ export async function resolve({ ip, isBrowser, apiKey, infoHash, cachedEntryInfo
   return _getCachedLink(PM, infoHash, cachedEntryInfo, fileIndex, ip, isBrowser)
       .catch(() => _resolve(PM, infoHash, cachedEntryInfo, fileIndex, ip, isBrowser))
       .catch(error => {
-        if (error?.message?.includes('Account not premium.')) {
+        if (isAccessDeniedError(error)) {
           console.log(`Access denied to Premiumize ${infoHash} [${fileIndex}]`);
           return StaticResponse.FAILED_ACCESS;
         }
@@ -185,6 +185,15 @@ function statusDownloading(status) {
 
 function statusReady(status) {
   return ['finished', 'seeding'].includes(status);
+}
+
+function isAccessDeniedError(error) {
+  return ['Account not premium.'].some(value => error?.message?.includes(value));
+}
+
+function isLimitExceededError(error) {
+  return ['Fair use limit reached!', 'You already have a maximum of 25 active downloads in progress!']
+      .some(value => error?.message?.includes(value));
 }
 
 async function getDefaultOptions(ip) {

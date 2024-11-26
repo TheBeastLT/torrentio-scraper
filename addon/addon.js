@@ -46,7 +46,7 @@ builder.defineCatalogHandler((args) => {
         cacheMaxAge: CATALOG_CACHE_MAX_AGE
       }))
       .catch(error => {
-        return Promise.reject(`Failed retrieving catalog ${args.id}: ${JSON.stringify(error)}`);
+        return Promise.reject(`Failed retrieving catalog ${args.id}: ${JSON.stringify(error.message || error)}`);
       });
 })
 
