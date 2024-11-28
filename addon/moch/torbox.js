@@ -146,6 +146,9 @@ async function _unrestrictLink(apiKey, infoHash, torrent, cachedEntryInfo, fileI
       || videos[0];
 
   if (!targetVideo) {
+    if (torrent.files.every(file => file.zipped)) {
+      return StaticResponse.FAILED_RAR;
+    }
     return Promise.reject(`No TorBox file found for index ${fileIndex} in: ${JSON.stringify(torrent)}`);
   }
   return getDownloadLink(apiKey, 'torrents', torrent.id, targetVideo.id, ip);
@@ -226,11 +229,12 @@ export function toCommonError(data) {
 }
 
 function statusDownloading(torrent) {
-  return ['metaDL', 'downloading', 'stalled', 'processing', 'completed'].includes(torrent?.download_state);
+  return ['metaDL', 'downloading', 'stalled (no seeds)', 'processing', 'checking', 'completed']
+      .includes(torrent?.download_state);
 }
 
 function statusError(torrent) {
-  return !torrent?.active && !torrent?.download_finished;
+  return (!torrent?.active && !torrent?.download_finished) || torrent?.download_state === 'error';
 }
 
 function statusReady(torrent) {

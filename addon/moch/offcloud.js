@@ -168,7 +168,7 @@ export function toCommonError(error) {
 }
 
 function statusDownloading(torrent) {
-  return ['downloading', 'created'].includes(torrent.status);
+  return ['downloading', 'created', 'queued'].includes(torrent.status);
 }
 
 function statusError(torrent) {
