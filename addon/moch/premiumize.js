@@ -196,8 +196,11 @@ function isAccessDeniedError(error) {
 }
 
 function isLimitExceededError(error) {
-  return ['Fair use limit reached!', 'You already have a maximum of 25 active downloads in progress!']
-      .some(value => error?.message?.includes(value));
+  return [
+      'Fair use limit reached!',
+      'You already have a maximum of 25 active downloads in progress!',
+      'Your space is full! Please delete old files first!'
+  ].some(value => error?.message?.includes(value));
 }
 
 async function getDefaultOptions(ip) {
