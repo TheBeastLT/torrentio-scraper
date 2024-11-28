@@ -83,14 +83,17 @@ export async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex
 
 async function _resolve(AD, infoHash, cachedEntryInfo, fileIndex) {
   const torrent = await _createOrFindTorrent(AD, infoHash);
-  if (torrent && statusReady(torrent.statusCode)) {
+  if (statusReady(torrent?.statusCode)) {
     return _unrestrictLink(AD, torrent, cachedEntryInfo, fileIndex);
-  } else if (torrent && statusDownloading(torrent.statusCode)) {
+  } else if (statusDownloading(torrent?.statusCode)) {
     console.log(`Downloading to AllDebrid ${infoHash} [${fileIndex}]...`);
     return StaticResponse.DOWNLOADING;
-  } else if (torrent && statusHandledError(torrent.statusCode)) {
+  } else if (statusHandledError(torrent?.statusCode)) {
     console.log(`Retrying downloading to AllDebrid ${infoHash} [${fileIndex}]...`);
     return _retryCreateTorrent(AD, infoHash, cachedEntryInfo, fileIndex);
+  } else if (statusTooBigEntry(torrent?.statusCode)) {
+    console.log(`Torrent too big for AllDebrid ${infoHash} [${fileIndex}]`);
+    return StaticResponse.FAILED_TOO_BIG;
   }
 
   return Promise.reject(`Failed AllDebrid adding torrent ${JSON.stringify(torrent)}`);
@@ -180,6 +183,10 @@ function statusDownloading(statusCode) {
 
 function statusReady(statusCode) {
   return statusCode === 4;
+}
+
+function statusTooBigEntry(statusCode) {
+  return statusCode === 8;
 }
 
 function isExpiredSubscriptionError(error) {
