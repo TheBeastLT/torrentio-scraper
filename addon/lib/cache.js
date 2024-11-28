@@ -10,7 +10,7 @@ const RESOLVED_URL_KEY_PREFIX = `${GLOBAL_KEY_PREFIX}|resolved`;
 const STREAM_TTL = 24 * 60 * 60 * 1000; // 24 hours
 const STREAM_EMPTY_TTL = 60 * 1000; // 1 minute
 const RESOLVED_URL_TTL = 3 * 60 * 60 * 1000; // 3 hours
-const AVAILABILITY_TTL = 24 * 60 * 60 * 1000; // 24 hours
+const AVAILABILITY_TTL =  5 * 24 * 60 * 60 * 1000; // 5 days
 const MESSAGE_VIDEO_URL_TTL = 60 * 1000; // 1 minutes
 // When the streams are empty we want to cache it for less time in case of timeouts or failures
 
