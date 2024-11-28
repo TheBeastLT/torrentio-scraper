@@ -63,9 +63,17 @@ export async function resolve({ ip, apiKey, infoHash, fileIndex }) {
 
   return _resolve(DL, infoHash, fileIndex)
       .catch(error => {
-        if (errorExpiredSubscriptionError(error)) {
+        if (isAccessDeniedError(error)) {
           console.log(`Access denied to DebridLink ${infoHash} [${fileIndex}]`);
           return StaticResponse.FAILED_ACCESS;
+        }
+        if (isLimitsExceededError(error)) {
+          console.log(`Limits exceeded in DebridLink ${infoHash} [${fileIndex}]`);
+          return StaticResponse.LIMITS_EXCEEDED;
+        }
+        if (isTorrentTooBigError(error)) {
+          console.log(`Torrent too big for DebridLink ${infoHash} [${fileIndex}]`);
+          return StaticResponse.FAILED_TOO_BIG;
         }
         return Promise.reject(`Failed DebridLink adding torrent ${JSON.stringify(error)}`);
       });
@@ -135,6 +143,14 @@ function statusReady(torrent) {
   return torrent.downloadPercent === 100;
 }
 
-function errorExpiredSubscriptionError(error) {
-  return ['freeServerOverload', 'maxTorrent', 'maxLink', 'maxLinkHost', 'maxData', 'maxDataHost'].includes(error);
+function isAccessDeniedError(error) {
+  return ['badToken', 'accountLocked'].includes(error);
+}
+
+function isLimitsExceededError(error) {
+  return ['freeServerOverload', 'maxTorrent', 'maxLink', 'maxLinkHost', 'maxData', 'maxDataHost', 'floodDetected'].includes(error);
+}
+
+function isTorrentTooBigError(error) {
+  return ['torrentTooBig'].includes(error);
 }
