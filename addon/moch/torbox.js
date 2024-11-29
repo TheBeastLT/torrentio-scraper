@@ -214,6 +214,9 @@ async function getItemList(apiKey, type, id = undefined, offset = 0) {
   return axios.get(url, { params, headers, timeout })
       .then(response => {
         if (response.data?.success) {
+          if (Array.isArray(response.data.data)) {
+            response.data.data.sort((a, b) => b.id - a.id);
+          }
           return Promise.resolve(response.data.data);
         }
         return Promise.reject(response.data);
