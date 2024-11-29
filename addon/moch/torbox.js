@@ -151,8 +151,9 @@ async function freeLastActiveTorrent(apiKey) {
   if (seedingTorrent) {
     return controlTorrent(apiKey, seedingTorrent.id, 'stop_seeding');
   }
-  if (torrents.filter(statusDownloading).pop()) {
-    return controlTorrent(apiKey, seedingTorrent.id, 'delete');
+  const downloadingTorrent = torrents.filter(statusDownloading).pop();
+  if (downloadingTorrent) {
+    return controlTorrent(apiKey, downloadingTorrent.id, 'delete');
   }
   return Promise.reject({ detail: 'No torrent to pause found' });
 }
