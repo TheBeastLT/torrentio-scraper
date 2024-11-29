@@ -120,7 +120,7 @@ async function _findTorrent(apiKey, infoHash) {
   return foundTorrent || Promise.reject('No recent torrent found');
 }
 
-async function _createTorrent(apiKey, infoHash) {
+async function _createTorrent(apiKey, infoHash, attempts = 1) {
   const magnetLink = await getMagnetLink(infoHash);
   return createTorrent(apiKey, magnetLink)
       .then(data => {
@@ -129,6 +129,10 @@ async function _createTorrent(apiKey, infoHash) {
         }
         if (data.queued_id) {
           return Promise.resolve({ ...data, download_state: 'metaDL' })
+        }
+        if (data?.error === 'ACTIVE_LIMIT' && attempts > 0) {
+          return freeLastActiveTorrent(apiKey)
+              .then(() => _createTorrent(apiKey, infoHash, attempts - 1));
         }
         return Promise.reject(`Unexpected create data: ${JSON.stringify(data)}`);
       });
@@ -139,6 +143,18 @@ async function _retryCreateTorrent(apiKey, infoHash, cachedEntryInfo, fileIndex)
   return newTorrent && statusReady(newTorrent)
       ? _unrestrictLink(apiKey, infoHash, newTorrent, cachedEntryInfo, fileIndex)
       : StaticResponse.FAILED_DOWNLOAD;
+}
+
+async function freeLastActiveTorrent(apiKey) {
+  const torrents = await getTorrentList(apiKey);
+  const seedingTorrent = torrents.filter(statusSeeding).pop();
+  if (seedingTorrent) {
+    return controlTorrent(apiKey, seedingTorrent.id, 'stop_seeding');
+  }
+  if (torrents.filter(statusDownloading).pop()) {
+    return controlTorrent(apiKey, seedingTorrent.id, 'delete');
+  }
+  return Promise.reject({ detail: 'No torrent to pause found' });
 }
 
 async function _unrestrictLink(apiKey, infoHash, torrent, cachedEntryInfo, fileIndex, ip) {
@@ -261,6 +277,10 @@ function statusError(torrent) {
 
 function statusReady(torrent) {
   return torrent?.download_present;
+}
+
+function statusSeeding(torrent) {
+  return ['seeding', 'uploading (no peers)'].includes(torrent?.download_state);
 }
 
 function isAccessDeniedError(error) {
