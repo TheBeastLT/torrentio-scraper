@@ -132,6 +132,10 @@ export async function resolve({ ip, isBrowser, apiKey, infoHash, fileIndex }) {
           console.log(`Limits exceeded in RealDebrid ${infoHash} [${fileIndex}]`);
           return StaticResponse.LIMITS_EXCEEDED;
         }
+        if (isTorrentTooBigError(error)) {
+          console.log(`Torrent too big for RealDebrid ${infoHash} [${fileIndex}]`);
+          return StaticResponse.FAILED_TOO_BIG;
+        }
         return Promise.reject(`Failed RealDebrid adding torrent ${JSON.stringify(error)}`);
       });
 }
@@ -350,7 +354,11 @@ function isInfringingFileError(error) {
 }
 
 function isLimitExceededError(error) {
-  return [21, 23, 26, 29, 36].includes(error?.code);
+  return [21, 23, 26, 36].includes(error?.code);
+}
+
+function isTorrentTooBigError(error) {
+  return [29].includes(error?.code);
 }
 
 async function getDefaultOptions(ip) {
