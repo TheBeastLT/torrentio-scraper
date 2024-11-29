@@ -100,7 +100,8 @@ async function _resolve(apiKey, infoHash, cachedEntryInfo, fileIndex, ip) {
     return StaticResponse.DOWNLOADING;
   } else if (torrent && statusError(torrent)) {
     console.log(`Retry failed download in TorBox ${infoHash} [${fileIndex}]...`);
-    return _retryCreateTorrent(apiKey, infoHash, cachedEntryInfo, fileIndex);
+    return controlTorrent(apiKey, torrent.id, 'delete')
+        .then(() => _retryCreateTorrent(apiKey, infoHash, cachedEntryInfo, fileIndex));
   }
 
   return Promise.reject(`Failed TorBox adding torrent ${JSON.stringify(torrent)}`);
@@ -178,6 +179,20 @@ async function createTorrent(apiKey, magnetLink){
   const data = new URLSearchParams();
   data.append('magnet', magnetLink);
   data.append('allow_zip', 'false');
+  return axios.post(url, data, { headers, timeout })
+      .then(response => {
+        if (response.data?.success) {
+          return Promise.resolve(response.data.data);
+        }
+        return Promise.reject(response.data);
+      })
+      .catch(error => Promise.reject(error.response?.data || error));
+}
+
+async function controlTorrent(apiKey, torrent_id, operation){
+  const url = `${baseUrl}/api/torrents/controltorrent`
+  const headers = getHeaders(apiKey);
+  const data = { torrent_id, operation}
   return axios.post(url, data, { headers, timeout })
       .then(response => {
         if (response.data?.success) {
