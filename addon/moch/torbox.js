@@ -149,10 +149,12 @@ async function freeLastActiveTorrent(apiKey) {
   const torrents = await getTorrentList(apiKey);
   const seedingTorrent = torrents.filter(statusSeeding).pop();
   if (seedingTorrent) {
+    console.log(`Stopping seeded item in TorBox to make space...`);
     return controlTorrent(apiKey, seedingTorrent.id, 'stop_seeding');
   }
   const downloadingTorrent = torrents.filter(statusDownloading).pop();
   if (downloadingTorrent) {
+    console.log(`Deleting downloading item in TorBox to make space...`);
     return controlTorrent(apiKey, downloadingTorrent.id, 'delete');
   }
   return Promise.reject({ detail: 'No torrent to pause found' });
@@ -268,8 +270,7 @@ export function toCommonError(data) {
 }
 
 function statusDownloading(torrent) {
-  return ['metaDL', 'downloading', 'stalled (no seeds)', 'processing', 'checking', 'completed']
-      .includes(torrent?.download_state);
+  return !statusReady(torrent) && !statusError(torrent);
 }
 
 function statusError(torrent) {
@@ -281,7 +282,7 @@ function statusReady(torrent) {
 }
 
 function statusSeeding(torrent) {
-  return ['seeding', 'uploading (no peers)'].includes(torrent?.download_state);
+  return ['seeding', 'uploading', 'uploading (no peers)'].includes(torrent?.download_state);
 }
 
 function isAccessDeniedError(error) {
