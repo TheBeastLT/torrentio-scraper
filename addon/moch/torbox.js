@@ -62,7 +62,7 @@ export async function getItemMeta(itemId, apiKey) {
           id: `${KEY}:${itemId}:${file.id}`,
           title: file.name,
           released: new Date(createDate.getTime() - index).toISOString(),
-          streams: [{ url: `${apiKey}/null/${itemId}-${file.id}/null` }]
+          streams: [{ url: `${apiKey}/${itemId}-${file.id}/null/null` }]
         }))
   }
 }
@@ -88,8 +88,8 @@ export async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex
 }
 
 async function _resolve(apiKey, infoHash, cachedEntryInfo, fileIndex, ip) {
-  if (infoHash === 'null') {
-    const [type, rootId, fileId] = cachedEntryInfo.split('-');
+  if (infoHash?.includes('-')) {
+    const [type, rootId, fileId] = infoHash.split('-');
     return getDownloadLink(apiKey, type, rootId, fileId, ip);
   }
   const torrent = await _createOrFindTorrent(apiKey, infoHash);
