@@ -28,6 +28,22 @@ export const PreConfigurations = {
 
 const keysToSplit = [Providers.key, LanguageOptions.key, QualityFilter.key, SizeFilter.key, DebridOptions.key];
 const keysToUppercase = [SizeFilter.key];
+const keysParser = {
+  stremthru: (val) => {
+    const config = { url: '' , auth: '' };
+    if (val) {
+      const [auth, url] = decodeURIComponent(val).split('@');
+      config.url = url;
+      if (auth.includes(':')) {
+        const [store, token] = auth.split(':');
+        config.auth = { store, token };
+      } else {
+        config.auth = auth;
+      }
+    }
+    return config;
+  }
+}
 
 export function parseConfiguration(configuration) {
   if (!configuration) {
@@ -48,6 +64,11 @@ export function parseConfiguration(configuration) {
       .filter(key => configValues[key])
       .forEach(key => configValues[key] = configValues[key].split(',')
           .map(value => keysToUppercase.includes(key) ? value.toUpperCase() : value.toLowerCase()))
+  Object.keys(keysParser).forEach((key) => {
+    if (configValues[key]) {
+      configValues[key] = keysParser[key](configValues[key]);
+    }
+  })
   return configValues;
 }
 

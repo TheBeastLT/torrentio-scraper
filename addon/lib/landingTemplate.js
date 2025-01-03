@@ -210,6 +210,7 @@ export default function landingTemplate(manifest, config = {}) {
   const putioKey = config[MochOptions.putio.key] || '';
   const putioClientId = putioKey.replace(/@.*/, '');
   const putioToken = putioKey.replace(/.*@/, '');
+  const stremthru = config[MochOptions.stremthru.key] || { url: '', auth: '' };
 
   const background = manifest.background || 'https://dl.strem.io/addon-background.jpg';
   const logo = manifest.logo || 'https://dl.strem.io/addon-logo.png';
@@ -341,6 +342,12 @@ export default function landingTemplate(manifest, config = {}) {
            <input type="text" id="iPutioClientId" placeholder="ClientId" onchange="generateInstallLink()" class="input">
            <input type="text" id="iPutioToken" placeholder="Token" onchange="generateInstallLink()" class="input">
          </div>
+
+         <div id="dStremThru">
+           <label class="label" for="iStremThru">StremThru URL and Credential:</label>
+           <input type="text" id="iStremThruUrl" placeholder="URL: https://" onchange="generateInstallLink()" class="input">
+           <input type="text" id="iStremThruAuth" placeholder="Credential: 'store_name:store_token' / base64 encoded 'username:password'" onchange="generateInstallLink()" class="input">
+         </div>
          
          <div id="dDebridOptions">
            <label class="label" for="iDebridOptions">Debrid options:</label>
@@ -405,6 +412,8 @@ export default function landingTemplate(manifest, config = {}) {
               $('#iTorbox').val("${torboxApiKey}");
               $('#iPutioClientId').val("${putioClientId}");
               $('#iPutioToken').val("${putioToken}");
+              $('#iStremThruUrl').val("${stremthru.url}");
+              $('#iStremThruAuth').val("${stremthru.auth}");
               $('#iSort').val("${sort}");
               $('#iLimit').val("${limit}");
               $('#iSizeFilter').val("${sizeFilter}");
@@ -431,6 +440,7 @@ export default function landingTemplate(manifest, config = {}) {
             $('#dOffcloud').toggle(provider === '${MochOptions.offcloud.key}');
             $('#dTorbox').toggle(provider === '${MochOptions.torbox.key}');
             $('#dPutio').toggle(provider === '${MochOptions.putio.key}');
+            $('#dStremThru').toggle(provider === '${MochOptions.stremthru.key}');
           }
           
           function generateInstallLink() {
@@ -451,6 +461,8 @@ export default function landingTemplate(manifest, config = {}) {
               const torboxValue = $('#iTorbox').val() || '';
               const putioClientIdValue = $('#iPutioClientId').val() || '';
               const putioTokenValue = $('#iPutioToken').val() || '';
+              const stremthruUrl = $('#iStremThruUrl').val() || '';
+              const stremthruAuth = $('#iStremThruAuth').val() || '';
               
               
               const providers = providersList.length && providersList.length < ${Providers.options.length} && providersValue;
@@ -468,6 +480,9 @@ export default function landingTemplate(manifest, config = {}) {
               const offcloud = offcloudValue.length && offcloudValue.trim();
               const torbox = torboxValue.length && torboxValue.trim();
               const putio = putioClientIdValue.length && putioTokenValue.length && putioClientIdValue.trim() + '@' + putioTokenValue.trim();
+              let stremthru = stremthruUrl.trim().length
+                    ? encodeURIComponent(stremthruAuth.trim() + '@' + stremthruUrl.trim())
+                    : '';
 
               const preConfigurations = { 
                 ${preConfigurationObject}
@@ -486,7 +501,8 @@ export default function landingTemplate(manifest, config = {}) {
                     ['${MochOptions.debridlink.key}', debridLink],
                     ['${MochOptions.offcloud.key}', offcloud],
                     ['${MochOptions.torbox.key}', torbox],
-                    ['${MochOptions.putio.key}', putio]
+                    ['${MochOptions.putio.key}', putio],
+                    ['${MochOptions.stremthru.key}', stremthru]
                   ].filter(([_, value]) => value.length).map(([key, value]) => key + '=' + value).join('|');
               configurationValue = Object.entries(preConfigurations)
                   .filter(([key, value]) => value === configurationValue)
