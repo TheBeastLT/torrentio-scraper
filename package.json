@@ -4,15 +4,21 @@
   "exports": "./index.js",
   "type": "module",
   "scripts": {
-    "start": "node index.js"
+    "start": "tsx index.ts",
+    "dev": "tsx --watch index.ts",
+    "lint": "eslint **/*.ts",
+    "lint:fix": "eslint --fix **/*.ts",
+    "check": "tsc --noEmit",
+    "build": "tsc"
   },
   "engines": {
-    "node": ">=16.x"
+    "node": ">=22.x"
   },
   "author": "TheBeastLT <pauliox@beyond.lt>",
   "license": "MIT",
   "dependencies": {
     "@keyv/mongo": "^3.0.1",
+    "@types/express": "^5.0.0",
     "axios": "^1.7.7",
     "bottleneck": "^2.19.5",
     "moment": "^2.30.1",
@@ -21,5 +27,14 @@
     "request-ip": "^3.3.0",
     "sequelize": "^6.29.0",
     "stremio-addon-sdk": "^1.6.10"
+  },
+  "devDependencies": {
+    "@types/stremio-addon-sdk": "^1.6.11",
+    "eslint": "^9.18.0",
+    "eslint-config-prettier": "^10.0.1",
+    "globals": "^15.14.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.20.0"
   }
 }
