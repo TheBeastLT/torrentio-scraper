@@ -17,7 +17,8 @@ const VIDEO_EXTENSIONS = [
   "wmv",
   "ogm",
   "ts",
-  "m2ts"
+  "mts",
+  "m2ts",
 ];
 const SUBTITLE_EXTENSIONS = [
   "aqt",

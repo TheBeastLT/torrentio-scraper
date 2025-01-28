@@ -22,7 +22,7 @@
     "named-queue": "^2.2.1",
     "offcloud-api": "^1.0.2",
     "p-limit": "^5.0.0",
-    "parse-torrent-title": "git://github.com/TheBeastLT/parse-torrent-title.git#1bc3539e0d7c6686655ede649e6be8da53e4c217",
+    "parse-torrent-title": "git://github.com/TheBeastLT/parse-torrent-title.git#ea4ab26d2394055443f3671a80b4ea8c055c9591",
     "pg": "^8.8.0",
     "premiumize-api": "^1.0.3",
     "prom-client": "^14.2.0",

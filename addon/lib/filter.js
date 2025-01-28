@@ -100,6 +100,11 @@ export const Providers = {
       label: 'Cinecalidad',
       foreign: '🇲🇽'
     },
+    {
+      key: 'besttorrents',
+      label: 'BestTorrents',
+      foreign: '🇵🇱'
+    },
   ]
 };
 export const QualityFilter = {
