@@ -157,19 +157,18 @@ export async function getMochItemMeta(mochKey, itemId, config) {
 }
 
 function processMochResults(streams, config, results) {
-  const errorResults = results
-      .map(result => errorStreamResponse(result.moch.key, result.error, config))
-      .filter(errorResponse => errorResponse);
-  if (errorResults.length) {
-    return errorResults;
-  }
-
   const excludeDownloadLinks = options.excludeDownloadLinks(config);
-  const mochResults = results.filter(result => result?.mochStreams);
-
-  const cachedStreams = mochResults
-      .reduce((resultStreams, mochResult) => populateCachedLinks(resultStreams, mochResult, config), streams);
-  const resultStreams = excludeDownloadLinks ? cachedStreams : populateDownloadLinks(cachedStreams, mochResults, config);
+  const cachedStreams = results.reduce((resultStreams, result) => {
+    if (result?.mochStreams) {
+      return populateCachedLinks(resultStreams, result, config)
+    }
+    const errorStream = errorStreamResponse(result.moch.key, result.error, config);
+    if (errorStream) {
+      resultStreams.push(errorStream);
+    }
+    return resultStreams;
+  }, streams);
+  const resultStreams = excludeDownloadLinks ? cachedStreams : populateDownloadLinks(cachedStreams, results, config);
   return resultStreams.filter(stream => stream.url);
 }
 
@@ -188,7 +187,8 @@ function populateCachedLinks(streams, mochResult, config) {
   });
 }
 
-function populateDownloadLinks(streams, mochResults, config) {
+function populateDownloadLinks(streams, results, config) {
+  const mochResults = results.filter(result => result.mochStreams);
   const torrentStreams = streams.filter(stream => stream.infoHash);
   const seededStreams = streams.filter(stream => !stream.title.includes('👤 0'));
   torrentStreams.forEach(stream => mochResults.forEach(mochResult => {
