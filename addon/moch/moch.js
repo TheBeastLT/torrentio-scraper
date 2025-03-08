@@ -3,6 +3,7 @@ import * as realdebrid from './realdebrid.js';
 import * as premiumize from './premiumize.js';
 import * as alldebrid from './alldebrid.js';
 import * as debridlink from './debridlink.js';
+import * as easydebrid from './easydebrid.js';
 import * as offcloud from './offcloud.js';
 import * as torbox from './torbox.js';
 import * as putio from './putio.js';
@@ -43,6 +44,14 @@ export const MochOptions = {
     name: 'DebridLink',
     shortName: 'DL',
     catalogs: ['']
+  },
+  easydebrid: {
+    key: 'easydebrid',
+    instance: easydebrid,
+    name: 'EasyDebrid',
+    shortName: 'ED',
+    catalogs: [],
+    noDownloads: true
   },
   offcloud: {
     key: 'offcloud',
@@ -192,9 +201,10 @@ function populateDownloadLinks(streams, results, config) {
   const torrentStreams = streams.filter(stream => stream.infoHash);
   const seededStreams = streams.filter(stream => !stream.title.includes('👤 0'));
   torrentStreams.forEach(stream => mochResults.forEach(mochResult => {
+    const supportDownloads = !mochResult.moch.noDownloads;
     const cachedEntry = mochResult.mochStreams[`${stream.infoHash}@${stream.fileIdx}`];
     const isCached = cachedEntry?.cached;
-    if (!isCached && isHealthyStreamForDebrid(seededStreams, stream)) {
+    if (supportDownloads && !isCached && isHealthyStreamForDebrid(seededStreams, stream)) {
       streams.push({
         name: `[${mochResult.moch.shortName} download] ${stream.name}`,
         title: stream.title,

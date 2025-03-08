@@ -205,6 +205,7 @@ export default function landingTemplate(manifest, config = {}) {
   const premiumizeApiKey = config[MochOptions.premiumize.key] || '';
   const allDebridApiKey = config[MochOptions.alldebrid.key] || '';
   const debridLinkApiKey = config[MochOptions.debridlink.key] || '';
+  const easyDebridApiKey = config[MochOptions.easydebrid.key] || '';
   const offcloudApiKey = config[MochOptions.offcloud.key] || '';
   const torboxApiKey = config[MochOptions.torbox.key] || '';
   const putioKey = config[MochOptions.putio.key] || '';
@@ -326,6 +327,11 @@ export default function landingTemplate(manifest, config = {}) {
            <input type="text" id="iDebridLink" onchange="generateInstallLink()" class="input">
          </div>
          
+         <div id="dEasyDebrid">
+           <label class="label" for="iEasyDebrid">EasyDebrid API Key:</label>
+           <input type="text" id="iEasyDebrid" onchange="generateInstallLink()" class="input">
+         </div>
+         
          <div id="dOffcloud">
            <label class="label" for="iOffcloud">Offcloud API Key (Find it <a href='https://offcloud.com/#/account' target="_blank">here</a>):</label>
            <input type="text" id="iOffcloud" onchange="generateInstallLink()" class="input">
@@ -401,6 +407,7 @@ export default function landingTemplate(manifest, config = {}) {
               $('#iPremiumize').val("${premiumizeApiKey}");
               $('#iAllDebrid').val("${allDebridApiKey}");
               $('#iDebridLink').val("${debridLinkApiKey}");
+               $('#iEasyDebrid').val("${easyDebridApiKey}");
               $('#iOffcloud').val("${offcloudApiKey}");
               $('#iTorbox').val("${torboxApiKey}");
               $('#iPutioClientId').val("${putioClientId}");
@@ -428,6 +435,7 @@ export default function landingTemplate(manifest, config = {}) {
             $('#dPremiumize').toggle(provider === '${MochOptions.premiumize.key}');
             $('#dAllDebrid').toggle(provider === '${MochOptions.alldebrid.key}');
             $('#dDebridLink').toggle(provider === '${MochOptions.debridlink.key}');
+            $('#dEasyDebrid').toggle(provider === '${MochOptions.easydebrid.key}');
             $('#dOffcloud').toggle(provider === '${MochOptions.offcloud.key}');
             $('#dTorbox').toggle(provider === '${MochOptions.torbox.key}');
             $('#dPutio').toggle(provider === '${MochOptions.putio.key}');
@@ -447,6 +455,7 @@ export default function landingTemplate(manifest, config = {}) {
               const allDebridValue = $('#iAllDebrid').val() || '';
               const debridLinkValue = $('#iDebridLink').val() || ''
               const premiumizeValue = $('#iPremiumize').val() || '';
+              const easyDebridValue = $('#iEasyDebrid').val() || '';
               const offcloudValue = $('#iOffcloud').val() || '';
               const torboxValue = $('#iTorbox').val() || '';
               const putioClientIdValue = $('#iPutioClientId').val() || '';
@@ -465,6 +474,7 @@ export default function landingTemplate(manifest, config = {}) {
               const premiumize = premiumizeValue.length && premiumizeValue.trim();
               const allDebrid = allDebridValue.length && allDebridValue.trim();
               const debridLink = debridLinkValue.length && debridLinkValue.trim();
+              const easyDebrid = easyDebridValue.length && easyDebridValue.trim();
               const offcloud = offcloudValue.length && offcloudValue.trim();
               const torbox = torboxValue.length && torboxValue.trim();
               const putio = putioClientIdValue.length && putioTokenValue.length && putioClientIdValue.trim() + '@' + putioTokenValue.trim();
@@ -484,6 +494,7 @@ export default function landingTemplate(manifest, config = {}) {
                     ['${MochOptions.premiumize.key}', premiumize],
                     ['${MochOptions.alldebrid.key}', allDebrid],
                     ['${MochOptions.debridlink.key}', debridLink],
+                    ['${MochOptions.easydebrid.key}', easyDebrid],
                     ['${MochOptions.offcloud.key}', offcloud],
                     ['${MochOptions.torbox.key}', torbox],
                     ['${MochOptions.putio.key}', putio]

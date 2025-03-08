@@ -74,7 +74,7 @@ function getCatalogs(config) {
 function getResources(config) {
   const streamResource = {
     name: 'stream',
-    types: [Type.MOVIE, Type.SERIES],
+    types: [Type.MOVIE, Type.SERIES, Type.ANIME],
     idPrefixes: ['tt', 'kitsu']
   };
   const metaResource = {
