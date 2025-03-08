@@ -11,14 +11,14 @@ export function manifest(config = {}) {
   const overrideManifest = getManifestOverride(config);
   const baseManifest = {
     id: 'com.stremio.torrentio.addon',
-    version: '0.0.14',
+    version: '0.0.15',
     name: getName(overrideManifest, config),
     description: getDescription(config),
     catalogs: getCatalogs(config),
     resources: getResources(config),
     types: [Type.MOVIE, Type.SERIES, Type.ANIME, Type.OTHER],
-    background: `https://i.ibb.co/VtSfFP9/t8wVwcg.jpg`,
-    logo: `https://i.ibb.co/w4BnkC9/GwxAcDV.png`,
+    background: `${config.host}/images/background_v1.jpg`,
+    logo: `${config.host}/images/logo_v1.png`,
     behaviorHints: {
       configurable: true,
       configurationRequired: false

@@ -30,14 +30,16 @@ router.get(`/:preconfiguration(${Object.keys(PreConfigurations).join('|')})`, (r
 });
 
 router.get('/:configuration?/configure', (req, res) => {
-  const configValues = parseConfiguration(req.params.configuration || '');
+  const host = `${req.protocol}://${req.headers.host}`;
+  const configValues = { ...parseConfiguration(req.params.configuration || ''), host };
   const landingHTML = landingTemplate(manifest(configValues), configValues);
   res.setHeader('content-type', 'text/html');
   res.end(landingHTML);
 });
 
 router.get('/:configuration?/manifest.json', (req, res) => {
-  const configValues = parseConfiguration(req.params.configuration || '');
+  const host = `${req.protocol}://${req.headers.host}`;
+  const configValues = { ...parseConfiguration(req.params.configuration || ''), host };
   const manifestBuf = JSON.stringify(manifest(configValues));
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
   res.end(manifestBuf)
