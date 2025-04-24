@@ -3,7 +3,7 @@ import { Type } from '../lib/types.js';
 import { isVideo } from '../lib/extension.js';
 import StaticResponse from './static.js';
 import { getMagnetLink } from '../lib/magnetHelper.js';
-import { chunkArray, BadTokenError, sameFilename, streamFilename } from './mochHelper.js';
+import { chunkArray, sameFilename, streamFilename, BadTokenError, AccessDeniedError } from './mochHelper.js';
 
 const KEY = 'torbox';
 const timeout = 30000;
@@ -21,7 +21,7 @@ export async function getCachedStreams(streams, apiKey, ip) {
           return Promise.reject(error);
         }
         const message = error.message || error;
-        console.warn('Failed TorBox cached torrent availability request:', message);
+        console.log('Failed TorBox cached torrent availability request: ', JSON.stringify(message));
         return undefined;
       });
   return available && streams
@@ -265,6 +265,9 @@ export function toCommonError(data) {
   const error = data?.response?.data || data;
   if (['AUTH_ERROR', 'BAD_TOKEN'].includes(error?.error)) {
     return BadTokenError;
+  }
+  if (isAccessDeniedError(error)) {
+    return AccessDeniedError;
   }
   return undefined;
 }
