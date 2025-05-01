@@ -9,7 +9,7 @@ const KEY = 'torbox';
 const timeout = 30000;
 const baseUrl = 'https://api.torbox.app/v1'
 
-export async function getCachedStreams(streams, apiKey, ip) {
+export async function getCachedStreams(streams, apiKey) {
   const hashBatches = chunkArray(streams.map(stream => stream.infoHash), 150)
       .map(hashes => getAvailabilityResponse(apiKey, hashes));
   const available = await Promise.all(hashBatches)
@@ -17,11 +17,10 @@ export async function getCachedStreams(streams, apiKey, ip) {
           .map(data => data.map(entry => entry.hash))
           .reduce((all, result) => all.concat(result), []))
       .catch(error => {
+        console.log('Failed TorBox cached torrent availability request: ', JSON.stringify(error.message || error));
         if (toCommonError(error)) {
           return Promise.reject(error);
         }
-        const message = error.message || error;
-        console.log('Failed TorBox cached torrent availability request: ', JSON.stringify(message));
         return undefined;
       });
   return available && streams
@@ -263,7 +262,7 @@ function getHeaders(apiKey) {
 
 export function toCommonError(data) {
   const error = data?.response?.data || data;
-  if (['AUTH_ERROR', 'BAD_TOKEN'].includes(error?.error)) {
+  if (['BAD_TOKEN'].includes(error?.error)) {
     return BadTokenError;
   }
   if (isAccessDeniedError(error)) {
