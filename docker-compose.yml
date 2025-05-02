@@ -1,0 +1,100 @@
+services:
+  torrentio:
+    depends_on:
+      torrentio-postgres:
+        condition: service_healthy
+      torrentio-mongodb:
+        condition: service_healthy
+    build:
+      context: ${ROOT_DIR:-.}
+      dockerfile: Dockerfile
+    image: ghcr.io/th3w1zard1/torrentio-addon:latest
+    container_name: torrentio
+    hostname: torrentio
+    networks:
+      - publicnet
+    ports:
+      - "${TORRENTIO_PORT:-7000}:7000"
+    volumes:
+      - ${CONFIGS_PATH:-./config}/stremio/addons/torrentio:/app/config
+    environment:
+      TZ: ${TZ:-America/Chicago}
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
+      UMASK: ${UMASK:-002}
+      DATABASE_URI: postgres://postgres:postgres@torrentio-postgres/torrentio
+      MONGODB_URI: mongodb://admin:password@torrentio-mongodb/admin
+      PORT: ${TORRENTIO_PORT:-7000}
+      CACHE_MAX_AGE: ${TORRENTIO_CACHE_MAX_AGE:-3600}
+      METRICS_USER: ${TORRENTIO_METRICS_USER:-admin}
+      METRICS_PASSWORD: ${TORRENTIO_METRICS_PASSWORD:-password}
+    labels:
+      traefik.enable: "true"
+      deunhealth.restart.on.unhealthy: "true"
+      traefik.http.routers.torrentio.rule: Host(`torrentio.${DOMAIN}`)
+      traefik.http.services.torrentio.loadbalancer.server.port: $${PORT:-7000}
+      homepage.group: Media
+      homepage.name: Torrentio
+      homepage.icon: torrentio.png
+      homepage.href: https://torrentio.${DOMAIN}/
+      homepage.description: Torrentio is a stremio addon for torrenting.
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:$${PORT:-7000} || exit 1"]
+      interval: ${TORRENTIO_HEALTHCHECK_INTERVAL:-30s}
+      timeout: ${TORRENTIO_HEALTHCHECK_TIMEOUT:-10s}
+      retries: ${TORRENTIO_HEALTHCHECK_RETRIES:-3}
+    restart: always
+
+  torrentio-mongodb:
+    image: mongo:latest
+    container_name: torrentio-mongodb
+    hostname: torrentio-mongodb
+    networks:
+      - publicnet
+    ports:
+      - "${TORRENTIO_MONGODB_PORT:-27017}:27017"
+    environment:
+      TZ: ${TZ:-America/Chicago}
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
+      UMASK: ${UMASK:-002}
+      MONGO_INITDB_ROOT_USERNAME: ${TORRENTIO_MONGODB_ROOT_USERNAME:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${TORRENTIO_MONGODB_ROOT_PASSWORD:-password}
+    healthcheck:
+      test: ["CMD-SHELL", 'mongosh --eval "db.runCommand(\"ping\").ok" localhost:27017 --username $${MONGO_INITDB_ROOT_USERNAME} --password $${MONGO_INITDB_ROOT_PASSWORD} || exit 1']
+      interval: ${TORRENTIO_MONGODB_HEALTHCHECK_INTERVAL:-30s}
+      timeout: ${TORRENTIO_MONGODB_HEALTHCHECK_TIMEOUT:-10s}
+      retries: ${TORRENTIO_MONGODB_HEALTHCHECK_RETRIES:-5}
+    restart: always
+
+  torrentio-postgres:
+    image: postgres:17.4
+    container_name: torrentio-postgres
+    hostname: torrentio-postgres
+    networks:
+      - publicnet
+    ports:
+      - "${TORRENTIO_POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - ${CONFIG_PATH:-./configs}/stremio/addons/torrentio/pgdata:${TORRENTIO_PGDATA:-/var/lib/postgresql/data/pgdata}
+    environment:
+      TZ: ${TZ:-America/Chicago}
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
+      UMASK: ${UMASK:-002}
+      PGDATA: ${TORRENTIO_PGDATA:-/var/lib/postgresql/data/pgdata}
+      POSTGRES_USER: ${TORRENTIO_DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${TORRENTIO_DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${TORRENTIO_DB_NAME:-torrentio}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB} > /dev/null 2>&1 || exit 1"]
+      interval: ${TORRENTIO_DB_HEALTHCHECK_INTERVAL:-30s}
+      timeout: ${TORRENTIO_DB_HEALTHCHECK_TIMEOUT:-10s}
+      retries: ${TORRENTIO_DB_HEALTHCHECK_RETRIES:-5}
+    restart: always
+
+networks:
+  publicnet:
+    driver: bridge
+    name: publicnet
+    attachable: true
