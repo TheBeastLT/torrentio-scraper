@@ -21,23 +21,34 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
+      - name: Set credential variables
+        id: credentials
+        run: |
+          echo "DOCKER_USERNAME=$(echo ${DOCKER_USERNAME:-${{ secrets.DOCKER_USERNAME }} })" >> $GITHUB_OUTPUT
+          echo "DOCKER_PASSWORD=$(echo ${DOCKER_PASSWORD:-${{ secrets.DOCKER_PASSWORD }}:-${{ secrets.DOCKER_TOKEN }}:-${{ env.DOCKER_TOKEN }} })" >> $GITHUB_OUTPUT
+          if [ -n "$(echo ${DOCKER_USERNAME:-${{ secrets.DOCKER_USERNAME }} })" ]; then 
+            echo "HAS_DOCKER_CREDS=true" >> $GITHUB_OUTPUT
+          else
+            echo "HAS_DOCKER_CREDS=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Docker metadata
         id: meta
         uses: docker/metadata-action@v4
         with:
           images: |
-            ${{ secrets.DOCKER_USERNAME || env.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}
+            ${{ steps.credentials.outputs.DOCKER_USERNAME != '' && format('{0}/{1}', steps.credentials.outputs.DOCKER_USERNAME, env.IMAGE_NAME) || '' }}
             ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
           tags: |
             type=raw,value=latest
             type=sha,format=short
 
       - name: Login to DockerHub
-        if: ${{ secrets.DOCKER_USERNAME || env.DOCKER_USERNAME }}
+        if: steps.credentials.outputs.HAS_DOCKER_CREDS == 'true'
         uses: docker/login-action@v2
         with:
-          username: ${{ secrets.DOCKER_USERNAME || env.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD || env.DOCKER_PASSWORD || secrets.DOCKER_TOKEN || env.DOCKER_TOKEN }}
+          username: ${{ steps.credentials.outputs.DOCKER_USERNAME }}
+          password: ${{ steps.credentials.outputs.DOCKER_PASSWORD }}
         continue-on-error: true
 
       - name: Login to GitHub Container Registry
@@ -45,7 +56,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN || github.token }}
+          password: ${{ github.token }}
         continue-on-error: true
 
       - name: Build and push
