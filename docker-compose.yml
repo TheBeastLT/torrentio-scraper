@@ -5,10 +5,11 @@ services:
         condition: service_healthy
       torrentio-mongodb:
         condition: service_healthy
+    # maybe some day...
+#    image: ghcr.io/TheBeastLT/torrentio-addon:latest
     build:
       context: ${ROOT_DIR:-.}
       dockerfile: Dockerfile
-    image: ghcr.io/th3w1zard1/torrentio-addon:latest
     container_name: torrentio
     hostname: torrentio
     networks:
