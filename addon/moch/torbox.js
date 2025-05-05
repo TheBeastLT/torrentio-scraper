@@ -98,7 +98,7 @@ async function _resolve(apiKey, infoHash, cachedEntryInfo, fileIndex, ip) {
     console.log(`Downloading to TorBox ${infoHash} [${fileIndex}]...`);
     return StaticResponse.DOWNLOADING;
   } else if (torrent && statusError(torrent)) {
-    console.log(`Retry failed download in TorBox ${infoHash} [${fileIndex}]...`);
+    console.log(`Retry failed download in TorBox ${JSON.stringify(torrent)}...`);
     return controlTorrent(apiKey, torrent.id, 'delete')
         .then(() => _retryCreateTorrent(apiKey, infoHash, cachedEntryInfo, fileIndex));
   }
@@ -225,10 +225,10 @@ async function getTorrentList(apiKey, id = undefined, offset = 0) {
   return getItemList(apiKey, 'torrents', id, offset);
 }
 
-async function getItemList(apiKey, type, id = undefined, offset = 0) {
+async function getItemList(apiKey, type, id = undefined, offset = 0, bypass_cache = true) {
   const url = `${baseUrl}/api/${type}/mylist`;
   const headers = getHeaders(apiKey);
-  const params = { id, offset };
+  const params = { id, offset, bypass_cache };
   return axios.get(url, { params, headers, timeout })
       .then(response => {
         if (response.data?.success) {
@@ -244,8 +244,9 @@ async function getItemList(apiKey, type, id = undefined, offset = 0) {
 
 async function getDownloadLink(token, type, rootId, file_id, user_ip) {
   const url = `${baseUrl}/api/${type}/requestdl`;
+  const headers = getHeaders(token);
   const params = { token, torrent_id: rootId, usenet_id: rootId, web_id: rootId, file_id, user_ip };
-  return axios.get(url, { params, timeout })
+  return axios.get(url, { params, headers, timeout })
       .then(response => {
         if (response.data?.success) {
           console.log(`Unrestricted TorBox ${type} [${rootId}] to ${response.data.data}`);
@@ -257,7 +258,7 @@ async function getDownloadLink(token, type, rootId, file_id, user_ip) {
 }
 
 function getHeaders(apiKey) {
-  return { Authorization: `Bearer ${apiKey}` };
+  return { Authorization: `Bearer ${apiKey}`, 'User-Agent': 'torrentio' };
 }
 
 export function toCommonError(data) {
