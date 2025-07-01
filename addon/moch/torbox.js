@@ -273,7 +273,7 @@ export function toCommonError(data) {
 }
 
 function statusDownloading(torrent) {
-  return !statusReady(torrent) && !statusError(torrent);
+  return (!statusReady(torrent) && !statusError(torrent)) || !!torrent?.queued_id;
 }
 
 function statusError(torrent) {
