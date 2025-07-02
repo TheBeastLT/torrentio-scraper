@@ -82,7 +82,12 @@ router.get('/:configuration?/:resource/:type/:id/:extra?.json', limiter, (req, r
       });
 });
 
-router.get('/:moch/:apiKey/:infoHash/:cachedEntryInfo/:fileIndex/:filename?', (req, res) => {
+router.get(
+    [
+      '/:moch/:apiKey/:infoHash/:cachedEntryInfo/:fileIndex/:filename?',
+      '/resolve/:moch/:apiKey/:infoHash/:cachedEntryInfo/:fileIndex/:filename?'
+    ],
+    (req, res) => {
   const userAgent = req.headers['user-agent'] || '';
   const parameters = {
     mochKey: req.params.moch,

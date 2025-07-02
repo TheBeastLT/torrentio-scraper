@@ -188,7 +188,7 @@ function populateCachedLinks(streams, mochResult, config) {
       return {
         name: `[${mochResult.moch.shortName}+] ${stream.name}`,
         title: stream.title,
-        url: `${config.host}/${mochResult.moch.key}/${cachedEntry.url}/${streamFilename(stream)}`,
+        url: `${config.host}/resolve/${mochResult.moch.key}/${cachedEntry.url}/${streamFilename(stream)}`,
         behaviorHints: stream.behaviorHints
       };
     }
@@ -208,7 +208,7 @@ function populateDownloadLinks(streams, results, config) {
       streams.push({
         name: `[${mochResult.moch.shortName} download] ${stream.name}`,
         title: stream.title,
-        url: `${config.host}/${mochResult.moch.key}/${cachedEntry.url}/${streamFilename(stream)}`,
+        url: `${config.host}/resolve/${mochResult.moch.key}/${cachedEntry.url}/${streamFilename(stream)}`,
         behaviorHints: stream.behaviorHints
       })
     }
