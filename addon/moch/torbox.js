@@ -3,19 +3,15 @@ import { Type } from '../lib/types.js';
 import { isVideo } from '../lib/extension.js';
 import StaticResponse from './static.js';
 import { getMagnetLink } from '../lib/magnetHelper.js';
-import { chunkArray, sameFilename, streamFilename, BadTokenError, AccessDeniedError } from './mochHelper.js';
+import { sameFilename, streamFilename, BadTokenError, AccessDeniedError } from './mochHelper.js';
 
 const KEY = 'torbox';
 const timeout = 30000;
 const baseUrl = 'https://api.torbox.app/v1'
 
 export async function getCachedStreams(streams, apiKey) {
-  const hashBatches = chunkArray(streams.map(stream => stream.infoHash), 150)
-      .map(hashes => getAvailabilityResponse(apiKey, hashes));
-  const available = await Promise.all(hashBatches)
-      .then(results => results
-          .map(data => data.map(entry => entry.hash))
-          .reduce((all, result) => all.concat(result), []))
+  const available = await getAvailabilityResponse(apiKey, streams.map(stream => stream.infoHash))
+      .then(results => new Map(results.map(result => [result.hash, result])))
       .catch(error => {
         console.log('Failed TorBox cached torrent availability request: ', JSON.stringify(error.message || error));
         if (toCommonError(error)) {
@@ -25,11 +21,23 @@ export async function getCachedStreams(streams, apiKey) {
       });
   return available && streams
       .reduce((mochStreams, stream) => {
-        const isCached = available.includes(stream.infoHash);
+        const cachedEntry = available.get(stream.infoHash);
         const fileName = streamFilename(stream);
+        const targetFileName = decodeURIComponent(fileName);
+        const videos = (cachedEntry?.files || [])
+            .filter(file => isVideo(file.short_name))
+            .sort((a, b) => b.size - a.size);
+        const targetVideo = Number.isInteger(stream.fileIdx)
+            && videos.find(video => sameFilename(video.name, targetFileName))
+            || videos[0];
         mochStreams[`${stream.infoHash}@${stream.fileIdx}`] = {
           url: `${apiKey}/${stream.infoHash}/${fileName}/${stream.fileIdx}`,
-          cached: isCached
+          cached: !!cachedEntry,
+          behaviorHints: targetVideo?.opensubtitles_hash &&
+              {
+                videoSize: targetVideo.size,
+                videoHash: targetVideo.opensubtitles_hash
+              }
         };
         return mochStreams;
       }, {})
@@ -180,8 +188,9 @@ async function _unrestrictLink(apiKey, infoHash, torrent, cachedEntryInfo, fileI
 async function getAvailabilityResponse(apiKey, hashes) {
   const url = `${baseUrl}/api/torrents/checkcached`;
   const headers = getHeaders(apiKey);
-  const params = { hash: hashes.join(','), format: 'list' };
-  return axios.get(url, { params, headers, timeout })
+  const params = { format: 'list', list_files: true };
+  const data = { hashes }
+  return axios.post(url, data, { params, headers, timeout })
       .then(response => {
         if (response.data?.success) {
           return Promise.resolve(response.data.data || []);

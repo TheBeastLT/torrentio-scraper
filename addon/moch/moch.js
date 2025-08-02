@@ -189,7 +189,7 @@ function populateCachedLinks(streams, mochResult, config) {
         name: `[${mochResult.moch.shortName}+] ${stream.name}`,
         title: stream.title,
         url: `${config.host}/resolve/${mochResult.moch.key}/${cachedEntry.url}/${streamFilename(stream)}`,
-        behaviorHints: stream.behaviorHints
+        behaviorHints: { ...stream.behaviorHints, ...cachedEntry.behaviorHints }
       };
     }
     return stream;
