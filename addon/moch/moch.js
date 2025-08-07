@@ -157,7 +157,7 @@ export async function getMochItemMeta(mochKey, itemId, config) {
       .then(meta => {
         meta.videos.forEach(video => video.streams.forEach(stream => {
           if (!stream.url.startsWith('http')) {
-            stream.url = `${config.host}/${moch.key}/${stream.url}/${streamFilename(video)}`
+            stream.url = `${config.host}/resolve/${moch.key}/${stream.url}/${streamFilename(video)}`
           }
           stream.behaviorHints = { bingeGroup: itemId }
         }))
