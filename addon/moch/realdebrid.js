@@ -362,5 +362,5 @@ function isTorrentTooBigError(error) {
 }
 
 async function getDefaultOptions(ip) {
-  return { ip, timeout: 15000 };
+  return { ip, timeout: 10000 };
 }

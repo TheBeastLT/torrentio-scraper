@@ -79,7 +79,7 @@ export const MochOptions = {
 const unrestrictQueues = {}
 Object.values(MochOptions)
     .map(moch => moch.key)
-    .forEach(mochKey => unrestrictQueues[mochKey] = createNamedQueue(50));
+    .forEach(mochKey => unrestrictQueues[mochKey] = createNamedQueue(20));
 
 export function hasMochConfigured(config) {
   return Object.keys(MochOptions).find(moch => config?.[moch])
