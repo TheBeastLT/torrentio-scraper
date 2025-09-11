@@ -300,7 +300,7 @@ async function _unrestrictFileLink(RD, fileLink, torrent, fileIndex, isBrowser, 
         console.log(`Unrestricted RealDebrid ${torrent.hash} [${fileIndex}] to ${unrestrictedLink}`);
         const cachedFileIds = torrent.files.filter(file => file.selected).map(file => file.id);
         cacheAvailabilityResults(torrent.hash.toLowerCase(), cachedFileIds); // no need to await can happen async
-        return unrestrictedLink;
+        return unrestrictedLink || Promise.reject(`No download link returned for ${torrent.hash} [${fileIndex}]`);
       })
       .catch(error => {
         if (shouldRetry && error.code === 19) {
