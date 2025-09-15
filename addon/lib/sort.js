@@ -66,7 +66,7 @@ function sortBySeeders(streams, config, type) {
   const healthy = streams.filter(stream => extractSeeders(stream.title) >= HEALTHY_SEEDERS);
   const seeded = streams.filter(stream => extractSeeders(stream.title) >= SEEDED_SEEDERS);
 
-  if (type === Type.SERIES && hasMochConfigured(config)) {
+  if (hasMochConfigured(config)) {
     return streams;
   } else if (healthy.length >= MIN_HEALTHY_COUNT) {
     return healthy;
