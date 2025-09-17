@@ -30,7 +30,8 @@
 
 ## Development Commands
 
-If you have `just` installed:
+If you have `just` installed (you can install it with `brew install just`):
+
 
 ```bash
 just                    # List all available commands
