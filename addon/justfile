@@ -1,0 +1,83 @@
+# Load environment variables from .env file
+set dotenv-load
+
+# Default recipe (list all available commands)
+default:
+    @just --list
+
+# Start the development environment
+dev:
+    docker-compose up --build
+
+# Start development environment in background
+dev-detached:
+    docker-compose up --build -d
+
+# Stop the development environment
+down:
+    docker-compose down
+
+# Stop and remove all containers, networks, and volumes
+clean:
+    docker-compose down -v --remove-orphans
+
+# View logs from all services
+logs:
+    docker-compose logs -f
+
+# View logs from addon service only
+logs-addon:
+    docker-compose logs -f addon
+
+# View logs from postgres service only
+logs-postgres:
+    docker-compose logs -f postgres
+
+# View logs from mongo service only
+logs-mongo:
+    docker-compose logs -f mongo
+
+# Execute a command in the running addon container
+exec command="bash":
+    docker-compose exec addon {{command}}
+
+# Install dependencies
+install:
+    docker-compose exec addon npm install
+
+# Run the addon in production mode locally
+start:
+    docker-compose exec addon npm start
+
+# Connect to postgres database
+db-connect:
+    docker-compose exec postgres psql -U torrentio -d torrentio
+
+# Connect to mongo database
+mongo-connect:
+    docker-compose exec mongo mongosh torrentio-cache
+
+# Rebuild and restart services
+rebuild:
+    docker-compose down
+    docker-compose build --no-cache
+    docker-compose up
+
+# Show status of all services
+status:
+    docker-compose ps
+
+# View database connection info
+db-info:
+    @echo "PostgreSQL: postgres://torrentio:torrentio@localhost:5432/torrentio"
+    @echo "MongoDB: mongodb://localhost:27017/torrentio-cache"
+
+# Reset databases (removes all data)
+db-reset:
+    docker-compose down -v
+    docker-compose up -d postgres mongo
+    @echo "Databases reset. Run 'just dev' to start the full stack."
+
+# Run a one-off command without starting the full stack
+run command:
+    docker-compose run --rm addon {{command}}

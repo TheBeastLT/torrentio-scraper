@@ -4,7 +4,8 @@
   "exports": "./index.js",
   "type": "module",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "dev": "node --insecure-http-parser --watch index.js"
   },
   "author": "TheBeastLT <pauliox@beyond.lt>",
   "license": "MIT",

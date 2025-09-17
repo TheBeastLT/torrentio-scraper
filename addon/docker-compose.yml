@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  addon:
+    build: .
+    ports:
+      - "7001:7000"
+    environment:
+      - NODE_ENV=development
+      - PORT=7000
+      - DATABASE_URI=postgres://torrentio:torrentio@postgres:5432/torrentio
+      - MONGODB_URI=mongodb://mongo:27017/torrentio-cache
+      - METRICS_USER=admin
+      - METRICS_PASSWORD=admin
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+    volumes:
+      - .:/home/node/app
+      - /home/node/app/node_modules
+    command: npm run dev
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: torrentio
+      POSTGRES_USER: torrentio
+      POSTGRES_PASSWORD: torrentio
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U torrentio -d torrentio"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mongo:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  mongo_data:
