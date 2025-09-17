@@ -1,0 +1,21 @@
+FROM node:21-alpine
+
+RUN apk update && apk upgrade && \
+    apk add --no-cache git
+
+WORKDIR /home/node/app
+
+# Install dependencies
+COPY package*.json ./
+RUN npm ci
+
+# Copy source code
+COPY . .
+
+# Create non-root user
+RUN chown -R node:node /home/node/app
+USER node
+
+EXPOSE 7000
+
+CMD [ "node", "--insecure-http-parser", "index.js" ]
