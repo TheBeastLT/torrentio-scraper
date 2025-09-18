@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "start": "node index.js",
-    "dev": "node --insecure-http-parser --watch index.js"
+    "dev": "node --insecure-http-parser --watch index.js",
+    "create-tables": "node create-tables.js"
   },
   "author": "TheBeastLT <pauliox@beyond.lt>",
   "license": "MIT",
