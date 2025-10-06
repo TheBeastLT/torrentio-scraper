@@ -76,6 +76,11 @@ export const Providers = {
       foreign: '🇵🇹'
     },
     {
+        key: 'micoleaodublado',
+        label: 'MicoLeaoDublado',
+        foreign: '🇵🇹'
+    },
+    {
       key: 'torrent9',
       label: 'Torrent9',
       foreign: '🇫🇷'
