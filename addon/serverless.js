@@ -3,6 +3,8 @@ import cors from 'cors';
 import rateLimit from "express-rate-limit";
 import requestIp from 'request-ip';
 import userAgentParser from 'ua-parser-js';
+import { createClient } from 'redis'
+import { RedisStore } from 'rate-limit-redis'
 import addonInterface from './addon.js';
 import qs from 'querystring';
 import { manifest } from './lib/manifest.js';
@@ -11,11 +13,19 @@ import landingTemplate from './lib/landingTemplate.js';
 import * as moch from './moch/moch.js';
 
 const router = new Router();
+const client = createClient({
+  url: process.env.REDIS_URL,
+})
+await client.connect()
 const limiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max: 300, // limit each IP to 300 requests per windowMs
-  headers: false,
-  keyGenerator: (req) => requestIp.getClientIp(req)
+  windowMs: 24 * 60 * 60 * 1000, // 1 day
+  limit: 5000,
+  legacyHeaders: false,
+  passOnStoreError: true,
+  keyGenerator: (req) => requestIp.getClientIp(req),
+  store: new RedisStore({
+    sendCommand: (...args) => client.sendCommand(args),
+  }),
 })
 
 router.use(cors())
