@@ -135,21 +135,31 @@ async function _createTorrent(AD, infoHash) {
 
 async function _unrestrictLink(AD, torrent, encodedFileName, fileIndex) {
   const targetFileName = decodeURIComponent(encodedFileName);
-  const videos = torrent.links.filter(link => isVideo(link.filename)).sort((a, b) => b.size - a.size);
+  const files = getNestedFiles(await AD.magnet.files(torrent.id).then(response => response.data.magnets[0].files[0]));
+  const videos = files.filter(link => isVideo(link.n)).sort((a, b) => b.s - a.s);
   const targetVideo = Number.isInteger(fileIndex)
-      && videos.find(video => sameFilename(targetFileName, video.filename))
+      && videos.find(video => sameFilename(targetFileName, video.n))
       || videos[0];
 
-  if (!targetVideo && torrent.links.every(link => isArchive(link.filename))) {
+  if (!targetVideo && videos.every(link => isArchive(link.n))) {
     console.log(`Only AllDebrid archive is available for [${torrent.hash}] ${encodedFileName}`)
     return StaticResponse.FAILED_RAR;
   }
-  if (!targetVideo || !targetVideo.link || !targetVideo.link.length) {
+  if (!targetVideo?.l?.length) {
     return Promise.reject(`No AllDebrid links found for [${torrent.hash}] ${encodedFileName}`);
   }
-  const unrestrictedLink = await AD.link.unlock(targetVideo.link).then(response => response.data.link);
+  const unrestrictedLink = await AD.link.unlock(targetVideo.l).then(response => response.data.link);
   console.log(`Unrestricted AllDebrid ${torrent.hash} [${fileIndex}] to ${unrestrictedLink}`);
   return unrestrictedLink;
+}
+
+function getNestedFiles(folder) {
+    return folder.e.flatMap(entry => {
+        if (Array.isArray(entry.e)) {
+            return getNestedFiles(entry);
+        }
+        return [entry];
+    });
 }
 
 async function getDefaultOptions(ip) {
