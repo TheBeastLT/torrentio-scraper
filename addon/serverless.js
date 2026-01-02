@@ -8,7 +8,7 @@ import { RedisStore } from 'rate-limit-redis'
 import addonInterface from './addon.js';
 import qs from 'querystring';
 import { manifest } from './lib/manifest.js';
-import { parseConfiguration, PreConfigurations } from './lib/configuration.js';
+import { parseConfiguration } from './lib/configuration.js';
 import landingTemplate from './lib/landingTemplate.js';
 import * as moch from './moch/moch.js';
 
@@ -34,12 +34,17 @@ router.get('/', (_, res) => {
   res.end();
 });
 
-router.get(`/:preconfiguration(${Object.keys(PreConfigurations).join('|')})`, (req, res) => {
-  res.redirect(`/${req.params.preconfiguration}/configure`)
+router.get(`/lite`, (req, res) => {
+  res.redirect(`/lite/configure`)
   res.end();
 });
 
-router.get('/:configuration?/configure', (req, res) => {
+router.get(`/brazuca`, (req, res) => {
+  res.redirect(`/brazuca/configure`)
+  res.end();
+});
+
+router.get('{/:configuration}/configure', (req, res) => {
   const host = `${req.protocol}://${req.headers.host}`;
   const configValues = { ...parseConfiguration(req.params.configuration || ''), host };
   const landingHTML = landingTemplate(manifest(configValues), configValues);
@@ -47,7 +52,7 @@ router.get('/:configuration?/configure', (req, res) => {
   res.end(landingHTML);
 });
 
-router.get('/:configuration?/manifest.json', (req, res) => {
+router.get('{/:configuration}/manifest.json', (req, res) => {
   const host = `${req.protocol}://${req.headers.host}`;
   const configValues = { ...parseConfiguration(req.params.configuration || ''), host };
   const manifestBuf = JSON.stringify(manifest(configValues));
@@ -55,7 +60,7 @@ router.get('/:configuration?/manifest.json', (req, res) => {
   res.end(manifestBuf)
 });
 
-router.get('/:configuration?/:resource/:type/:id/:extra?.json', limiter, (req, res, next) => {
+router.get('{/:configuration}/:resource/:type/:id{/:extra}.json', limiter, (req, res, next) => {
   const { configuration, resource, type, id } = req.params;
   const extra = req.params.extra ? qs.parse(req.url.split('/').pop().slice(0, -5)) : {}
   const ip = requestIp.getClientIp(req);
@@ -92,7 +97,7 @@ router.get('/:configuration?/:resource/:type/:id/:extra?.json', limiter, (req, r
       });
 });
 
-router.get('/resolve/:moch/:apiKey/:infoHash/:cachedEntryInfo/:fileIndex/:filename?', (req, res) => {
+router.get('/resolve/:moch/:apiKey/:infoHash/:cachedEntryInfo/:fileIndex{/:filename}', (req, res) => {
   const userAgent = req.headers['user-agent'] || '';
   const parameters = {
     mochKey: req.params.moch,
