@@ -93,3 +93,31 @@ export function getCachedAvailabilityResults(infoHashes) {
         return {};
       });
 }
+
+export function cacheMochAvailabilityResult(moch, infoHash, result = { cached: true }) {
+    const key = `${AVAILABILITY_KEY_PREFIX}:${moch}:${infoHash}`;
+    return remoteCache.set(key, result, AVAILABILITY_TTL);
+}
+
+export function removeMochAvailabilityResult(moch, infoHash) {
+    const key = `${AVAILABILITY_KEY_PREFIX}:${moch}:${infoHash}`;
+    return remoteCache.delete(key);
+}
+
+export function getMochCachedAvailabilityResults(moch, infoHashes) {
+    const keys = infoHashes.map(infoHash => `${AVAILABILITY_KEY_PREFIX}:${moch}:${infoHash}`)
+    return remoteCache.getMany(keys)
+        .then(result => {
+            const availabilityResults = {};
+            infoHashes.forEach((infoHash, index) => {
+                if (result[index]) {
+                    availabilityResults[infoHash] = result[index];
+                }
+            });
+            return availabilityResults;
+        })
+        .catch(error => {
+            console.log('Failed retrieve availability cache', error)
+            return {};
+        });
+}

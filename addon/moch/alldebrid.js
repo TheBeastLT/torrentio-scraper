@@ -4,17 +4,24 @@ import { isVideo, isArchive } from '../lib/extension.js';
 import StaticResponse from './static.js';
 import { getMagnetLink } from '../lib/magnetHelper.js';
 import { BadTokenError, AccessDeniedError, sameFilename, streamFilename, AccessBlockedError } from './mochHelper.js';
+import {
+    cacheMochAvailabilityResult,
+    getMochCachedAvailabilityResults,
+    removeMochAvailabilityResult
+} from "../lib/cache.js";
 
 const KEY = 'alldebrid';
 const AGENT = 'torrentio';
 
 export async function getCachedStreams(streams, apiKey, ip) {
+  const hashes = streams.map(stream => stream.infoHash);
+  const available = await getMochCachedAvailabilityResults(KEY, hashes);
   return streams
       .reduce((mochStreams, stream) => {
         const filename = streamFilename(stream);
         mochStreams[`${stream.infoHash}@${stream.fileIdx}`] = {
           url: `${apiKey}/${stream.infoHash}/${filename}/${stream.fileIdx}`,
-          cached: false
+          cached: available[stream.infoHash]?.cached || false
         }
         return mochStreams;
       }, {})
@@ -87,6 +94,7 @@ async function _resolve(AD, infoHash, cachedEntryInfo, fileIndex) {
     return _unrestrictLink(AD, torrent, cachedEntryInfo, fileIndex);
   } else if (statusDownloading(torrent?.statusCode)) {
     console.log(`Downloading to AllDebrid ${infoHash} [${fileIndex}]...`);
+    removeMochAvailabilityResult(KEY, infoHash);
     return StaticResponse.DOWNLOADING;
   } else if (statusHandledError(torrent?.statusCode)) {
     console.log(`Retrying downloading to AllDebrid ${infoHash} [${fileIndex}]...`);
@@ -130,12 +138,17 @@ async function _createTorrent(AD, infoHash) {
   const magnetLink = await getMagnetLink(infoHash);
   const uploadResponse = await AD.magnet.upload(magnetLink);
   const torrentId = uploadResponse.data.magnets[0].id;
+  if (!torrentId) {
+    return Promise.reject(`No magnet added with response: ${JSON.stringify(uploadResponse)}`);
+  }
   return AD.magnet.status(torrentId).then(statusResponse => statusResponse.data.magnets);
 }
 
 async function _unrestrictLink(AD, torrent, encodedFileName, fileIndex) {
   const targetFileName = decodeURIComponent(encodedFileName);
-  const files = getNestedFiles(await AD.magnet.files(torrent.id).then(response => response.data.magnets[0].files[0]));
+  let files = await AD.magnet.files(torrent.id)
+      .then(response => response.data.magnets[0].files)
+      .then(files => getNestedFiles({ e: files }))
   const videos = files.filter(link => isVideo(link.n)).sort((a, b) => b.s - a.s);
   const targetVideo = Number.isInteger(fileIndex)
       && videos.find(video => sameFilename(targetFileName, video.n))
@@ -149,6 +162,7 @@ async function _unrestrictLink(AD, torrent, encodedFileName, fileIndex) {
     return Promise.reject(`No AllDebrid links found for [${torrent.hash}] ${encodedFileName}`);
   }
   const unrestrictedLink = await AD.link.unlock(targetVideo.l).then(response => response.data.link);
+  cacheMochAvailabilityResult(KEY, torrent.hash.toLowerCase());
   console.log(`Unrestricted AllDebrid ${torrent.hash} [${fileIndex}] to ${unrestrictedLink}`);
   return unrestrictedLink;
 }
