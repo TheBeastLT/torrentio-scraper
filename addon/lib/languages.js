@@ -7,7 +7,7 @@ const languageMapping = {
   'japanese': '🇯🇵',
   'russian': '🇷🇺',
   'italian': '🇮🇹',
-  'portuguese': '🇵🇹',
+  'portuguese': '🇧🇷',
   'spanish': '🇪🇸',
   'latino': '🇲🇽',
   'korean': '🇰🇷',
