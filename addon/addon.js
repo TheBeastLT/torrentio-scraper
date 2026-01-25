@@ -18,7 +18,7 @@ const STALE_REVALIDATE_AGE = 4 * 60 * 60; // 4 hours
 const STALE_ERROR_AGE = 7 * 24 * 60 * 60; // 7 days
 
 const builder = new addonBuilder(dummyManifest());
-const requestQueue = createNamedQueue(Infinity);
+const requestQueue = createNamedQueue(200);
 const newLimiter = pLimit(50)
 
 builder.defineStreamHandler((args) => {
