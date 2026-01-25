@@ -1,189 +1,3 @@
-const STYLESHEET = `
-* {
-   box-sizing: border-box;
-}
-
-body,
-html {
-   margin: 0;
-   padding: 0;
-   width: 100%;
-   height: 100%
-}
-
-html {
-   background-size: auto 100%;
-   background-size: cover;
-   background-position: center center;
-   background-repeat: repeat-y;
-}
-
-body {
-   display: flex;
-   background-color: transparent;
-   font-family: 'Open Sans', Arial, sans-serif;
-   color: white;
-}
-
-h1 {
-   font-size: 4.5vh;
-   font-weight: 700;
-}
-
-h2 {
-   font-size: 2.2vh;
-   font-weight: normal;
-   font-style: italic;
-   opacity: 0.8;
-}
-
-h3 {
-   font-size: 2.2vh;
-}
-
-h1,
-h2,
-h3,
-p,
-label {
-   margin: 0;
-   text-shadow: 0 0 1vh rgba(0, 0, 0, 0.15);
-}
-
-p {
-   font-size: 1.75vh;
-}
-
-ul {
-   font-size: 1.75vh;
-   margin: 0;
-   margin-top: 1vh;
-   padding-left: 3vh;
-}
-
-a {
-   color: green
-}
-
-a.install-link {
-   text-decoration: none
-}
-
-.install-button {
-   border: 0;
-   outline: 0;
-   color: white;
-   background: #8A5AAB;
-   padding: 1.2vh 3.5vh;
-   margin: auto;
-   text-align: center;
-   font-family: 'Open Sans', Arial, sans-serif;
-   font-size: 2.2vh;
-   font-weight: 600;
-   cursor: pointer;
-   display: block;
-   box-shadow: 0 0.5vh 1vh rgba(0, 0, 0, 0.2);
-   transition: box-shadow 0.1s ease-in-out;
-}
-
-.install-button:hover {
-   box-shadow: none;
-}
-
-.install-button:active {
-   box-shadow: 0 0 0 0.5vh white inset;
-}
-
-#addon {
-   width: 90vh;
-   margin: auto;
-   padding-left: 10%;
-   padding-right: 10%;
-   background: rgba(0, 0, 0, 0.60);
-}
-
-.logo {
-   height: 14vh;
-   width: 14vh;
-   margin: auto;
-   margin-bottom: 3vh;
-}
-
-.logo img {
-   width: 100%;
-}
-
-.name, .version {
-   display: inline-block;
-   vertical-align: top;
-}
-
-.name {
-   line-height: 5vh;
-}
-
-.version {
-   position: absolute;
-   line-height: 5vh;
-   margin-left: 1vh;
-   opacity: 0.8;
-}
-
-.contact {
-   left: 0;
-   bottom: 4vh;
-   width: 100%;
-   margin-top: 1vh;
-   text-align: center;
-}
-
-.contact a {
-   font-size: 1.4vh;
-   font-style: italic;
-}
-
-.separator {
-   margin-bottom: 4vh;
-}
-
-.label {
-  font-size: 2.2vh;
-  font-weight: 600;
-  padding: 0;
-  line-height: inherit;
-}
-
-.btn-group, .multiselect-container {
-  width: 100%;
-}
-
-.btn {
-  text-align: left;
-}
-
-.multiselect-container {
-  border: 0;
-  border-radius: 0;
-}
-
-.input, .btn {
-  width: 100%;
-  margin: auto;
-  margin-bottom: 10px;
-  padding: 6px 12px;
-  border: 0;
-  border-radius: 0;
-  outline: 0;
-  color: #333;
-  background-color: rgb(255, 255, 255);
-  box-shadow: 0 0.5vh 1vh rgba(0, 0, 0, 0.2);
-}
-
-.input:focus, .btn:focus {
-  outline: none; 
-  box-shadow: 0 0 0 2pt rgb(30, 144, 255, 0.7);
-}
-`;
 import { Providers, QualityFilter, SizeFilter } from './filter.js';
 import { SortOptions } from './sort.js';
 import { LanguageOptions } from './languages.js';
@@ -192,326 +6,437 @@ import { MochOptions } from '../moch/moch.js';
 import { PreConfigurations } from './configuration.js';
 
 export default function landingTemplate(manifest, config = {}) {
-  const providers = config[Providers.key] || Providers.options.map(provider => provider.key);
-  const sort = config[SortOptions.key] || SortOptions.options.qualitySeeders.key;
-  const languages = config[LanguageOptions.key] || [];
-  const qualityFilters = config[QualityFilter.key] || [];
-  const sizeFilter = (config[SizeFilter.key] || []).join(',');
-  const limit = config.limit || '';
+  // 1. Server-Side Data Preparation
+  const savedProviders = config[Providers.key] || Providers.options.map(p => p.key);
+  const savedSort = config[SortOptions.key] || SortOptions.options.qualitySeeders.key;
+  const savedLanguages = config[LanguageOptions.key] || [];
+  const savedQuality = config[QualityFilter.key] || [];
+  const savedSize = (config[SizeFilter.key] || []).join(',');
+  const savedLimit = config.limit || '';
+  const savedDebridOpts = config[DebridOptions.key] || [];
 
-  const debridProvider = Object.keys(MochOptions).find(mochKey => config[mochKey]);
-  const debridOptions = config[DebridOptions.key] || [];
-  const realDebridApiKey = config[MochOptions.realdebrid.key] || '';
-  const premiumizeApiKey = config[MochOptions.premiumize.key] || '';
-  const allDebridApiKey = config[MochOptions.alldebrid.key] || '';
-  const debridLinkApiKey = config[MochOptions.debridlink.key] || '';
-  const easyDebridApiKey = config[MochOptions.easydebrid.key] || '';
-  const offcloudApiKey = config[MochOptions.offcloud.key] || '';
-  const torboxApiKey = config[MochOptions.torbox.key] || '';
-  const putioKey = config[MochOptions.putio.key] || '';
-  const putioClientId = putioKey.replace(/@.*/, '');
-  const putioToken = putioKey.replace(/.*@/, '');
+  const savedDebridProvider = Object.keys(MochOptions).find(key => config[key]) || 'none';
+
+  const apiKeys = {
+    [MochOptions.realdebrid.key]: config[MochOptions.realdebrid.key] || '',
+    [MochOptions.premiumize.key]: config[MochOptions.premiumize.key] || '',
+    [MochOptions.alldebrid.key]: config[MochOptions.alldebrid.key] || '',
+    [MochOptions.debridlink.key]: config[MochOptions.debridlink.key] || '',
+    [MochOptions.easydebrid.key]: config[MochOptions.easydebrid.key] || '',
+    [MochOptions.offcloud.key]: config[MochOptions.offcloud.key] || '',
+    [MochOptions.torbox.key]: config[MochOptions.torbox.key] || '',
+    [MochOptions.putio.key]: config[MochOptions.putio.key] || '',
+  };
+
+  let putioClientId = '';
+  let putioToken = '';
+  if(apiKeys[MochOptions.putio.key] && apiKeys[MochOptions.putio.key].includes('@')){
+    const parts = apiKeys[MochOptions.putio.key].split('@');
+    putioClientId = parts[0];
+    putioToken = parts[1];
+  }
 
   const background = manifest.background || 'https://dl.strem.io/addon-background.jpg';
   const logo = manifest.logo || 'https://dl.strem.io/addon-logo.png';
-  const providersHTML = Providers.options
-      .map(provider => `<option value="${provider.key}">${provider.foreign ? provider.foreign + ' ' : ''}${provider.label}</option>`)
-      .join('\n');
-  const sortOptionsHTML = Object.values(SortOptions.options)
-      .map((option, i) => `<option value="${option.key}" ${i === 0 ? 'selected' : ''}>${option.description}</option>`)
-      .join('\n');
-  const languagesOptionsHTML = LanguageOptions.options
-      .map((option, i) => `<option value="${option.key}">${option.label}</option>`)
-      .join('\n');
-  const qualityFiltersHTML = Object.values(QualityFilter.options)
-      .map(option => `<option value="${option.key}">${option.label}</option>`)
-      .join('\n');
-  const debridProvidersHTML = Object.values(MochOptions)
-      .map(moch => `<option value="${moch.key}">${moch.name}</option>`)
-      .join('\n');
-  const debridOptionsHTML = Object.values(DebridOptions.options)
-      .map(option => `<option value="${option.key}">${option.description}</option>`)
-      .join('\n');
-  const stylizedTypes = manifest.types
-      .map(t => t[0].toUpperCase() + t.slice(1) + (t !== 'series' ? 's' : ''));
-  const preConfigurationObject = Object.entries(PreConfigurations)
-      .map(([key, config]) => `${key}: '${config.serialized}'`)
-      .join(',');
 
+  // 2. Options Lists
+  const providerList = Providers.options.map(p => ({ label: (p.foreign ? p.foreign + ' ' : '') + p.label, value: p.key }));
+  const sortList = Object.values(SortOptions.options).map(o => ({ label: o.description, value: o.key }));
+  const languageList = LanguageOptions.options.map(o => ({ label: o.label, value: o.key }));
+  const qualityList = Object.values(QualityFilter.options).map(o => ({ label: o.label, value: o.key }));
+  const debridProviderList = Object.values(MochOptions).map(o => ({ label: o.name, value: o.key }));
+  const debridOptList = Object.values(DebridOptions.options).map(o => ({ label: o.description, value: o.key }));
+
+  // 3. HTML Output
   return `
-   <!DOCTYPE html>
-   <html style="background-image: url(${background});">
-
-   <head>
-      <meta charset="utf-8">
-      <title>${manifest.name} - Stremio Addon</title>
+  <!DOCTYPE html>
+  <html lang="en">
+  <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+      <title>${manifest.name} - Configuration</title>
       <link rel="shortcut icon" href="${logo}" type="image/x-icon">
-      <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,600,700&display=swap" rel="stylesheet">
-      <script src="https://code.jquery.com/jquery-3.6.4.slim.min.js"></script>
-      <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
-      <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-      <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet" >
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-multiselect/1.1.2/js/bootstrap-multiselect.min.js"></script>
-      <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-multiselect/1.1.2/css/bootstrap-multiselect.css" rel="stylesheet"/>
-      <style>${STYLESHEET}</style>
-   </head>
-
-	<body>
-      <div id="addon">
-         <div class="logo">
-            <img src="${logo}">
-         </div>
-         <h1 class="name">${manifest.name}</h1>
-         <h2 class="version">${manifest.version || '0.0.0'}</h2>
-         <h2 class="description">${manifest.description || ''}</h2>
-
-         <div class="separator"></div>
-
-         <h3 class="gives">This addon has more :</h3>
-         <ul>
-            ${stylizedTypes.map(t => `<li>${t}</li>`).join('')}
-         </ul>
-
-         <div class="separator"></div>
-         
-         <label class="label" for="iProviders">Providers:</label>
-         <select id="iProviders" class="input" onchange="generateInstallLink()" name="providers[]" multiple="multiple">
-            ${providersHTML}
-         </select>
-         
-         <label class="label" for="iSort">Sorting:</label>
-         <select id="iSort" class="input" onchange="sortModeChange()">
-           ${sortOptionsHTML}
-         </select>
-         
-         <label class="label" for="iLanguages">Priority foreign language:</label>
-         <select id="iLanguages" class="input" onchange="generateInstallLink()" name="languages[]" multiple="multiple" title="Streams with the selected dubs/subs language will be shown on the top">
-           ${languagesOptionsHTML}
-         </select>
-         
-         <label class="label" for="iQualityFilter">Exclude qualities/resolutions:</label>
-         <select id="iQualityFilter" class="input" onchange="generateInstallLink()" name="qualityFilters[]" multiple="multiple">
-            ${qualityFiltersHTML}
-         </select>
-         
-         <label class="label" id="iLimitLabel" for="iLimit">Max results per quality:</label>
-         <input type="text" inputmode="numeric" pattern="[0-9]*" id="iLimit" onchange="generateInstallLink()" class="input" placeholder="All results">
-         
-         <label class="label" id="iSizeFilterLabel" for="iSizeFilter">Video size limit:</label>
-         <input type="text" pattern="([0-9.]*(?:MB|GB),?)+" id="iSizeFilter" onchange="generateInstallLink()" class="input" placeholder="No limit" title="Returned videos cannot exceed this size, use comma to have different size for movies and series. Examples: 5GB ; 800MB ; 10GB,2GB">
-         
-         
-         <label class="label" for="iDebridProviders">Debrid provider:</label>
-         <select id="iDebridProviders" class="input" onchange="debridProvidersChange()">
-            <option value="none" selected>None</option>
-            ${debridProvidersHTML}
-         </select>
-         
-         <div id="dRealDebrid">
-           <label class="label" for="iRealDebrid">RealDebrid API Key (Find it <a href='https://real-debrid.com/apitoken' target="_blank">here</a>):</label>
-           <input type="text" id="iRealDebrid" onchange="generateInstallLink()" class="input">
-         </div>
-         
-         <div id="dAllDebrid">
-           <label class="label" for="iAllDebrid">AllDebrid API Key (Create it <a href='https://alldebrid.com/apikeys' target="_blank">here</a>):</label>
-           <input type="text" id="iAllDebrid" onchange="generateInstallLink()" class="input">
-         </div>
-         
-         <div id="dPremiumize">
-           <label class="label" for="iPremiumize">Premiumize API Key (Find it <a href='https://www.premiumize.me/account' target="_blank">here</a>):</label>
-           <input type="text" id="iPremiumize" onchange="generateInstallLink()" class="input">
-         </div>
-         
-         <div id="dDebridLink">
-           <label class="label" for="iDebridLink">DebridLink API Key (Find it <a href='https://debrid-link.fr/webapp/apikey' target="_blank">here</a>):</label>
-           <input type="text" id="iDebridLink" onchange="generateInstallLink()" class="input">
-         </div>
-         
-         <div id="dEasyDebrid">
-           <label class="label" for="iEasyDebrid">EasyDebrid API Key:</label>
-           <input type="text" id="iEasyDebrid" onchange="generateInstallLink()" class="input">
-         </div>
-         
-         <div id="dOffcloud">
-           <label class="label" for="iOffcloud">Offcloud API Key (Find it <a href='https://offcloud.com/#/account' target="_blank">here</a>):</label>
-           <input type="text" id="iOffcloud" onchange="generateInstallLink()" class="input">
-         </div>
-         
-         <div id="dTorbox">
-           <label class="label" for="iTorbox">TorBox API Key (Find it <a href='https://torbox.app/settings' target="_blank">here</a>):</label>
-           <input type="text" id="iTorbox" onchange="generateInstallLink()" class="input">
-         </div>
-         
-         <div id="dPutio">
-           <label class="label" for="iPutio">Put.io ClientId and Token (Create new OAuth App <a href='https://app.put.io/oauth' target="_blank">here</a>):</label>
-           <input type="text" id="iPutioClientId" placeholder="ClientId" onchange="generateInstallLink()" class="input">
-           <input type="text" id="iPutioToken" placeholder="Token" onchange="generateInstallLink()" class="input">
-         </div>
-         
-         <div id="dDebridOptions">
-           <label class="label" for="iDebridOptions">Debrid options:</label>
-           <select id="iDebridOptions" class="input" onchange="generateInstallLink()" name="debridOptions[]" multiple="multiple">
-              ${debridOptionsHTML}
-           </select>
-         </div>
-         
-         <div class="separator"></div>
-
-         <a id="installLink" class="install-link" href="#">
-            <button name="Install" class="install-button">INSTALL</button>
-         </a>
-         <div class="contact">
-           <p>Or paste into Stremio search bar after clicking install</p>
-        </div>
-        
-        <div class="separator"></div>
-      </div>
-      <script type="text/javascript">
-          $(document).ready(function() {
-              const isTvMedia = window.matchMedia("tv").matches;
-              const isTvAgent = /\\b(?:tv|wv)\\b/i.test(navigator.userAgent)
-              const isDesktopMedia = window.matchMedia("(pointer:fine)").matches;
-              if (isDesktopMedia && !isTvMedia && !isTvAgent) {
-                $('#iProviders').multiselect({ 
-                    nonSelectedText: 'All providers',
-                    buttonTextAlignment: 'left',
-                    onChange: () => generateInstallLink()
-                });
-                $('#iProviders').multiselect('select', [${providers.map(provider => '"' + provider + '"')}]);
-                $('#iLanguages').multiselect({ 
-                    nonSelectedText: 'None',
-                    buttonTextAlignment: 'left',
-                    onChange: () => generateInstallLink()
-                });
-                $('#iLanguages').multiselect('select', [${languages.map(language => '"' + language + '"')}]);
-                $('#iQualityFilter').multiselect({ 
-                    nonSelectedText: 'None',
-                    buttonTextAlignment: 'left',
-                    onChange: () => generateInstallLink()
-                });
-                $('#iQualityFilter').multiselect('select', [${qualityFilters.map(filter => '"' + filter + '"')}]);
-                $('#iDebridOptions').multiselect({ 
-                    nonSelectedText: 'None',
-                    buttonTextAlignment: 'left',
-                    onChange: () => generateInstallLink()
-                });
-                $('#iDebridOptions').multiselect('select', [${debridOptions.map(option => '"' + option + '"')}]);
-              } else {
-                $('#iProviders').val([${providers.map(provider => '"' + provider + '"')}]);
-                $('#iLanguages').val([${languages.map(language => '"' + language + '"')}]);
-                $('#iQualityFilter').val([${qualityFilters.map(filter => '"' + filter + '"')}]);
-                $('#iDebridOptions').val([${debridOptions.map(option => '"' + option + '"')}]);
-              }
-              $('#iDebridProviders').val("${debridProvider || 'none'}");
-              $('#iRealDebrid').val("${realDebridApiKey}");
-              $('#iPremiumize').val("${premiumizeApiKey}");
-              $('#iAllDebrid').val("${allDebridApiKey}");
-              $('#iDebridLink').val("${debridLinkApiKey}");
-               $('#iEasyDebrid').val("${easyDebridApiKey}");
-              $('#iOffcloud').val("${offcloudApiKey}");
-              $('#iTorbox').val("${torboxApiKey}");
-              $('#iPutioClientId').val("${putioClientId}");
-              $('#iPutioToken').val("${putioToken}");
-              $('#iSort').val("${sort}");
-              $('#iLimit').val("${limit}");
-              $('#iSizeFilter').val("${sizeFilter}");
-              generateInstallLink();
-              debridProvidersChange();
-          });
+      <script src="https://cdn.tailwindcss.com"></script>
+      <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+      
+      <style>
+          body { font-family: 'Inter', sans-serif; }
+          .glass {
+              background: rgba(17, 24, 39, 0.90);
+              backdrop-filter: blur(16px);
+              -webkit-backdrop-filter: blur(16px);
+              border: 1px solid rgba(255, 255, 255, 0.1);
+          }
+          .scroller::-webkit-scrollbar { width: 6px; }
+          .scroller::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
+          .scroller::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+          [x-cloak] { display: none !important; }
           
-          function sortModeChange() {
-            if (['${SortOptions.options.seeders.key}', '${SortOptions.options.size.key}'].includes($('#iSort').val())) {
-              $("#iLimitLabel").text("Max results:");
-            } else {
-              $("#iLimitLabel").text("Max results per quality:");
+          .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+          }
+          @media (min-width: 768px) {
+            .md\\:line-clamp-none {
+                -webkit-line-clamp: unset;
             }
-            generateInstallLink();
           }
           
-          function debridProvidersChange() {
-            const provider = $('#iDebridProviders').val()
-            $('#dDebridOptions').toggle(provider !== 'none');
-            $('#dRealDebrid').toggle(provider === '${MochOptions.realdebrid.key}');
-            $('#dPremiumize').toggle(provider === '${MochOptions.premiumize.key}');
-            $('#dAllDebrid').toggle(provider === '${MochOptions.alldebrid.key}');
-            $('#dDebridLink').toggle(provider === '${MochOptions.debridlink.key}');
-            $('#dEasyDebrid').toggle(provider === '${MochOptions.easydebrid.key}');
-            $('#dOffcloud').toggle(provider === '${MochOptions.offcloud.key}');
-            $('#dTorbox').toggle(provider === '${MochOptions.torbox.key}');
-            $('#dPutio').toggle(provider === '${MochOptions.putio.key}');
+          /* Tooltip Animation - Enhanced for Focus */
+          .tooltip-content {
+              opacity: 0;
+              visibility: hidden;
+              transition: opacity 0.2s ease, visibility 0.2s ease;
           }
-          
-          function generateInstallLink() {
-              const providersList = $('#iProviders').val() || [];
-              const providersValue = providersList.join(',');
-              const qualityFilterValue = $('#iQualityFilter').val().join(',') || '';
-              const sortValue = $('#iSort').val() || '';
-              const languagesValue = $('#iLanguages').val().join(',') || [];
-              const limitValue = $('#iLimit').val() || '';
-              const sizeFilterValue = $('#iSizeFilter').val() || '';
-              
-              const debridOptionsValue = $('#iDebridOptions').val().join(',') || '';
-              const realDebridValue = $('#iRealDebrid').val() || '';
-              const allDebridValue = $('#iAllDebrid').val() || '';
-              const debridLinkValue = $('#iDebridLink').val() || ''
-              const premiumizeValue = $('#iPremiumize').val() || '';
-              const easyDebridValue = $('#iEasyDebrid').val() || '';
-              const offcloudValue = $('#iOffcloud').val() || '';
-              const torboxValue = $('#iTorbox').val() || '';
-              const putioClientIdValue = $('#iPutioClientId').val() || '';
-              const putioTokenValue = $('#iPutioToken').val() || '';
-              
-              
-              const providers = providersList.length && providersList.length < ${Providers.options.length} && providersValue;
-              const qualityFilters = qualityFilterValue.length && qualityFilterValue;
-              const sort = sortValue !== '${SortOptions.options.qualitySeeders.key}' && sortValue;
-              const languages = languagesValue.length && languagesValue;
-              const limit = /^[1-9][0-9]{0,2}$/.test(limitValue) && limitValue;
-              const sizeFilter = sizeFilterValue.length && sizeFilterValue;
-              
-              const debridOptions = debridOptionsValue.length && debridOptionsValue.trim();
-              const realDebrid = realDebridValue.length && realDebridValue.trim();
-              const premiumize = premiumizeValue.length && premiumizeValue.trim();
-              const allDebrid = allDebridValue.length && allDebridValue.trim();
-              const debridLink = debridLinkValue.length && debridLinkValue.trim();
-              const easyDebrid = easyDebridValue.length && easyDebridValue.trim();
-              const offcloud = offcloudValue.length && offcloudValue.trim();
-              const torbox = torboxValue.length && torboxValue.trim();
-              const putio = putioClientIdValue.length && putioTokenValue.length && putioClientIdValue.trim() + '@' + putioTokenValue.trim();
-
-              const preConfigurations = { 
-                ${preConfigurationObject}
-              };
-              let configurationValue = [
-                    ['${Providers.key}', providers],
-                    ['${SortOptions.key}', sort],
-                    ['${LanguageOptions.key}', languages],
-                    ['${QualityFilter.key}', qualityFilters],
-                    ['limit', limit],
-                    ['${SizeFilter.key}', sizeFilter],
-                    ['${DebridOptions.key}', debridOptions], 
-                    ['${MochOptions.realdebrid.key}', realDebrid],
-                    ['${MochOptions.premiumize.key}', premiumize],
-                    ['${MochOptions.alldebrid.key}', allDebrid],
-                    ['${MochOptions.debridlink.key}', debridLink],
-                    ['${MochOptions.easydebrid.key}', easyDebrid],
-                    ['${MochOptions.offcloud.key}', offcloud],
-                    ['${MochOptions.torbox.key}', torbox],
-                    ['${MochOptions.putio.key}', putio]
-                  ].filter(([_, value]) => value.length).map(([key, value]) => key + '=' + value).join('|');
-              configurationValue = Object.entries(preConfigurations)
-                  .filter(([key, value]) => value === configurationValue)
-                  .map(([key, value]) => key)[0] || configurationValue;
-              const configuration = configurationValue && configurationValue.length ? '/' + configurationValue : '';
-              const location = window.location.host + configuration + '/manifest.json'
-              installLink.href = 'stremio://' + location;
+          /* Show tooltip on hover OR when the trigger inside has focus */
+          .group:hover .tooltip-content,
+          .group:focus-within .tooltip-content {
+              opacity: 1;
+              visibility: visible;
           }
+      </style>
 
-          installLink.addEventListener('click', function() {
-             navigator.clipboard.writeText(installLink.href.replace('stremio://', 'https://'));
+      <script>
+          document.addEventListener('alpine:init', () => {
+              Alpine.data('addonConfig', () => ({
+                  providers: ${JSON.stringify(savedProviders)},
+                  sort: ${JSON.stringify(savedSort)},
+                  languages: ${JSON.stringify(savedLanguages)},
+                  qualities: ${JSON.stringify(savedQuality)},
+                  limit: ${JSON.stringify(savedLimit)},
+                  sizeFilter: ${JSON.stringify(savedSize)},
+                  debridProvider: ${JSON.stringify(savedDebridProvider)},
+                  debridOpts: ${JSON.stringify(savedDebridOpts)},
+                  apiKeys: ${JSON.stringify(apiKeys)},
+                  putioClientId: ${JSON.stringify(putioClientId)},
+                  putioToken: ${JSON.stringify(putioToken)},
+                  installUrl: '#',
+                  
+                  // UI Status
+                  copiedDonation: '',
+                  copiedInstall: false,
+                  descExpanded: false,
+
+                  options: {
+                      providers: ${JSON.stringify(providerList)},
+                      sort: ${JSON.stringify(sortList)},
+                      languages: ${JSON.stringify(languageList)},
+                      qualities: ${JSON.stringify(qualityList)},
+                      debridProviders: ${JSON.stringify(debridProviderList)},
+                      debridOpts: ${JSON.stringify(debridOptList)},
+                  },
+                  
+                  donationAddresses: {
+                      BTC: 'bc1qkfrm3zukkrehg2twpzv2zurzfhjmk4lce92paf',
+                      ETH: '0xc451992e770cf1528b50405d56b17a1f257435fe',
+                      SOL: '55qSqbxNT7UnZZ4zDYNDStHphiTXkH4gkbPc4RRLQmmy'
+                  },
+
+                  toggleProvider(value) {
+                      if (this.providers.includes(value)) {
+                          this.providers = this.providers.filter(x => x !== value);
+                      } else {
+                          this.providers.push(value);
+                      }
+                  },
+
+                  generateLink() {
+                      const allProvidersCount = this.options.providers.length;
+                      const providerStr = (this.providers.length > 0 && this.providers.length < allProvidersCount) 
+                          ? this.providers.join(',') 
+                          : '';
+
+                      const qualityStr = this.qualities.join(',');
+                      const sortStr = (this.sort !== '${SortOptions.options.qualitySeeders.key}') ? this.sort : '';
+                      const langStr = this.languages.join(',');
+                      const limitStr = (/^[1-9][0-9]{0,2}$/.test(this.limit)) ? this.limit : '';
+                      const sizeStr = this.sizeFilter;
+                      const debridOptStr = this.debridOpts.join(',');
+                      
+                      const activeDebrid = this.debridProvider;
+                      let activeKey = '';
+                      
+                      if (activeDebrid === '${MochOptions.putio.key}') {
+                          if (this.putioClientId && this.putioToken) {
+                              activeKey = this.putioClientId.trim() + '@' + this.putioToken.trim();
+                          }
+                      } else if (activeDebrid !== 'none') {
+                          activeKey = this.apiKeys[activeDebrid] ? this.apiKeys[activeDebrid].trim() : '';
+                      }
+
+                      const configMap = [
+                          ['${Providers.key}', providerStr],
+                          ['${SortOptions.key}', sortStr],
+                          ['${LanguageOptions.key}', langStr],
+                          ['${QualityFilter.key}', qualityStr],
+                          ['limit', limitStr],
+                          ['${SizeFilter.key}', sizeStr],
+                          ['${DebridOptions.key}', debridOptStr],
+                          [activeDebrid, activeKey]
+                      ];
+
+                      const configPath = configMap
+                          .filter(([k, v]) => v && v.length > 0 && k !== 'none')
+                          .map(([k, v]) => k + '=' + v)
+                          .join('|');
+
+                      this.installUrl = 'stremio://' + window.location.host + (configPath ? '/' + configPath : '') + '/manifest.json';
+                  },
+                  
+                  copyLink() {
+                      const httpsLink = this.installUrl.replace('stremio://', 'https://');
+                      navigator.clipboard.writeText(httpsLink).then(() => {
+                          this.copiedInstall = true;
+                          setTimeout(() => { this.copiedInstall = false }, 2000);
+                      });
+                  },
+                  
+                  copyDonation(type) {
+                      const addr = this.donationAddresses[type];
+                      navigator.clipboard.writeText(addr).then(() => {
+                          this.copiedDonation = type;
+                          setTimeout(() => { this.copiedDonation = '' }, 2000);
+                      });
+                  }
+              }))
           });
       </script>
-	</body>
+  </head>
+  <body class="bg-gray-900 text-gray-100 min-h-screen flex items-center justify-center md:px-4 relative"
+        style="background-image: url('${background}'); background-size: cover; background-position: center; background-attachment: fixed;">
+      
+      <div class="absolute inset-0 bg-black bg-opacity-70 z-0"></div>
 
-	</html>`
+      <div x-data="addonConfig" x-effect="generateLink()" x-cloak class="relative z-10 w-full md:max-w-5xl glass rounded-none md:rounded-2xl shadow-2xl overflow-hidden flex flex-col h-full md:h-[96vh]">
+          
+          <div class="text-center py-3 px-4 flex-shrink-0 bg-gray-900/40 border-b border-gray-700/50">
+              <img src="${logo}" class="w-12 h-12 md:w-20 md:h-20 mx-auto rounded-xl shadow-lg mb-2" alt="Logo">
+              
+              <div class="flex flex-wrap items-center justify-center gap-2 md:gap-3 mb-1">
+                  <h1 class="text-lg md:text-2xl font-bold tracking-tight text-white">${manifest.name}</h1>
+                  <span class="text-[10px] md:text-xs font-mono bg-gray-800 text-indigo-400 border border-gray-700 px-1.5 py-0.5 rounded shadow-sm select-none">
+                      v${manifest.version || '0.0.0'}
+                  </span>
+              </div>
+
+              <div 
+                  @click="descExpanded = !descExpanded" 
+                  @keydown.enter="descExpanded = !descExpanded"
+                  @keydown.space.prevent="descExpanded = !descExpanded"
+                  tabindex="0"
+                  role="button"
+                  :aria-expanded="descExpanded"
+                  aria-label="Expand or collapse description"
+                  class="group cursor-pointer max-w-4xl mx-auto focus:outline-none focus:ring-2 focus:ring-indigo-500/50 rounded p-1"
+              >
+                  <p class="text-xs md:text-sm text-gray-400 leading-relaxed transition-all duration-200"
+                     :class="descExpanded ? '' : 'line-clamp-2 md:line-clamp-none'">
+                      ${manifest.description || 'Configuration'}
+                  </p>
+                  <div class="md:hidden text-[10px] text-indigo-400 mt-1 opacity-80" x-text="descExpanded ? 'Show less' : 'Show more'"></div>
+              </div>
+          </div>
+
+          <div class="p-4 md:p-6 space-y-6 md:space-y-8 overflow-y-auto scroller flex-grow">
+              
+              <div>
+                  <div class="flex justify-between items-center mb-2 md:mb-3">
+                    <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider">Providers</h3>
+                    <button 
+                        @click="providers = options.providers.map(p => p.value)" 
+                        class="text-xs text-indigo-400 hover:text-indigo-300 focus:outline-none focus:text-indigo-200 focus:underline"
+                    >Select All</button>
+                  </div>
+                  <div class="flex flex-wrap gap-2">
+                      <template x-for="p in options.providers" :key="p.value">
+                          <button 
+                              @click="toggleProvider(p.value)"
+                              :class="providers.includes(p.value) ? 'bg-indigo-600 text-white border-indigo-500 shadow-lg shadow-indigo-500/20' : 'bg-gray-800 text-gray-400 border-gray-700 hover:bg-gray-700'"
+                              class="px-2.5 py-1.5 md:px-3 md:py-1.5 rounded-full text-[10px] md:text-xs font-semibold border transition-all duration-200 select-none focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-indigo-500">
+                              <span x-text="p.label"></span>
+                          </button>
+                      </template>
+                  </div>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
+                  <div>
+                      <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Sorting</label>
+                      <select x-model="sort" class="w-full bg-gray-800 border border-gray-700 text-xs md:text-sm text-white rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-indigo-500 outline-none">
+                          <template x-for="opt in options.sort">
+                              <option :value="opt.value" x-text="opt.label" :selected="opt.value === sort"></option>
+                          </template>
+                      </select>
+                  </div>
+                  <div>
+                      <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2" x-text="['${SortOptions.options.seeders.key}', '${SortOptions.options.size.key}'].includes(sort) ? 'Max Results' : 'Max Results per Quality'"></label>
+                      <input x-model="limit" type="number" placeholder="All results" class="w-full bg-gray-800 border border-gray-700 text-xs md:text-sm text-white rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-indigo-500 outline-none">
+                  </div>
+              </div>
+
+              <div>
+                  <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Priority Language</label>
+                  <div class="bg-gray-800 rounded-lg border border-gray-700 max-h-32 md:max-h-48 overflow-y-auto scroller">
+                      <template x-for="lang in options.languages" :key="lang.value">
+                          <label class="flex items-center px-4 py-2 hover:bg-gray-700 cursor-pointer border-b border-gray-700/50 last:border-0 transition-colors focus-within:bg-gray-700">
+                              <input type="checkbox" :value="lang.value" x-model="languages" class="w-4 h-4 text-indigo-600 rounded bg-gray-900 border-gray-600 focus:ring-indigo-500 focus:ring-offset-gray-800">
+                              <span class="ml-3 text-xs md:text-sm text-gray-200" x-text="lang.label"></span>
+                          </label>
+                      </template>
+                  </div>
+              </div>
+
+              <div>
+                  <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Exclude Resolutions</label>
+                  <div class="flex flex-wrap gap-2">
+                      <template x-for="q in options.qualities" :key="q.value">
+                          <label class="flex items-center space-x-2 cursor-pointer bg-gray-800 px-3 py-2 rounded-lg border border-gray-700 hover:border-gray-500 transition-colors select-none focus-within:ring-2 focus-within:ring-red-500/50 focus-within:border-red-500">
+                              <input type="checkbox" :value="q.value" x-model="qualities" class="w-4 h-4 text-red-500 rounded bg-gray-900 border-gray-600 focus:ring-red-500 focus:ring-offset-gray-800">
+                              <span class="text-[10px] md:text-xs font-medium text-gray-300" x-text="q.label"></span>
+                          </label>
+                      </template>
+                  </div>
+              </div>
+              
+               <div>
+                  <div class="flex items-center gap-2 mb-2">
+                      <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider">Video Size Limit</label>
+                      <div class="group relative flex items-center">
+                          <svg 
+                              tabindex="0" 
+                              role="img" 
+                              aria-label="Info about size limit" 
+                              aria-describedby="size-tooltip"
+                              xmlns="http://www.w3.org/2000/svg" 
+                              class="h-4 w-4 text-gray-500 cursor-help hover:text-indigo-400 focus:text-indigo-400 transition-colors focus:outline-none" 
+                              fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <div id="size-tooltip" role="tooltip" class="tooltip-content absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-64 p-3 bg-black/90 backdrop-blur-sm text-xs text-gray-200 rounded-lg shadow-xl border border-gray-700 text-center leading-relaxed z-50 pointer-events-none">
+                              Returned videos cannot exceed this size, use comma to have different size for movies and series. Examples: 5GB ; 800MB ; 10GB,2GB
+                              <div class="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1 border-4 border-transparent border-t-black/90"></div>
+                          </div>
+                      </div>
+                  </div>
+                  <input x-model="sizeFilter" type="text" placeholder="e.g. 2GB, 500MB" class="w-full bg-gray-800 border border-gray-700 text-xs md:text-sm text-white rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-indigo-500 outline-none">
+              </div>
+
+              <div class="h-px bg-gray-700 w-full"></div>
+
+              <div class="bg-gray-800/40 rounded-xl p-4 md:p-5 border border-gray-700/50">
+                  <div class="mb-4">
+                      <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Debrid Provider</label>
+                      <div class="relative">
+                          <select x-model="debridProvider" class="w-full bg-gray-800 border border-gray-700 text-xs md:text-sm text-white rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-indigo-500 outline-none appearance-none">
+                              <option value="none">None</option>
+                              <template x-for="p in options.debridProviders">
+                                  <option :value="p.value" x-text="p.label" :selected="p.value === debridProvider"></option>
+                              </template>
+                          </select>
+                          <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-400">
+                              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                          </div>
+                      </div>
+                  </div>
+
+                  <div x-show="debridProvider !== 'none'" x-transition class="space-y-4 pt-2">
+                      
+                      <div x-show="debridProvider !== '${MochOptions.putio.key}'">
+                          <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">API Key</label>
+                          <input type="text" x-model="apiKeys[debridProvider]" class="w-full bg-gray-800 border border-gray-700 text-xs md:text-sm text-white rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-indigo-500 outline-none">
+                          <div class="mt-2 text-right">
+                              <a target="_blank" 
+                                 :href="
+                                  debridProvider === '${MochOptions.realdebrid.key}' ? 'https://real-debrid.com/apitoken' :
+                                  debridProvider === '${MochOptions.alldebrid.key}' ? 'https://alldebrid.com/apikeys' :
+                                  debridProvider === '${MochOptions.premiumize.key}' ? 'https://www.premiumize.me/account' :
+                                  debridProvider === '${MochOptions.debridlink.key}' ? 'https://debrid-link.fr/webapp/apikey' :
+                                  debridProvider === '${MochOptions.offcloud.key}' ? 'https://offcloud.com/#/account' :
+                                  debridProvider === '${MochOptions.torbox.key}' ? 'https://torbox.app/settings' : '#'
+                                 "
+                                 class="text-[10px] md:text-xs text-indigo-400 hover:text-indigo-300 hover:underline focus:outline-none focus:ring-1 focus:ring-indigo-400 rounded">
+                                  Find API Key &rarr;
+                              </a>
+                          </div>
+                      </div>
+
+                      <div x-show="debridProvider === '${MochOptions.putio.key}'" class="grid grid-cols-2 gap-4">
+                          <div>
+                              <input type="text" x-model="putioClientId" placeholder="Client ID" class="w-full bg-gray-800 border border-gray-700 text-xs md:text-sm text-white rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-indigo-500 outline-none">
+                          </div>
+                          <div>
+                              <input type="text" x-model="putioToken" placeholder="Token" class="w-full bg-gray-800 border border-gray-700 text-xs md:text-sm text-white rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-indigo-500 outline-none">
+                          </div>
+                      </div>
+
+                      <div class="pt-2">
+                          <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Options</label>
+                          <div class="flex flex-wrap gap-2">
+                              <template x-for="opt in options.debridOpts" :key="opt.value">
+                                  <label class="flex items-center space-x-2 cursor-pointer bg-gray-900/50 px-3 py-1.5 rounded border border-gray-700 select-none focus-within:ring-2 focus-within:ring-indigo-500/50">
+                                      <input type="checkbox" :value="opt.value" x-model="debridOpts" class="w-3.5 h-3.5 text-indigo-600 rounded bg-gray-800 border-gray-600 focus:ring-indigo-500 focus:ring-offset-gray-800">
+                                      <span class="text-[10px] md:text-xs font-medium text-gray-300" x-text="opt.label"></span>
+                                  </label>
+                              </template>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+
+          </div>
+
+          <div class="p-4 md:p-5 bg-gray-900/95 border-t border-gray-800 flex-shrink-0 z-20 space-y-4">
+              
+              <div>
+                  <a :href="installUrl" class="block w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-center py-3 md:py-3.5 rounded-xl shadow-lg transition-all transform active:scale-[0.98] text-sm md:text-base focus:outline-none focus:ring-4 focus:ring-indigo-500/50">
+                      INSTALL
+                  </a>
+                  <div class="text-center mt-3">
+                      <button 
+                          @click="copyLink" 
+                          class="relative group text-[10px] md:text-xs text-gray-500 hover:text-gray-300 underline focus:outline-none focus:text-indigo-300"
+                      >
+                          Copy Link
+                          <div x-show="copiedInstall" x-transition class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-black text-white text-[10px] py-1 px-2 rounded whitespace-nowrap">Copied!</div>
+                      </button>
+                  </div>
+              </div>
+              
+              <div class="pt-2 border-t border-gray-800/50">
+                  <p class="text-center text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-3">Support Development</p>
+                  <div class="flex justify-center gap-4">
+                      <button 
+                          @click="copyDonation('BTC')" 
+                          aria-label="Donate Bitcoin (BTC)"
+                          class="group relative p-2 rounded-lg bg-gray-800/50 hover:bg-orange-500/10 border border-gray-700 hover:border-orange-500/50 transition-all focus:outline-none focus:ring-2 focus:ring-orange-500">
+                          <svg class="w-4 h-4 md:w-5 md:h-5 text-gray-400 group-hover:text-orange-500" fill="currentColor" viewBox="0 0 512 512"><path d="M504 256c0 136.967-111.033 248-248 248S8 392.967 8 256 119.033 8 256 8s248 111.033 248 248zm-141.663-6.692c6.027-40.125-24.653-61.69-66.675-76.083l13.604-54.587-23.211-5.786-13.342 53.544c-6.105-1.524-12.42-3.045-18.647-4.502l13.435-53.904-23.211-5.787-13.648 54.766c-5.06-1.155-10.038-2.277-14.931-3.44l.01-.043-32.003-8.005-6.176 24.786s17.228 3.945 16.857 4.186c9.407 2.344 11.106 8.557 10.824 13.483l-10.852 43.543c.648.164 1.485.405 2.406.757-.765-.192-1.574-.388-2.434-.606l-15.207 61.025c-1.154 2.857-4.088 7.143-10.667 5.503.292.417-16.857-4.186-16.857-4.186l-11.558 26.657 30.198 7.53c5.567 1.385 11.026 2.769 16.565 4.095l-13.729 55.093 23.211 5.787 13.626-54.693c6.353 1.722 12.56 3.336 18.667 4.814l-13.644 54.757 23.211 5.787 13.607-54.59c35.498 6.717 62.247 4.008 73.486-28.11 9.06-25.845-456-40.75-21.36-53.957 15.195-3.324 21.464-10.74 19.124-21.365zm-72.296 66.828c-9.782 39.255-75.926 18.04-97.382 12.693l17.382-69.742c21.458 5.347 90.79 15.393 80 57.049zm12.378-102.946c-8.948 35.91-64.248 17.653-82.162 13.187l15.798-63.385c17.915 4.466 75.589 12.8 66.364 50.198z"/></svg>
+                          <div x-show="copiedDonation === 'BTC'" x-transition class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-black text-white text-[10px] py-1 px-2 rounded whitespace-nowrap">Copied!</div>
+                      </button>
+                      
+                      <button 
+                          @click="copyDonation('ETH')"
+                          aria-label="Donate Ethereum (ETH)" 
+                          class="group relative p-2 rounded-lg bg-gray-800/50 hover:bg-purple-500/10 border border-gray-700 hover:border-purple-500/50 transition-all focus:outline-none focus:ring-2 focus:ring-purple-500">
+                          <svg class="w-4 h-4 md:w-5 md:h-5 text-gray-400 group-hover:text-purple-500" fill="currentColor" viewBox="0 0 32 32"><path d="M15.925 23.96l-9.819-5.796L15.925 32l9.83-13.836-9.83 5.796zM16.075 0L6.255 16.346l9.82 5.806 9.82-5.806L16.075 0zm0 14.5l-5.79-3.46 5.79-9.57 5.8 9.57-5.8 3.46z"/></svg>
+                          <div x-show="copiedDonation === 'ETH'" x-transition class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-black text-white text-[10px] py-1 px-2 rounded whitespace-nowrap">Copied!</div>
+                      </button>
+                      
+                      <button 
+                          @click="copyDonation('SOL')" 
+                          aria-label="Donate Solana (SOL)"
+                          class="group relative p-2 rounded-lg bg-gray-800/50 hover:bg-teal-400/10 border border-gray-700 hover:border-teal-400/50 transition-all focus:outline-none focus:ring-2 focus:ring-teal-400">
+                           <svg class="w-4 h-4 md:w-5 md:h-5 text-gray-400 group-hover:text-teal-400" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4.77661 8.89139C4.65487 8.76991 4.65487 8.57271 4.77661 8.45123L7.3323 5.89739C7.45404 5.77565 7.65149 5.77565 7.77323 5.89739L23.4475 21.5604C23.5693 21.6819 23.5693 21.8791 23.4475 22.0006L20.8918 24.5544C20.7701 24.6762 20.5727 24.6762 20.4509 24.5544L4.77661 8.89139ZM27.0652 24.5544C27.187 24.6762 27.187 24.8733 27.0652 24.9948L24.5095 27.5487C24.3878 27.6704 24.1903 27.6704 24.0686 27.5487L8.39433 11.8856C8.27259 11.7639 8.27259 11.5667 8.39433 11.4452L10.9501 8.89139C11.0718 8.76991 11.2692 8.76991 11.391 8.89139L27.0652 24.5544ZM27.0652 8.89139C27.187 8.76991 27.187 8.57271 27.0652 8.45123L24.5095 5.89739C24.3878 5.77565 24.1903 5.77565 24.0686 5.89739L18.8475 11.1148L21.844 14.1088L27.0652 8.89139ZM12.9944 22.9515L9.99793 19.9575L4.77661 24.5544C4.65487 24.6762 4.65487 24.8733 4.77661 24.9948L7.3323 27.5487C7.45404 27.6704 7.65149 27.6704 7.77323 27.5487L12.9944 22.9515Z" fill="currentColor"/></svg>
+                          <div x-show="copiedDonation === 'SOL'" x-transition class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-black text-white text-[10px] py-1 px-2 rounded whitespace-nowrap">Copied!</div>
+                      </button>
+                  </div>
+              </div>
+          </div>
+
+      </div>
+  </body>
+  </html>
+  `;
 }
