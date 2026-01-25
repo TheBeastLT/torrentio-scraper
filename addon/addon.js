@@ -19,7 +19,7 @@ const STALE_ERROR_AGE = 7 * 24 * 60 * 60; // 7 days
 
 const builder = new addonBuilder(dummyManifest());
 const requestQueue = createNamedQueue(Infinity);
-const newLimiter = pLimit(30)
+const newLimiter = pLimit(50)
 
 builder.defineStreamHandler((args) => {
   if (!args.id.match(/tt\d+/i) && !args.id.match(/kitsu:\d+/i)) {
