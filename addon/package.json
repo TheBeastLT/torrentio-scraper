@@ -10,6 +10,7 @@
   "license": "MIT",
   "dependencies": {
     "@keyv/mongo": "^3.1.0",
+    "@keyv/redis": "^5.1.6",
     "@paradise-cloud/easy-debrid": "^3.0.0",
     "@putdotio/api-client": "^8.42.0",
     "all-debrid-api": "^1.3.3",
