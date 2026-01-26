@@ -19,6 +19,8 @@ jobs:
             ssh-key: SSH_KEY_3
           - ssh-host: SSH_HOST_4
             ssh-key: SSH_KEY_4
+          - ssh-host: SSH_HOST_5
+            ssh-key: SSH_KEY_5
 
     steps:
       - uses: actions/checkout@v1

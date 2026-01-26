@@ -1,5 +1,4 @@
 import KeyvMongo from "@keyv/mongo";
-import KeyvRedis from "@keyv/redis";
 import { KeyvCacheableMemory } from "cacheable";
 import { isStaticUrl }  from '../moch/static.js';
 
@@ -15,10 +14,8 @@ const AVAILABILITY_TTL =  5 * 24 * 60 * 60 * 1000; // 5 days
 const MESSAGE_VIDEO_URL_TTL = 60 * 1000; // 1 minutes
 
 const MONGO_URI = process.env.MONGODB_URI;
-const REDIS_URL = process.env.REDIS_URL;
 
 const memoryCache = new KeyvCacheableMemory({ ttl: MESSAGE_VIDEO_URL_TTL, lruSize: Infinity });
-const redisCache = REDIS_URL && new KeyvRedis(REDIS_URL);
 const mongoCache = MONGO_URI && new KeyvMongo(MONGO_URI, {
   collection: 'torrentio_addon_collection',
   minPoolSize: 50,
@@ -26,29 +23,28 @@ const mongoCache = MONGO_URI && new KeyvMongo(MONGO_URI, {
   maxConnecting: 5,
 });
 
-async function cacheWrapRedis(key, method, ttl) {
-    const value = await redisCache.get(key);
+async function cacheWrap(cache, key, method, ttl) {
+    if (!cache) {
+        return method();
+    }
+    const value = await cache.get(key);
     if (value !== undefined) {
-        try {
-            return JSON.parse(value);
-        } catch (e) {
-            console.warn(`Cache parse error for key ${key}`, e);
-        }
+        return value;
     }
     const result = await method();
     const ttlValue = ttl instanceof Function ? ttl(result) : ttl;
-    await redisCache.set(key, JSON.stringify(result), ttlValue);
+    await cache.set(key, result, ttlValue);
     return result;
 }
 
 export function cacheWrapStream(id, method) {
   const ttl = (streams) => streams.length ? STREAM_TTL : STREAM_EMPTY_TTL;
-  return cacheWrapRedis(`${STREAM_KEY_PREFIX}:${id}`, method, ttl);
+  return cacheWrap(mongoCache, `${STREAM_KEY_PREFIX}:${id}`, method, ttl);
 }
 
 export function cacheWrapResolvedUrl(id, method) {
   const ttl = (url) => isStaticUrl(url) ? MESSAGE_VIDEO_URL_TTL : RESOLVED_URL_TTL;
-  return cacheWrapRedis(`${RESOLVED_URL_KEY_PREFIX}:${id}`, method, ttl);
+  return cacheWrap(mongoCache, `${RESOLVED_URL_KEY_PREFIX}:${id}`, method, ttl);
 }
 
 export function cacheAvailabilityResults(infoHash, fileIds) {
