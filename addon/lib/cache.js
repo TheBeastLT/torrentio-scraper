@@ -7,7 +7,8 @@ const STREAM_KEY_PREFIX = `${GLOBAL_KEY_PREFIX}|stream`;
 const AVAILABILITY_KEY_PREFIX = `${GLOBAL_KEY_PREFIX}|availability`;
 const RESOLVED_URL_KEY_PREFIX = `${GLOBAL_KEY_PREFIX}|resolved`;
 
-const STREAM_TTL = 24 * 60 * 60 * 1000; // 24 hours
+const STREAM_TTL = 3 * 24 * 60 * 60 * 1000; // 3 days
+const STREAM_MEM_TTL = 2 * 60 * 60 * 1000; // 2 hours
 const STREAM_EMPTY_TTL = 60 * 1000; // 1 minute
 const RESOLVED_URL_TTL = 3 * 60 * 60 * 1000; // 3 hours
 const AVAILABILITY_TTL =  5 * 24 * 60 * 60 * 1000; // 5 days
@@ -15,7 +16,7 @@ const MESSAGE_VIDEO_URL_TTL = 60 * 1000; // 1 minutes
 
 const MONGO_URI = process.env.MONGODB_URI;
 
-const memoryCache = new KeyvCacheableMemory({ ttl: MESSAGE_VIDEO_URL_TTL, lruSize: Infinity });
+const memoryCache = new KeyvCacheableMemory({ lruSize: 10000 });
 const mongoCache = MONGO_URI && new KeyvMongo(MONGO_URI, {
   collection: 'torrentio_addon_collection',
   minPoolSize: 50,
@@ -23,28 +24,38 @@ const mongoCache = MONGO_URI && new KeyvMongo(MONGO_URI, {
   maxConnecting: 5,
 });
 
-async function cacheWrap(cache, key, method, ttl) {
-    if (!cache) {
+async function cacheWrap(key, method, ttl) {
+    if (!mongoCache) {
         return method();
     }
-    const value = await cache.get(key);
+    let value = await memoryCache.get(key);
     if (value !== undefined) {
         return value;
     }
+    value = await mongoCache.get(key);
+    if (value !== undefined) {
+        await cacheValue(memoryCache, key, value, ttl);
+        return value;
+    }
     const result = await method();
-    const ttlValue = ttl instanceof Function ? ttl(result) : ttl;
-    await cache.set(key, result, ttlValue);
+    await cacheValue(mongoCache, key, result, ttl);
+    await cacheValue(memoryCache, key, result, ttl);
     return result;
 }
 
+async function cacheValue(cache, key, value, ttl) {
+    const ttlValue = ttl instanceof Function ? ttl(value, cache) : ttl;
+    await cache.set(key, value, ttlValue);
+}
+
 export function cacheWrapStream(id, method) {
-  const ttl = (streams) => streams.length ? STREAM_TTL : STREAM_EMPTY_TTL;
-  return cacheWrap(mongoCache, `${STREAM_KEY_PREFIX}:${id}`, method, ttl);
+  const ttl = (streams, cache) => streams.length ? cache !== memoryCache ? STREAM_TTL : STREAM_MEM_TTL : STREAM_EMPTY_TTL;
+  return cacheWrap(`${STREAM_KEY_PREFIX}:${id}`, method, ttl);
 }
 
 export function cacheWrapResolvedUrl(id, method) {
   const ttl = (url) => isStaticUrl(url) ? MESSAGE_VIDEO_URL_TTL : RESOLVED_URL_TTL;
-  return cacheWrap(mongoCache, `${RESOLVED_URL_KEY_PREFIX}:${id}`, method, ttl);
+  return cacheWrap(`${RESOLVED_URL_KEY_PREFIX}:${id}`, method, ttl);
 }
 
 export function cacheAvailabilityResults(infoHash, fileIds) {
