@@ -4,6 +4,7 @@ import { isVideo } from '../lib/extension.js';
 import StaticResponse from './static.js';
 import { getMagnetLink } from '../lib/magnetHelper.js';
 import { sameFilename, streamFilename, BadTokenError, AccessDeniedError } from './mochHelper.js';
+import * as querystring from "node:querystring";
 
 const KEY = 'torbox';
 const timeout = 30000;
@@ -69,7 +70,7 @@ export async function getItemMeta(itemId, apiKey) {
           id: `${KEY}:${itemId}:${file.id}`,
           title: file.name,
           released: new Date(createDate.getTime() - index).toISOString(),
-          streams: [{ url: `${apiKey}/${itemId}-${file.id}/null/null` }]
+          streams: [{ url: getDownloadLink(apiKey, type, id, file.id) }]
         }))
   }
 }
@@ -97,7 +98,7 @@ export async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex
 async function _resolve(apiKey, infoHash, cachedEntryInfo, fileIndex, ip) {
   if (infoHash?.includes('-')) {
     const [type, rootId, fileId] = infoHash.split('-');
-    return getDownloadLink(apiKey, type, rootId, fileId, ip);
+    return getDownloadLink(apiKey, type, rootId, fileId);
   }
   const torrent = await _createOrFindTorrent(apiKey, infoHash);
   if (torrent && statusReady(torrent)) {
@@ -167,7 +168,7 @@ async function freeLastActiveTorrent(apiKey) {
   return Promise.reject({ detail: 'No torrent to pause found' });
 }
 
-async function _unrestrictLink(apiKey, infoHash, torrent, cachedEntryInfo, fileIndex, ip) {
+async function _unrestrictLink(apiKey, infoHash, torrent, cachedEntryInfo, fileIndex) {
   const targetFileName = decodeURIComponent(cachedEntryInfo);
   const videos = torrent.files
       .filter(file => isVideo(file.short_name))
@@ -182,7 +183,7 @@ async function _unrestrictLink(apiKey, infoHash, torrent, cachedEntryInfo, fileI
     }
     return Promise.reject(`No TorBox file found for index ${fileIndex} in: ${JSON.stringify(torrent)}`);
   }
-  return getDownloadLink(apiKey, 'torrents', torrent.id, targetVideo.id, ip);
+  return getDownloadLink(apiKey, 'torrents', torrent.id, targetVideo.id);
 }
 
 async function getAvailabilityResponse(apiKey, hashes) {
@@ -251,19 +252,10 @@ async function getItemList(apiKey, type, id = undefined, offset = 0, bypass_cach
       .catch(error => Promise.reject(error.response?.data || error));
 }
 
-async function getDownloadLink(token, type, rootId, file_id, user_ip) {
-  const url = `${baseUrl}/api/${type}/requestdl`;
-  const headers = getHeaders(token);
-  const params = { token, torrent_id: rootId, usenet_id: rootId, web_id: rootId, file_id, user_ip };
-  return axios.get(url, { params, headers, timeout })
-      .then(response => {
-        if (response.data?.success) {
-          console.log(`Unrestricted TorBox ${type} [${rootId}] to ${response.data.data}`);
-          return Promise.resolve(response.data.data);
-        }
-        return Promise.reject(response.data);
-      })
-      .catch(error => Promise.reject(error.response?.data || error));
+function getDownloadLink(token, type, rootId, file_id) {
+  const idKey = { torrents: 'torrent_id', usenet: 'usenet_id', webdl: 'web_id' }[type]
+  const params = { token, [idKey]: rootId, file_id, redirect: true };
+  return `${baseUrl}/api/${type}/requestdl?${querystring.stringify(params)}`;
 }
 
 function getHeaders(apiKey) {
