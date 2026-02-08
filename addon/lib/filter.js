@@ -56,6 +56,11 @@ export const Providers = {
       anime: true
     },
     {
+      key: 'nekobt',
+      label: 'nekoBT',
+      anime: true
+    },
+    {
       key: 'rutor',
       label: 'Rutor',
       foreign: '🇷🇺'
@@ -76,9 +81,9 @@ export const Providers = {
       foreign: '🇵🇹'
     },
     {
-        key: 'micoleaodublado',
-        label: 'MicoLeaoDublado',
-        foreign: '🇵🇹'
+      key: 'micoleaodublado',
+      label: 'MicoLeaoDublado',
+      foreign: '🇵🇹'
     },
     {
       key: 'torrent9',
