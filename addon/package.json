@@ -14,7 +14,7 @@
     "@paradise-cloud/easy-debrid": "^3.0.0",
     "@putdotio/api-client": "^8.42.0",
     "all-debrid-api": "^1.3.3",
-    "axios": "^1.13.2",
+    "axios": "^1.13.5",
     "cacheable": "^1.8.10",
     "cors": "^2.8.5",
     "debrid-link-api": "^1.0.1",
