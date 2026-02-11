@@ -73,12 +73,17 @@ export const Providers = {
     {
       key: 'comando',
       label: 'Comando',
-      foreign: '🇵🇹'
+      foreign: '🇧🇷'
     },
     {
       key: 'bludv',
       label: 'BluDV',
-      foreign: '🇵🇹'
+      foreign: '🇧🇷'
+    },
+    {
+      key: 'micoLeaoDublado',
+      label: 'MicoLeaoDublado',
+      foreign: '🇧🇷'
     },
     {
       key: 'micoleaodublado',
