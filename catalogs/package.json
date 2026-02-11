@@ -13,7 +13,7 @@
   "license": "MIT",
   "dependencies": {
     "@keyv/mongo": "^3.1.0",
-    "axios": "^1.13.2",
+    "axios": "^1.13.5",
     "bottleneck": "^2.19.5",
     "moment": "^2.30.1",
     "pg": "^8.16.3",
