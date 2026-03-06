@@ -18,7 +18,7 @@
     "cacheable": "^1.8.10",
     "cors": "^2.8.5",
     "debrid-link-api": "^1.0.1",
-    "express-rate-limit": "^8.2.1",
+    "express-rate-limit": "^8.3.0",
     "magnet-uri": "^6.2.0",
     "name-to-imdb": "^3.0.4",
     "named-queue": "^2.2.1",
