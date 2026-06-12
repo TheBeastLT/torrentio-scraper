@@ -93,6 +93,40 @@
     {
       "name": "Listy.do.M.5.2022.PL.1080p.WEB-DL.x264-K83",
       "expectedConfidence": "high"
+    },
+    {
+      "name": "Furiosa.A.Mad.Max.Saga.2024.MULTi.2160p.WEB-DL.x265-LTS",
+      "expectedConfidence": "medium",
+      "expectedTags": { "multi": true }
+    },
+    {
+      "name": "Shogun.S01E05.MULTi.1080p.AMZN.WEB-DL.H264-ANONiM",
+      "expectedConfidence": "medium",
+      "expectedTags": { "multi": true }
+    },
+    {
+      "name": "Bridgerton.S03.LektorPL.1080p.NF.WEB-DL",
+      "expectedConfidence": "high",
+      "expectedTags": { "lektor": true }
+    },
+    {
+      "name": "Vaiana.2.2024.DUBBPL.720p.WEB-DL",
+      "expectedConfidence": "high",
+      "expectedTags": { "dubbing": true }
+    },
+    {
+      "name": "Glina.S01.Odc.1-13.PL.480p.DVDRip.Paczka",
+      "expectedConfidence": "high"
+    },
+    {
+      "name": "Twisters.2024.MULTi.1080p.WEB.x264-spajk85",
+      "expectedConfidence": "medium",
+      "expectedTags": { "multi": true }
+    },
+    {
+      "name": "Gladiator.II.2024.1080p.WEB-DL.Napisy.NapiProjekt",
+      "expectedConfidence": "high",
+      "expectedTags": { "napisy": true }
     }
   ],
   "negative": [
@@ -143,6 +177,14 @@
     },
     {
       "name": "www.UIndex.pl - The.Movie.2023.1080p.WEB",
+      "expectedConfidence": "low"
+    },
+    {
+      "name": "Dune.Part.Two.2024.MULTi.1080p.WEB.H264-FLAME",
+      "expectedConfidence": "none"
+    },
+    {
+      "name": "Nobody.2.2025.1080p.WEB.H264-LTS",
       "expectedConfidence": "low"
     }
   ]

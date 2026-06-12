@@ -18,25 +18,46 @@ const HIGH_SCORE = 4;
 
 // Polish specific audio/subtitle tags. A bare "Lektor" or "Napisy" is already
 // uniquely Polish, while "Dubbing"/"DUB" alone is generic and needs the PL part.
-const LEKTOR_REGEX = /\blektor\b/i;
-const DUBBING_REGEX = /\b(?:dubbing[ ._-]*PL|PL[ ._-]?DUB(?:BING)?|DUB[ ._-]?PL)\b/i;
-const NAPISY_REGEX = /\b(?:napisy|PL[ ._-]?SUB(?:BED|S)?|SUB(?:S|BED)?[ ._-]?PL)\b/i;
+const LEKTOR_REGEX = /\blektor(?:pl)?\b/i;
+const DUBBING_REGEX = /\b(?:dubbing[ ._-]*PL|dubbingpl|PL[ ._-]?DUB(?:BING)?|DUB(?:B|BING)?[ ._-]?PL)\b/i;
+const NAPISY_REGEX = /\b(?:napisy(?:pl)?|napiproje?kt|PL[ ._-]?SUB(?:BED|S)?|SUB(?:S|BED)?[ ._-]?PL)\b/i;
 // Same guard as parse-torrent-title uses, so "www.site.PL" prefixes don't match.
 const LANGUAGE_TAG_REGEX = /(?<!w{3}\.\w+\.)\b(?:PL|POL)\b/i;
 // skipped when it is the first word, since then it's likely part of the title,
 // e.g. "Polish Wedding (1998)".
 const POLISH_WORD_REGEX = /\b(?:polish|polski(?:e|ego)?|po[ ._-]polsku|film[ ._-]polski)\b/i;
 const MULTI_REGEX = /\bMULTi?\b/i;
-// Curated list of release groups publishing Polish/MULTi-with-Polish releases.
+// Curated list of release groups publishing Polish/MULTi-with-Polish releases,
+// based on regex sets shared by the Polish Stremio community. Generic words,
+// international groups and one-letter tokens were dropped on purpose
+// (e.g. FLAME, FOX, GUN, KDE, R2D2, DReaM, bare K) to limit false positives.
 // Case sensitive on purpose, to not match unrelated words like "kit".
-const POLISH_GROUPS = ['K83', 'B89', 'KiT', 'PSiG', 'DSiTE', 'NitroTeam'];
+const POLISH_GROUPS = [
+  'A4O', 'ABM', 'AFO', 'AL3X', 'ANONiM', 'AS76', 'AZQ', 'Alusia', 'B2RPL', 'B89', 'BEBLU', 'BODZiO',
+  'BP007', 'BiDA', 'BiRD', 'CAMBiO', 'CHOPiN', 'CZRG', 'ChrisVPS', 'CiNEMAET', 'CinemaPolish', 'CoLO',
+  'DENDA', 'DSiTE', 'DYZIO', 'DZiDEK', 'DeiX', 'EMiS', 'EnTeR1973', 'FARNA', 'FPL', 'Flipu', 'GHW',
+  'GLiMMER', 'GR4PE', 'GameToonHD', 'GarRipzone', 'H3Q', 'HDBEE', 'HMDb', 'Izyk', 'JASKIER', 'Japhson',
+  'K041', 'K83', 'KIFR', 'KLiO', 'KPFR', 'KSQ', 'Kbuso', 'KiKO', 'KiT', 'KilKr', 'LTN', 'LTS', 'MAXiM',
+  'MORS', 'MiNS', 'Mixio', 'N0B0DY', 'N0L4', 'NitroTeam', 'NoNaNo', 'ODiSON', 'OzW', 'PIXELPOLICE',
+  'PLHD', 'PSOTNIK', 'PSiG', 'PTRG', 'PTTrG', 'PdlG', 'PiratesZone', 'ProPLTV', 'RAVoD', 'Ralf',
+  'RobSil', 'SK13', 'SYRIX', 'SZAFQU', 'Speedboy', 'Spedboy', 'StarLordX', 'TFSH', 'TV4TG', 'TiTaNiUM',
+  'ToP2P', 'WEB4TG', 'WiZARDS', 'XuploaD', 'ZLOCiUTKi', 'alE13', 'd666', 'inTGrity', 'wzrtyk', 'xmatr1x'
+];
 const POLISH_GROUP_REGEX = new RegExp(`(?:^|[ .([\\]-])(?:${POLISH_GROUPS.join('|')})(?:$|[ .)\\][-])`);
+// Known Polish uploader handles appearing in release/file names.
+const POLISH_UPLOADERS = [
+  'agusiq', 'dabrjarek', 'elladajarek', 'fiona9', 'gamer158', 'joanna668', 'kamil445', 'kamil11124',
+  'lufen', 'lysol1', 'maksim80', 'marcin0313', 'marjos83', 'nicollubin', 'pcela', 'potroks', 'spajk85',
+  'sy5ka', 'taboon1', 'tokar86a', 'wasik', 'wilu75', 'wosiu', 'zyvela'
+];
+const POLISH_UPLOADER_REGEX = new RegExp(`\\b(?:${POLISH_UPLOADERS.join('|')})\\b`, 'i');
 // Polish tracker watermarks frequently embedded in release/file names.
-const POLISH_SITE_REGEX = /best-?torrents|ex-?torrenty|devil-?torrents|polskie-?torrenty|electro-?torrent|helltorrents|xtorrenty|cinemamovies|exitorrent/i;
+const POLISH_SITE_REGEX = /best-?torrents|ex-?torrenty|devil-?torrents|polskie-?torrenty|electro-?torrent|helltorrents|xtorrenty|cinemamovies|exitorrent|polishtorrent|cool-?torents|shadows-?torrents|torrentmaniak|topfilmyfilmweb|bigbbs|filetracker|ekipa[ ._-]tnt/i;
 const POLISH_DOMAIN_REGEX = /\b[a-z0-9-]+\.pl\b/i;
 // Letters unique to the Polish alphabet ("ó" is shared with other languages).
 const POLISH_DIACRITICS_REGEX = /[ąćęłńśźż]/i;
-const POLISH_PHRASE_REGEX = /\bca[łl]y[ ._-]*film\b|\bodcinek\b/i;
+// Polish words characteristic for Polish uploads.
+const POLISH_PHRASE_REGEX = /\bca[łl]y[ ._-]*film\b|\bodc(?:inek|inki)?\b|\bpaczka\b|\bkolekcja\b|\bminiserial\b|\brekonstrukcja\b|\bwersja\b/i;
 const SEZON_REGEX = /\bsezon\b/i; // also used by Turkish releases, so a weak signal
 const POLISH_PROVIDERS = ['besttorrents'];
 
@@ -50,6 +71,7 @@ const SIGNALS = [
   { name: 'polish-site', score: 3, test: name => POLISH_SITE_REGEX.test(name) },
   { name: 'polish-diacritics', score: 3, test: name => POLISH_DIACRITICS_REGEX.test(name) },
   { name: 'release-group', score: 2, test: name => POLISH_GROUP_REGEX.test(name) },
+  { name: 'polish-uploader', score: 2, test: name => POLISH_UPLOADER_REGEX.test(name) },
   { name: 'polish-domain', score: 2, test: name => POLISH_DOMAIN_REGEX.test(name) },
   { name: 'polish-provider', score: 2, test: (name, provider) => isPolishProvider(provider) },
   { name: 'sezon', score: 1, test: name => SEZON_REGEX.test(name) }

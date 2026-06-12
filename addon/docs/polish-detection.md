@@ -22,10 +22,11 @@ module that scores a release/file name against multiple signals:
 | `napisy-pl` | 4 | `Napisy PL`, bare `Napisy`, `PLSUB`, `SUBPL` |
 | `language-tag` | 4 | standalone `PL` / `POL` token (`www.site.PL` excluded) |
 | `polish-word` | 4 | `POLISH`, `polski`, `po polsku` (skipped as the first word, e.g. the movie "Polish Wedding") |
-| `polish-phrase` | 3 | `cały film`, `odcinek` |
+| `polish-phrase` | 3 | `cały film`, `odcinek`/`odc`, `paczka`, `kolekcja`, `miniserial`, `wersja` |
 | `polish-site` | 3 | tracker watermarks: `ex-torrenty`, `devil-torrents`, `polskie-torrenty`, `electro-torrent`... |
 | `polish-diacritics` | 3 | letters unique to the Polish alphabet: `ą ć ę ł ń ś ź ż` |
-| `release-group` | 2 | curated Polish groups: `K83`, `B89`, `KiT`, `PSiG`, `DSiTE`, `NitroTeam` |
+| `release-group` | 2 | ~70 curated Polish groups (`K83`, `B89`, `KiT`, `PSiG`, `ANONiM`, `LTS`...), based on regex sets shared by the Polish Stremio community; generic/international tokens (`FLAME`, `FOX`, `KDE`, bare `K`...) deliberately excluded |
+| `polish-uploader` | 2 | known Polish uploader handles (`spajk85`, `agusiq`, `marcin0313`...) |
 | `polish-domain` | 2 | any `*.pl` domain in the name |
 | `polish-provider` | 2 | torrent scraped from a Polish provider (`BestTorrents`) |
 | `sezon` | 1 | `Sezon` (weak — also used by Turkish releases) |
