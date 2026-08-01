@@ -67,6 +67,10 @@ File.belongsTo(Torrent, { foreignKey: 'infoHash', constraints: false });
 File.hasMany(Subtitle, { foreignKey: 'fileId', constraints: false });
 Subtitle.belongsTo(File, { foreignKey: 'fileId', constraints: false });
 
+export function closeDatabase() {
+  return database.close();
+}
+
 export function getTorrent(infoHash) {
   return Torrent.findOne({ where: { infoHash: infoHash } });
 }

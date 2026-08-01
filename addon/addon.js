@@ -22,6 +22,9 @@ const requestQueue = createNamedQueue(200);
 const newLimiter = pLimit(50)
 
 builder.defineStreamHandler((args) => {
+  if (args.type !== Type.MOVIE && args.type !== Type.SERIES && args.type !== Type.ANIME) {
+    return Promise.resolve({ streams: [] });
+  }
   if (!args.id.match(/tt\d+/i) && !args.id.match(/kitsu:\d+/i)) {
     return Promise.resolve({ streams: [] });
   }
@@ -32,9 +35,7 @@ builder.defineStreamHandler((args) => {
       .then(streams => applyStaticInfo(streams))
       .then(streams => applyMochs(streams, args.extra))
       .then(streams => enrichCacheParams(streams))
-      .catch(error => {
-        return Promise.reject(`Failed request ${args.id}: ${error}`);
-      });
+      .catch(error => Promise.reject(new Error(`Failed request ${args.id}`, { cause: error })));
 });
 
 builder.defineCatalogHandler((args) => {
@@ -45,9 +46,7 @@ builder.defineCatalogHandler((args) => {
         metas: metas,
         cacheMaxAge: CATALOG_CACHE_MAX_AGE
       }))
-      .catch(error => {
-        return Promise.reject(`Failed retrieving catalog ${args.id}: ${JSON.stringify(error.message || error)}`);
-      });
+      .catch(error => Promise.reject(new Error(`Failed retrieving catalog ${args.id}`, { cause: error })));
 })
 
 builder.defineMetaHandler((args) => {
@@ -58,9 +57,7 @@ builder.defineMetaHandler((args) => {
         meta: meta,
         cacheMaxAge: metaId === 'Downloads' ? 0 : CACHE_MAX_AGE
       }))
-      .catch(error => {
-        return Promise.reject(`Failed retrieving catalog meta ${args.id}: ${JSON.stringify(error)}`);
-      });
+      .catch(error => Promise.reject(new Error(`Failed retrieving catalog meta ${args.id}`, { cause: error })));
 })
 
 async function resolveStreams(args) {
@@ -71,13 +68,12 @@ async function resolveStreams(args) {
 }
 
 async function streamHandler(args) {
-  // console.log(`Pending count: ${newLimiter.pendingCount}, active count: ${newLimiter.activeCount}`, )
   if (args.type === Type.MOVIE) {
     return movieRecordsHandler(args);
-  } else if (args.type === Type.SERIES) {
+  } else if (args.type === Type.SERIES || args.type === Type.ANIME) {
     return seriesRecordsHandler(args);
   }
-  return Promise.reject('not supported type');
+  return Promise.reject(new Error('not supported type'));
 }
 
 async function seriesRecordsHandler(args) {

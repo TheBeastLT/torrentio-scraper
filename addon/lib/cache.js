@@ -1,6 +1,9 @@
 import KeyvMongo from "@keyv/mongo";
 import { KeyvCacheableMemory } from "cacheable";
 import { isStaticUrl }  from '../moch/static.js';
+import { timeout } from './promises.js';
+
+const CACHE_READ_TIMEOUT = 3 * 1000;
 
 const GLOBAL_KEY_PREFIX = 'torrentio-addon';
 const STREAM_KEY_PREFIX = `${GLOBAL_KEY_PREFIX}|stream`;
@@ -30,24 +33,36 @@ async function cacheWrap(key, method, ttl, memCache = memoryCache) {
     if (!mongoCache) {
         return method();
     }
-    let value = await memCache.get(key);
+    let value = await cacheGet(memCache, key);
     if (value !== undefined) {
         return value;
     }
-    value = await mongoCache.get(key);
+    value = await cacheGet(mongoCache, key);
     if (value !== undefined) {
-        await cacheValue(memCache, key, value, ttl);
+        cacheSet(memCache, key, value, ttl);
         return value;
     }
     const result = await method();
-    await cacheValue(mongoCache, key, result, ttl);
-    await cacheValue(memCache, key, result, ttl);
+    cacheSet(mongoCache, key, result, ttl);
+    cacheSet(memCache, key, result, ttl);
     return result;
+}
+
+async function cacheGet(cache, key) {
+    return timeout(CACHE_READ_TIMEOUT, cache.get(key)).catch(() => undefined);
+}
+
+function cacheSet(cache, key, value, ttl) {
+    cacheValue(cache, key, value, ttl).catch(error => console.warn('Failed to write cache', key, error?.message || error));
 }
 
 async function cacheValue(cache, key, value, ttl) {
     const ttlValue = ttl instanceof Function ? ttl(value, cache) : ttl;
     await cache.set(key, value, ttlValue);
+}
+
+export function closeCache() {
+  return mongoCache ? mongoCache.disconnect() : Promise.resolve();
 }
 
 export function cacheWrapStream(id, method) {

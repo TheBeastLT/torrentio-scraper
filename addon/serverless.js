@@ -13,10 +13,11 @@ import landingTemplate from './lib/landingTemplate.js';
 import * as moch from './moch/moch.js';
 
 const router = new Router();
-const client = createClient({
+export const redisClient = createClient({
   url: process.env.REDIS_URL,
 })
-await client.connect()
+redisClient.on('error', (err) => console.error('Redis client error:', err?.message || err))
+redisClient.connect().catch((err) => console.error('Redis initial connect failed:', err?.message || err))
 const limiter = rateLimit({
   windowMs: 24 * 60 * 60 * 1000, // 1 day
   limit: 5000,
@@ -24,7 +25,7 @@ const limiter = rateLimit({
   passOnStoreError: true,
   keyGenerator: (req) => requestIp.getClientIp(req),
   store: new RedisStore({
-    sendCommand: (...args) => client.sendCommand(args),
+    sendCommand: (...args) => redisClient.sendCommand(args),
   }),
 })
 
@@ -90,7 +91,7 @@ router.get('{/:configuration}/:resource/:type/:id{/:extra}.json', limiter, (req,
             res.end(JSON.stringify({ err: 'not found' }));
           }
         } else {
-          console.error(err);
+          console.error('handler error', { resource, type, id, err: err?.message || err, cause: err?.cause?.message });
           res.writeHead(500);
           res.end(JSON.stringify({ err: 'handler error' }));
         }
@@ -115,7 +116,7 @@ router.get('/resolve/:moch/:apiKey/:infoHash/:cachedEntryInfo/:fileIndex{/:filen
         res.end();
       })
       .catch(error => {
-        console.log(error);
+        console.warn('resolve failed', { mochKey: parameters.mochKey, infoHash: parameters.infoHash, err: error?.message || error });
         res.statusCode = 404;
         res.end();
       });

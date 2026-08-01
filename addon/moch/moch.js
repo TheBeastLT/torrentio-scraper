@@ -14,6 +14,7 @@ import { BadTokenError, streamFilename, AccessDeniedError, enrichMeta, AccessBlo
 import { createNamedQueue } from "../lib/namedQueue.js";
 
 const RESOLVE_TIMEOUT = 2 * 60 * 1000; // 2 minutes
+const AVAILABILITY_TIMEOUT = 30 * 1000;
 const MIN_API_KEY_SYMBOLS = 15;
 const TOKEN_BLACKLIST = [];
 export const MochOptions = {
@@ -96,7 +97,7 @@ export async function applyMochs(streams, config) {
         if (isInvalidToken(config[moch.key], moch.key)) {
           return { moch, error: BadTokenError };
         }
-        return moch.instance.getCachedStreams(streams, config[moch.key], config.ip)
+        return timeout(AVAILABILITY_TIMEOUT, moch.instance.getCachedStreams(streams, config[moch.key], config.ip))
             .then(mochStreams => ({ moch, mochStreams }))
             .catch(rawError => {
               const error = moch.instance.toCommonError(rawError) || rawError;
@@ -204,7 +205,7 @@ function populateDownloadLinks(streams, results, config) {
     const supportDownloads = !mochResult.moch.noDownloads;
     const cachedEntry = mochResult.mochStreams[`${stream.infoHash}@${stream.fileIdx}`];
     const isCached = cachedEntry?.cached;
-    if (supportDownloads && !isCached && isHealthyStreamForDebrid(seededStreams, stream)) {
+    if (supportDownloads && cachedEntry && !isCached && isHealthyStreamForDebrid(seededStreams, stream)) {
       streams.push({
         name: `[${mochResult.moch.shortName} download] ${stream.name}`,
         title: stream.title,
