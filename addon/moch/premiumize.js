@@ -108,7 +108,7 @@ export async function resolve({ ip, isBrowser, apiKey, infoHash, cachedEntryInfo
 }
 
 async function _resolve(PM, infoHash, cachedEntryInfo, fileIndex, ip, isBrowser) {
-  const torrent = await _createOrFindTorrent(PM, infoHash);
+  const torrent = await _createTorrent(PM, infoHash);
   if (torrent && statusReady(torrent.status)) {
     return _getCachedLink(PM, infoHash, cachedEntryInfo, fileIndex, ip, isBrowser);
   } else if (torrent && statusDownloading(torrent.status)) {
@@ -141,14 +141,9 @@ async function _getCachedLink(PM, infoHash, encodedFileName, fileIndex, ip, isBr
   return Promise.reject('No cached entry found');
 }
 
-async function _createOrFindTorrent(PM, infoHash) {
-  return _findTorrent(PM, infoHash)
-      .catch(() => _createTorrent(PM, infoHash));
-}
-
-async function _findTorrent(PM, infoHash) {
+async function _findTorrent(PM, itemId) {
   const torrents = await PM.transfer.list().then(response => response.transfers);
-  const foundTorrents = torrents.filter(torrent => torrent.src.toLowerCase().includes(infoHash));
+  const foundTorrents = torrents.filter(torrent => torrent.id === itemId);
   const nonFailedTorrent = foundTorrents.find(torrent => !statusError(torrent.statusCode));
   const foundTorrent = nonFailedTorrent || foundTorrents[0];
   return foundTorrent || Promise.reject('No recent torrent found');
@@ -162,18 +157,18 @@ async function _findInfoHash(PM, itemId) {
 
 async function _createTorrent(PM, infoHash) {
   const magnetLink = await getMagnetLink(infoHash);
-  return PM.transfer.create(magnetLink).then(() => _findTorrent(PM, infoHash));
+  return PM.transfer.create(magnetLink).then((item) => _findTorrent(PM, item.id));
 }
 
 async function _retryCreateTorrent(PM, infoHash, encodedFileName, fileIndex) {
-  const newTorrent = await _createTorrent(PM, infoHash).then(() => _findTorrent(PM, infoHash));
+  const newTorrent = await _createTorrent(PM, infoHash);
   return newTorrent && statusReady(newTorrent.status)
       ? _getCachedLink(PM, infoHash, encodedFileName, fileIndex)
       : StaticResponse.FAILED_DOWNLOAD;
 }
 
 export function toCommonError(error) {
-  if (error && error.message === 'Not logged in.') {
+  if (error?.message === 'Not logged in.') {
     return BadTokenError;
   }
   return undefined;
