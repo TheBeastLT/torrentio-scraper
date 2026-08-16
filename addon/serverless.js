@@ -28,6 +28,7 @@ const limiter = rateLimit({
     sendCommand: (...args) => redisClient.sendCommand(args),
   }),
 })
+const resolvedUrlMaxAge = 6 * 60 * 60; // 6 hours
 
 router.use(cors())
 router.get('/', (_, res) => {
@@ -112,6 +113,9 @@ router.get('/resolve/:moch/:apiKey/:infoHash/:cachedEntryInfo/:fileIndex{/:filen
   }
   moch.resolve(parameters)
       .then(url => {
+        if (!url.startsWith(parameters.host)) {
+          res.setHeader('Cache-Control', `max-age=${resolvedUrlMaxAge}, public`);
+        }
         res.writeHead(302, { Location: url });
         res.end();
       })
