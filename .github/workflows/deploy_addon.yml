@@ -31,11 +31,12 @@ jobs:
             ghcr.io/thebeastlt/torrentio-addon:latest
 
       - name: Rolling update on the swarm
-        uses: appleboy/ssh-action@v1
+        uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SSH_HOST_1 }}
           key: ${{ secrets.SSH_KEY_1 }}
-          username: root
+          username: ${{ secrets.SSH_USERNAME }}
+          port: ${{ secrets.SSH_PORT }}
           script: |
             docker service update --with-registry-auth \
               --image ghcr.io/thebeastlt/torrentio-addon:${{ github.sha }} \
