@@ -221,7 +221,7 @@ async function torboxRequest(apiKey, method, path, { params, body } = {}) {
     const isJson = body && !(body instanceof URLSearchParams);
     const response = await fetch(`${baseUrl}${path}${query}`, {
         method,
-        headers: getHeaders(apiKey),
+        headers: { ...getHeaders(apiKey), ...(isJson && { 'Content-Type': 'application/json' }) },
         body: isJson ? JSON.stringify(body) : body,
         signal: AbortSignal.timeout(timeout)
     });
@@ -239,7 +239,7 @@ function getDownloadLink(token, type, rootId, file_id) {
 }
 
 function getHeaders(apiKey) {
-  return { Authorization: `Bearer ${apiKey}`, 'User-Agent': 'torrentio', 'Content-Type': 'application/json' };
+  return { Authorization: `Bearer ${apiKey}`, 'User-Agent': 'torrentio' };
 }
 
 export function toCommonError(data) {
