@@ -86,7 +86,7 @@ export async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex
           console.log(`Access denied to Offcloud ${infoHash} [${fileIndex}]`);
           return StaticResponse.FAILED_ACCESS;
         }
-        return Promise.reject(`Failed Offcloud adding torrent ${JSON.stringify(error)}`);
+        return Promise.reject(`Failed Offcloud adding torrent ${JSON.stringify(error?.message || error)}`);
       });
 }
 

@@ -138,7 +138,7 @@ export async function resolve({ ip, isBrowser, apiKey, infoHash, fileIndex }) {
           console.log(`Torrent too big for RealDebrid ${infoHash} [${fileIndex}]`);
           return StaticResponse.FAILED_TOO_BIG;
         }
-        return Promise.reject(`Failed RealDebrid adding torrent ${JSON.stringify(error)}`);
+        return Promise.reject(`Failed RealDebrid adding torrent ${JSON.stringify(error?.message || error)}`);
       });
 }
 

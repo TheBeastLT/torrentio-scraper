@@ -75,7 +75,7 @@ export async function resolve({ ip, apiKey, infoHash, fileIndex }) {
           console.log(`Torrent too big for DebridLink ${infoHash} [${fileIndex}]`);
           return StaticResponse.FAILED_TOO_BIG;
         }
-        return Promise.reject(`Failed DebridLink adding torrent ${JSON.stringify(error)}`);
+        return Promise.reject(`Failed DebridLink adding torrent ${JSON.stringify(error?.message || error)}`);
       });
 }
 

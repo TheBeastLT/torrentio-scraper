@@ -55,7 +55,7 @@ export async function getItemMeta(itemId, apiKey, ip) {
         type: Type.OTHER,
         name: torrent.filename,
         infoHash: torrent.hash.toLowerCase(),
-        videos: torrent.links
+        videos: (torrent.links || [])
             .filter(file => isVideo(file.filename))
             .map((file, index) => ({
               id: `${KEY}:${torrent.id}:${index}`,
@@ -85,7 +85,7 @@ export async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex
           console.log(`Deleting and retrying adding to AllDebrid ${infoHash} [${fileIndex}]...`);
           return _deleteAndRetry(AD, infoHash, cachedEntryInfo, fileIndex);
         }
-        return Promise.reject(`Failed AllDebrid adding torrent ${JSON.stringify(error)}`);
+        return Promise.reject(`Failed AllDebrid adding torrent ${JSON.stringify(error?.message || error)}`);
       });
 }
 
