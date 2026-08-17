@@ -9,7 +9,7 @@ import { BadTokenError, AccessDeniedError } from './mochHelper.js';
 
 const MIN_SIZE = 5 * 1024 * 1024; // 5 MB
 const CATALOG_MAX_PAGE = 1;
-const CATALOG_PAGE_SIZE = 100;
+const CATALOG_PAGE_SIZE = 50;
 const KEY = 'realdebrid';
 const DEBRID_DOWNLOADS = 'Downloads';
 
@@ -184,7 +184,7 @@ async function _createOrFindTorrentId(RD, infoHash, fileIndex) {
 }
 
 async function _findTorrent(RD, infoHash, fileIndex) {
-  const torrents = await RD.torrents.get(0, 1) || [];
+  const torrents = await RD.torrents.get(0, 1, 20) || [];
   const foundTorrents = torrents
       .filter(torrent => torrent.hash.toLowerCase() === infoHash)
       .filter(torrent => !statusError(torrent.status));
