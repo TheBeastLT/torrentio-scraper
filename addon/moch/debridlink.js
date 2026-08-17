@@ -3,7 +3,7 @@ import { Type } from '../lib/types.js';
 import { isVideo, isArchive } from '../lib/extension.js';
 import StaticResponse from './static.js';
 import { getMagnetLink } from '../lib/magnetHelper.js';
-import { BadTokenError } from './mochHelper.js';
+import { BadTokenError, NotFoundError } from './mochHelper.js';
 
 const KEY = 'debridlink';
 
@@ -39,13 +39,13 @@ export async function getItemMeta(itemId, apiKey, ip) {
   const options = await getDefaultOptions(ip);
   const DL = new DebridLinkClient(apiKey, options);
   return DL.seedbox.list(itemId)
-      .then(response => response.value[0])
+      .then(response => response.value?.[0] || Promise.reject(NotFoundError))
       .then(torrent => ({
         id: `${KEY}:${torrent.id}`,
         type: Type.OTHER,
         name: torrent.name,
         infoHash: torrent.hashString.toLowerCase(),
-        videos: torrent.files
+        videos: (torrent.files || [])
             .filter(file => isVideo(file.name))
             .map((file, index) => ({
               id: `${KEY}:${torrent.id}:${index}`,

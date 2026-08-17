@@ -4,7 +4,7 @@ import { Type } from '../lib/types.js';
 import { isVideo, isArchive } from '../lib/extension.js';
 import StaticResponse from './static.js';
 import { getMagnetLink } from '../lib/magnetHelper.js';
-import { BadTokenError, chunkArray, sameFilename, streamFilename } from './mochHelper.js';
+import { chunkArray, sameFilename, streamFilename, BadTokenError, NotFoundError } from './mochHelper.js';
 
 const KEY = 'premiumize';
 
@@ -58,6 +58,9 @@ export async function getItemMeta(itemId, apiKey, ip) {
   const options = await getDefaultOptions();
   const PM = new PremiumizeClient(apiKey, options);
   const rootFolder = await PM.folder.list(itemId, null);
+  if (!rootFolder) {
+    return Promise.reject(NotFoundError);
+  }
   const infoHash = await _findInfoHash(PM, itemId);
   return getFolderContents(PM, itemId, ip)
       .then(contents => ({
@@ -65,7 +68,7 @@ export async function getItemMeta(itemId, apiKey, ip) {
         type: Type.OTHER,
         name: rootFolder.name,
         infoHash: infoHash,
-        videos: contents
+        videos: (contents || [])
             .map((file, index) => ({
               id: `${KEY}:${file.id}:${index}`,
               title: file.name,

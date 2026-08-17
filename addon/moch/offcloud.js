@@ -4,7 +4,7 @@ import { Type } from '../lib/types.js';
 import { isVideo } from '../lib/extension.js';
 import StaticResponse from './static.js';
 import { getMagnetLink } from '../lib/magnetHelper.js';
-import { chunkArray, BadTokenError, sameFilename, streamFilename } from './mochHelper.js';
+import { chunkArray, sameFilename, streamFilename, BadTokenError, NotFoundError } from './mochHelper.js';
 
 const KEY = 'offcloud';
 
@@ -54,21 +54,22 @@ export async function getItemMeta(itemId, apiKey, ip) {
   const options = await getDefaultOptions(ip);
   const OC = new OffcloudClient(apiKey, options);
   const torrents = await OC.cloud.history();
-  const torrent = torrents.find(torrent => torrent.requestId === itemId)
-  const infoHash = torrent && magnet.decode(torrent.originalLink).infoHash
-  const createDate = torrent ? new Date(torrent.createdOn) : new Date();
+  const torrent = (torrents || []).find(torrent => torrent.requestId === itemId)
+  if (!torrent) {
+    return Promise.reject(NotFoundError);
+  }
   return _getFileUrls(OC, torrent)
       .then(files => ({
         id: `${KEY}:${itemId}`,
         type: Type.OTHER,
         name: torrent.name,
-        infoHash: infoHash,
-        videos: files
+        infoHash: magnet.decode(torrent.originalLink).infoHash,
+        videos: (files || [])
             .filter(file => isVideo(file))
             .map((file, index) => ({
               id: `${KEY}:${itemId}:${index}`,
               title: file.split('/').pop(),
-              released: new Date(createDate.getTime() - index).toISOString(),
+              released: new Date(new Date(torrent.createdOn).getTime() - index).toISOString(),
               streams: [{ url: file }]
             }))
       }))
