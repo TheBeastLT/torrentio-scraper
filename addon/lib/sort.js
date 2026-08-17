@@ -1,6 +1,5 @@
 import { QualityFilter } from './filter.js';
 import { containsLanguage, LanguageOptions } from './languages.js';
-import { Type } from './types.js';
 import { hasMochConfigured } from '../moch/moch.js';
 import { extractSeeders, extractSize } from './titleHelper.js';
 
@@ -38,7 +37,8 @@ export default function sortStreams(streams, config, type) {
   if (languages?.length && languages[0] !== 'english') {
     // No need to filter english since it's hard to predict which entries are english
     const streamsWithLanguage = streams.filter(stream => containsLanguage(stream, languages));
-    const streamsNoLanguage = streams.filter(stream => !streamsWithLanguage.includes(stream));
+    const withLanguage = new Set(streamsWithLanguage);
+    const streamsNoLanguage = streams.filter(stream => !withLanguage.has(stream));
     return _sortStreams(streamsWithLanguage, config, type).concat(_sortStreams(streamsNoLanguage, config, type));
   }
   return _sortStreams(streams, config, type);
@@ -63,12 +63,12 @@ function noopSort(streams) {
 
 function sortBySeeders(streams, config, type) {
   // streams are already presorted by seeders and upload date
-  const healthy = streams.filter(stream => extractSeeders(stream.title) >= HEALTHY_SEEDERS);
-  const seeded = streams.filter(stream => extractSeeders(stream.title) >= SEEDED_SEEDERS);
-
   if (hasMochConfigured(config)) {
     return streams;
-  } else if (healthy.length >= MIN_HEALTHY_COUNT) {
+  }
+  const healthy = streams.filter(stream => extractSeeders(stream.title) >= HEALTHY_SEEDERS);
+  const seeded = streams.filter(stream => extractSeeders(stream.title) >= SEEDED_SEEDERS);
+  if (healthy.length >= MIN_HEALTHY_COUNT) {
     return healthy;
   } else if (seeded.length >= MAX_UNHEALTHY_COUNT) {
     return seeded.slice(0, MIN_HEALTHY_COUNT);
@@ -78,11 +78,10 @@ function sortBySeeders(streams, config, type) {
 
 function sortBySize(streams, limit) {
   return streams
-      .sort((a, b) => {
-        const aSize = extractSize(a.title);
-        const bSize = extractSize(b.title);
-        return bSize - aSize;
-      }).slice(0, limit);
+      .map(stream => ({ stream, size: extractSize(stream.title) }))
+      .sort((a, b) => b.size - a.size)
+      .map(entry => entry.stream)
+      .slice(0, limit);
 }
 
 function sortByVideoQuality(streams, nestedSort, limit) {
