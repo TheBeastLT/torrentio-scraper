@@ -1,4 +1,3 @@
-import axios from 'axios';
 import { Type } from '../lib/types.js';
 import { isVideo } from '../lib/extension.js';
 import StaticResponse from './static.js';
@@ -187,48 +186,19 @@ async function _unrestrictLink(apiKey, infoHash, torrent, cachedEntryInfo, fileI
 }
 
 async function getAvailabilityResponse(apiKey, hashes) {
-  const url = `${baseUrl}/api/torrents/checkcached`;
-  const headers = getHeaders(apiKey);
-  const params = { format: 'list', list_files: true };
-  const data = { hashes }
-  return axios.post(url, data, { params, headers, timeout })
-      .then(response => {
-        if (response.data?.success) {
-          return Promise.resolve(response.data.data || []);
-        }
-        return Promise.reject(response.data);
-      })
-      .catch(error => Promise.reject(error.response?.data || error));
+  return torboxRequest(apiKey, 'POST', '/api/torrents/checkcached', {
+    params: { format: 'list' },
+    body: { hashes }
+  }).then(data => data || []);
 }
 
-async function createTorrent(apiKey, magnetLink){
-  const url = `${baseUrl}/api/torrents/createtorrent`
-  const headers = getHeaders(apiKey);
-  const data = new URLSearchParams();
-  data.append('magnet', magnetLink);
-  data.append('allow_zip', 'false');
-  return axios.post(url, data, { headers, timeout })
-      .then(response => {
-        if (response.data?.success) {
-          return Promise.resolve(response.data.data);
-        }
-        return Promise.reject(response.data);
-      })
-      .catch(error => Promise.reject(error.response?.data || error));
+async function createTorrent(apiKey, magnet, allow_zip = false){
+  const data = new URLSearchParams({ magnet, allow_zip });
+  return torboxRequest(apiKey, 'POST', '/api/torrents/createtorrent', { body: data });
 }
 
 async function controlTorrent(apiKey, torrent_id, operation){
-  const url = `${baseUrl}/api/torrents/controltorrent`
-  const headers = getHeaders(apiKey);
-  const data = { torrent_id, operation}
-  return axios.post(url, data, { headers, timeout })
-      .then(response => {
-        if (response.data?.success) {
-          return Promise.resolve(response.data.data);
-        }
-        return Promise.reject(response.data);
-      })
-      .catch(error => Promise.reject(error.response?.data || error));
+  return torboxRequest(apiKey, 'POST', '/api/torrents/controltorrent', { body: { torrent_id, operation } });
 }
 
 async function getTorrentList(apiKey, id = undefined, offset = 0) {
@@ -236,20 +206,30 @@ async function getTorrentList(apiKey, id = undefined, offset = 0) {
 }
 
 async function getItemList(apiKey, type, id = undefined, offset = 0, bypass_cache = true) {
-  const url = `${baseUrl}/api/${type}/mylist`;
-  const headers = getHeaders(apiKey);
-  const params = { id, offset, bypass_cache };
-  return axios.get(url, { params, headers, timeout })
-      .then(response => {
-        if (response.data?.success) {
-          if (Array.isArray(response.data.data)) {
-            response.data.data.sort((a, b) => b.id - a.id);
-          }
-          return Promise.resolve(response.data.data);
+  const params = id ? { id, offset, bypass_cache } : { offset, bypass_cache };
+  return torboxRequest(apiKey, 'GET', `/api/${type}/mylist`, { params })
+      .then(data => {
+        if (Array.isArray(data)) {
+          data.sort((a, b) => b.id - a.id);
         }
-        return Promise.reject(response.data);
-      })
-      .catch(error => Promise.reject(error.response?.data || error));
+        return data;
+      });
+}
+
+async function torboxRequest(apiKey, method, path, { params, body } = {}) {
+    const query = params ? `?${new URLSearchParams(params)}` : '';
+    const isJson = body && !(body instanceof URLSearchParams);
+    const response = await fetch(`${baseUrl}${path}${query}`, {
+        method,
+        headers: getHeaders(apiKey),
+        body: isJson ? JSON.stringify(body) : body,
+        signal: AbortSignal.timeout(timeout)
+    });
+    const result = await response.json();
+    if (!result?.success) {
+        throw result;
+    }
+    return result.data;
 }
 
 function getDownloadLink(token, type, rootId, file_id) {
@@ -259,7 +239,7 @@ function getDownloadLink(token, type, rootId, file_id) {
 }
 
 function getHeaders(apiKey) {
-  return { Authorization: `Bearer ${apiKey}`, 'User-Agent': 'torrentio' };
+  return { Authorization: `Bearer ${apiKey}`, 'User-Agent': 'torrentio', 'Content-Type': 'application/json' };
 }
 
 export function toCommonError(data) {
