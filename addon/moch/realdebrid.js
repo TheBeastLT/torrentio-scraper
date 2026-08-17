@@ -102,7 +102,8 @@ export async function getItemMeta(itemId, apiKey, ip) {
 
 async function _getAllTorrents(RD, page = 1) {
   return RD.torrents.get(page - 1, page, CATALOG_PAGE_SIZE)
-      .then(torrents => torrents && torrents.length === CATALOG_PAGE_SIZE && page < CATALOG_MAX_PAGE
+      .then(torrents => torrents || [])
+      .then(torrents => torrents?.length === CATALOG_PAGE_SIZE && page < CATALOG_MAX_PAGE
           ? _getAllTorrents(RD, page + 1)
               .then(nextTorrents => torrents.concat(nextTorrents))
               .catch(() => torrents)
@@ -110,7 +111,7 @@ async function _getAllTorrents(RD, page = 1) {
 }
 
 async function _getAllDownloads(RD, page = 1) {
-  return RD.downloads.get(page - 1, page, CATALOG_PAGE_SIZE);
+  return RD.downloads.get(page - 1, page, CATALOG_PAGE_SIZE).then(downloads => downloads || []);
 }
 
 export async function resolve({ ip, isBrowser, apiKey, infoHash, fileIndex }) {

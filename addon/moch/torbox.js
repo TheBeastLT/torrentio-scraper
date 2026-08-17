@@ -3,7 +3,7 @@ import { Type } from '../lib/types.js';
 import { isVideo } from '../lib/extension.js';
 import StaticResponse from './static.js';
 import { getMagnetLink } from '../lib/magnetHelper.js';
-import { sameFilename, streamFilename, BadTokenError, AccessDeniedError } from './mochHelper.js';
+import { sameFilename, streamFilename, BadTokenError, AccessDeniedError, NotFoundError } from './mochHelper.js';
 import * as querystring from "node:querystring";
 
 const KEY = 'torbox';
@@ -57,22 +57,22 @@ export async function getCatalog(apiKey, type, config) {
 
 export async function getItemMeta(itemId, apiKey) {
   const [type, id] = itemId.split('-');
-  const item = await getItemList(apiKey, type, id);
-  const createDate = item ? new Date(item.created_at) : new Date();
-  return {
-    id: `${KEY}:${itemId}`,
-    type: Type.OTHER,
-    name: item.name,
-    infoHash: item.hash,
-    videos: item.files
-        .filter(file => isVideo(file.short_name))
-        .map((file, index) => ({
-          id: `${KEY}:${itemId}:${file.id}`,
-          title: file.name,
-          released: new Date(createDate.getTime() - index).toISOString(),
-          streams: [{ url: getDownloadLink(apiKey, type, id, file.id) }]
-        }))
-  }
+  return getItemList(apiKey, type, id)
+      .then(item => item || Promise.reject(NotFoundError))
+      .then(item => ({
+        id: `${KEY}:${itemId}`,
+        type: Type.OTHER,
+        name: item.name,
+        infoHash: item.hash,
+        videos: (item.files || [])
+            .filter(file => isVideo(file.short_name))
+            .map((file, index) => ({
+              id: `${KEY}:${itemId}:${file.id}`,
+              title: file.name,
+              released: new Date(new Date(item.created_at).getTime() - index).toISOString(),
+              streams: [{ url: getDownloadLink(apiKey, type, id, file.id) }]
+            }))
+      }));
 }
 
 export async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex }) {

@@ -57,7 +57,9 @@ builder.defineMetaHandler((args) => {
         meta: meta,
         cacheMaxAge: metaId === 'Downloads' ? 0 : CACHE_MAX_AGE
       }))
-      .catch(error => Promise.reject(new Error(`Failed retrieving catalog meta ${args.id}`, { cause: error })));
+      .catch(error => error?.code === 'NOT_FOUND'
+          ? Promise.reject(error)
+          : Promise.reject(new Error(`Failed retrieving catalog meta ${args.id}`, { cause: error })));
 })
 
 async function resolveStreams(args) {

@@ -3,7 +3,7 @@ import { Type } from '../lib/types.js';
 import { isVideo, isArchive } from '../lib/extension.js';
 import StaticResponse from './static.js';
 import { getMagnetLink } from '../lib/magnetHelper.js';
-import { BadTokenError, AccessDeniedError, sameFilename, streamFilename, AccessBlockedError } from './mochHelper.js';
+import { BadTokenError, AccessDeniedError, sameFilename, streamFilename, AccessBlockedError, NotFoundError } from './mochHelper.js';
 import {
     cacheMochAvailabilityResult,
     getMochCachedAvailabilityResults,
@@ -49,6 +49,7 @@ export async function getItemMeta(itemId, apiKey, ip) {
   const AD = new AllDebridClient(apiKey, options);
   return AD.magnet.status(itemId)
       .then(response => response.data.magnets)
+      .then(torrent => torrent || Promise.reject(NotFoundError))
       .then(torrent => ({
         id: `${KEY}:${torrent.id}`,
         type: Type.OTHER,

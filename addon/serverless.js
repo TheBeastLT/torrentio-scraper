@@ -84,7 +84,7 @@ router.get('{/:configuration}/:resource/:type/:id{/:extra}.json', limiter, (req,
         res.end(JSON.stringify(resp));
       })
       .catch(err => {
-        if (err.noHandler) {
+        if (err.noHandler || err?.code === 'NOT_FOUND') {
           if (next) {
             next()
           } else {

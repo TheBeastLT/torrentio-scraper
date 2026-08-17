@@ -4,6 +4,7 @@ const METAHUB_URL = 'https://images.metahub.space'
 export const BadTokenError = { code: 'BAD_TOKEN' }
 export const AccessDeniedError = { code: 'ACCESS_DENIED' }
 export const AccessBlockedError = { code: 'ACCESS_BLOCKED' }
+export const NotFoundError = { code: 'NOT_FOUND' }
 
 export function chunkArray(arr, size) {
   return arr.length > size

@@ -225,7 +225,7 @@ function isHealthyStreamForDebrid(streams, stream) {
 }
 
 function isInvalidToken(token, mochKey) {
-  return token.length < MIN_API_KEY_SYMBOLS || TOKEN_BLACKLIST.includes(`${mochKey}|${token}`);
+  return !token || token.length < MIN_API_KEY_SYMBOLS || TOKEN_BLACKLIST.includes(`${mochKey}|${token}`);
 }
 
 function blackListToken(token, mochKey) {
