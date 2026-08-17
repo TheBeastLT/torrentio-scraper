@@ -92,7 +92,7 @@ router.get('{/:configuration}/:resource/:type/:id{/:extra}.json', limiter, (req,
             res.end(JSON.stringify({ err: 'not found' }));
           }
         } else {
-          console.error('handler error', { resource, type, id, err: err?.message || err, cause: err?.cause?.message });
+          console.error('handler error', { resource, type, id, err: err?.message || err, cause: err?.cause?.stack || err?.cause?.message });
           res.writeHead(500);
           res.end(JSON.stringify({ err: 'handler error' }));
         }
