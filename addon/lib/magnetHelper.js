@@ -1,4 +1,3 @@
-import axios from 'axios';
 import magnet from 'magnet-uri';
 import { getRandomUserAgent } from './requestHelper.js';
 import { getTorrent } from './repository.js';
@@ -55,13 +54,22 @@ export async function initBestTrackers() {
 }
 
 async function getBestTrackers(retry = 2) {
-  const options = { timeout: 30000, headers: { 'User-Agent': getRandomUserAgent() } };
-  return axios.get(TRACKERS_URL, options)
-      .then(response => response?.data?.trim()?.split('\n\n') || [])
+  const options = {
+    headers: { 'User-Agent': getRandomUserAgent() },
+    signal: AbortSignal.timeout(30000)
+  }
+  return fetch(TRACKERS_URL, options)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Request failed ${response.status}`);
+        }
+        return response.text();
+      })
+      .then(text => text?.trim()?.split('\n\n') || [])
       .catch(error => {
         if (retry === 0) {
-          console.log(`Failed retrieving best trackers: ${error.message}`);
-          throw error;
+          console.log(`Failed retrieving best trackers: ${error?.message || error}`);
+          return [];
         }
         return getBestTrackers(retry - 1);
       });
