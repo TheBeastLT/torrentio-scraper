@@ -9,4 +9,6 @@ COPY package*.json ./
 RUN npm ci --omit=dev
 COPY . .
 
-CMD [ "node", "--insecure-http-parser", "index.js" ]
+RUN chmod +x docker-entrypoint.sh
+
+ENTRYPOINT [ "./docker-entrypoint.sh" ]

@@ -8,51 +8,35 @@ on:
       - '.github/**'
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        include:
-          - ssh-host: SSH_HOST_1
-            ssh-key: SSH_KEY_1
-          - ssh-host: SSH_HOST_2
-            ssh-key: SSH_KEY_2
-          - ssh-host: SSH_HOST_3
-            ssh-key: SSH_KEY_3
-          - ssh-host: SSH_HOST_4
-            ssh-key: SSH_KEY_4
-          - ssh-host: SSH_HOST_5
-            ssh-key: SSH_KEY_5
-
+    permissions:
+      contents: read
+      packages: write
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v4
 
-      - name: Create Docker image
-        run: |
-          docker build -t torrentio-addon:latest ./addon/
-          docker save torrentio-addon:latest > torrentio_addon_latest.tar
-
-      - name: Upload Docker image
-        uses: appleboy/scp-action@master
+      - uses: docker/login-action@v3
         with:
-          host: ${{ secrets[matrix.ssh-host] }}
-          username: ${{ secrets.SSH_USERNAME }}
-          port: ${{ secrets.SSH_PORT }}
-          key: ${{ secrets[matrix.ssh-key] }}
-          source: torrentio_addon_latest.tar
-          target: /tmp/docker
-          overwrite: true
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Deploy Docker image
-        uses: appleboy/ssh-action@master
+      - uses: docker/build-push-action@v6
         with:
-          host: ${{ secrets[matrix.ssh-host] }}
-          username: ${{ secrets.SSH_USERNAME }}
-          port: ${{ secrets.SSH_PORT }}
-          key: ${{ secrets[matrix.ssh-key] }}
+          context: ./addon
+          push: true
+          tags: |
+            ghcr.io/thebeastlt/torrentio-addon:${{ github.sha }}
+            ghcr.io/thebeastlt/torrentio-addon:latest
+
+      - name: Rolling update on the swarm
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST_1 }}
+          key: ${{ secrets.SSH_KEY_1 }}
+          username: root
           script: |
-            docker load -i /tmp/docker/torrentio_addon_latest.tar
-            docker stop torrentio-addon
-            docker rm torrentio-addon
-            docker run -p ${{ secrets.PORT }}:${{ secrets.PORT }} -d --name torrentio-addon --restart always --log-opt max-size=100m --network host -e PORT=${{ secrets.PORT }} -e MONGODB_URI=${{ secrets.MONGODB_URI }} -e DATABASE_URI=${{ secrets.DATABASE_URI }}  -e REDIS_URL=${{ secrets.REDIS_URL }} -e METRICS_USER=${{ secrets.METRICS_USER }} -e METRICS_PASSWORD=${{ secrets.METRICS_PASSWORD }} torrentio-addon:latest
-            docker image prune -f
+            docker service update --with-registry-auth \
+              --image ghcr.io/thebeastlt/torrentio-addon:${{ github.sha }} \
+              torrentio_addon
