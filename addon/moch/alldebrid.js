@@ -120,14 +120,27 @@ async function _retryCreateTorrent(AD, infoHash, encodedFileName, fileIndex) {
 }
 
 async function _deleteAndRetry(AD, infoHash, encodedFileName, fileIndex) {
-  const torrents = await AD.magnet.status().then(response => response.data.magnets);
+  const response = await AD.magnet.status();
+  const torrents = response.data?.magnets;
+  if (!Array.isArray(torrents)) {
+    console.error(`AllDebrid magnet status unexpected response for ${infoHash}:`, JSON.stringify(response));
+    return _retryCreateTorrent(AD, infoHash, encodedFileName, fileIndex);
+  }
   const lastTorrent = torrents[torrents.length - 1];
+  if (!lastTorrent) {
+    return _retryCreateTorrent(AD, infoHash, encodedFileName, fileIndex);
+  }
   return AD.magnet.delete(lastTorrent.id)
       .then(() => _retryCreateTorrent(AD, infoHash, encodedFileName, fileIndex));
 }
 
 async function _findTorrent(AD, infoHash) {
-  const torrents = await AD.magnet.status().then(response => response.data.magnets);
+  const response = await AD.magnet.status();
+  const torrents = response.data?.magnets;
+  if (!Array.isArray(torrents)) {
+    console.error(`AllDebrid magnet status unexpected response for ${infoHash}:`, JSON.stringify(response));
+    return Promise.reject('No recent torrent found');
+  }
   const foundTorrents = torrents.filter(torrent => torrent.hash.toLowerCase() === infoHash);
   const nonFailedTorrent = foundTorrents.find(torrent => !statusError(torrent.statusCode));
   const foundTorrent = nonFailedTorrent || foundTorrents[0];
