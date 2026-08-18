@@ -1,10 +1,23 @@
 import client from 'prom-client';
+import { performance } from 'node:perf_hooks';
 import { MochOptions, queueDepths, blacklistSize } from '../moch/moch.js';
 import { poolStats } from './repository.js';
 
 const register = new client.Registry();
 register.setDefaultLabels({ app: 'torrentio-addon' });
 client.collectDefaultMetrics({ register });
+
+let prevElu = performance.eventLoopUtilization();
+new client.Gauge({
+  name: 'nodejs_eventloop_utilization',
+  help: 'Event loop utilization over the scrape interval (0-1)',
+  registers: [register],
+  collect() {
+    const current = performance.eventLoopUtilization();
+    this.set(performance.eventLoopUtilization(current, prevElu).utilization);
+    prevElu = current;
+  }
+});
 
 const httpDuration = new client.Histogram({
   name: 'http_request_duration_seconds',
