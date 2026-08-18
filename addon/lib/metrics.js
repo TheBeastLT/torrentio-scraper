@@ -22,8 +22,15 @@ new client.Gauge({
 const httpDuration = new client.Histogram({
   name: 'http_request_duration_seconds',
   help: 'HTTP request duration',
-  labelNames: ['resource', 'type', 'moch', 'status'],
-  buckets: [0.01, 0.05, 0.1, 0.3, 0.5, 1, 2, 5, 10, 30, 60],
+  labelNames: ['resource', 'type', 'status'],
+  buckets: [0.05, 0.1, 0.5, 1, 2.5, 10, 30],
+  registers: [register]
+});
+
+const httpRequests = new client.Counter({
+  name: 'http_requests_total',
+  help: 'HTTP requests by resource and debrid provider',
+  labelNames: ['resource', 'moch'],
   registers: [register]
 });
 
@@ -200,7 +207,8 @@ export function metricsMiddleware(req, res, next) {
   res.on('finish', () => {
     try {
       const { resource, type, moch } = routeLabels(req);
-      end({ resource, type, moch, status: res.statusCode });
+      end({ resource, type, status: res.statusCode });
+      httpRequests.inc({ resource, moch });
     } catch (error) {
       console.error('Failed recording request metric', error?.message || error);
     }

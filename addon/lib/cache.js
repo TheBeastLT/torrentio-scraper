@@ -1,4 +1,5 @@
 import os from 'node:os';
+import fs from 'node:fs';
 import KeyvMongo from "@keyv/mongo";
 import { KeyvCacheableMemory } from "cacheable";
 import { isStaticUrl }  from '../moch/static.js';
@@ -47,7 +48,7 @@ async function cacheWrap(name, key, method, ttl, memCache = memoryCache) {
         return value;
     }
     const mongoEnd = cacheTimer('get');
-    value = await cacheGet(mongoCache, key);
+    value = await cacheGet(mongoCache, key, true);
     mongoEnd();
     if (value !== undefined) {
         cacheResult(name, 'store');
@@ -61,8 +62,9 @@ async function cacheWrap(name, key, method, ttl, memCache = memoryCache) {
     return result;
 }
 
-async function cacheGet(cache, key) {
-    return timeout(CACHE_READ_TIMEOUT, cache.get(key)).catch(() => undefined);
+async function cacheGet(cache, key, withTimeout = false) {
+    const get = withTimeout ? timeout(CACHE_READ_TIMEOUT, cache.get(key)) : cache.get(key);
+    return Promise.resolve(get).catch(() => undefined);
 }
 
 function cacheSet(cache, key, value, ttl) {
