@@ -11,12 +11,16 @@ import { manifest } from './lib/manifest.js';
 import { parseConfiguration } from './lib/configuration.js';
 import landingTemplate from './lib/landingTemplate.js';
 import * as moch from './moch/moch.js';
+import { recordRateLimiterStoreError } from './lib/metrics.js';
 
 const router = new Router();
 export const redisClient = createClient({
   url: process.env.REDIS_URL,
 })
-redisClient.on('error', (err) => console.error('Redis client error:', err?.message || err))
+redisClient.on('error', (err) => {
+  recordRateLimiterStoreError();
+  console.error('Redis client error:', err?.message || err);
+})
 redisClient.connect().catch((err) => console.error('Redis initial connect failed:', err?.message || err))
 const limiter = rateLimit({
   windowMs: 24 * 60 * 60 * 1000, // 1 day

@@ -1,9 +1,21 @@
 import { Sequelize } from 'sequelize';
+import { observeDb } from './metrics.js';
 const Op = Sequelize.Op;
 
 const DATABASE_URI = process.env.DATABASE_URI;
 
-const database = new Sequelize(DATABASE_URI, { logging: false, pool: { max: 30, min: 5, idle: 20 * 60 * 1000 } });
+const getSqlOperation = sql => sql.match(/\b(SELECT|INSERT|UPDATE|DELETE)\b/i)?.[1]?.toUpperCase() ?? 'OTHER';
+const database = new Sequelize(DATABASE_URI, {
+  benchmark: true,
+  logging: (sql, ms) => observeDb(getSqlOperation(sql), (ms ?? 0) / 1000),
+  pool: { max: 30, min: 5, idle: 20 * 60 * 1000 }
+});
+
+export function poolStats() {
+  const pool = database?.connectionManager?.pool;
+  return pool ? { size: pool.size, available: pool.available, using: pool.using, waiting: pool.waiting } : {};
+}
+
 
 const Torrent = database.define('torrent',
     {

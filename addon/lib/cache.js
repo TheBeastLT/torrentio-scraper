@@ -2,6 +2,7 @@ import KeyvMongo from "@keyv/mongo";
 import { KeyvCacheableMemory } from "cacheable";
 import { isStaticUrl }  from '../moch/static.js';
 import { timeout } from './promises.js';
+import { cacheTimer, cacheResult } from './metrics.js';
 
 const CACHE_READ_TIMEOUT = 3 * 1000;
 
@@ -29,19 +30,24 @@ const mongoCache = MONGO_URI && new KeyvMongo(MONGO_URI, {
   maxConnecting: 5,
 });
 
-async function cacheWrap(key, method, ttl, memCache = memoryCache) {
+async function cacheWrap(name, key, method, ttl, memCache = memoryCache) {
     if (!mongoCache) {
         return method();
     }
     let value = await cacheGet(memCache, key);
     if (value !== undefined) {
+        cacheResult(name, 'memory');
         return value;
     }
+    const mongoEnd = cacheTimer('get');
     value = await cacheGet(mongoCache, key);
+    mongoEnd();
     if (value !== undefined) {
+        cacheResult(name, 'store');
         cacheSet(memCache, key, value, ttl);
         return value;
     }
+    cacheResult(name, 'miss');
     const result = await method();
     cacheSet(mongoCache, key, result, ttl);
     cacheSet(memCache, key, result, ttl);
@@ -67,12 +73,12 @@ export function closeCache() {
 
 export function cacheWrapStream(id, method) {
   const ttl = (streams, cache) => streams.length ? cache !== streamMemoryCache ? STREAM_TTL : STREAM_MEM_TTL : STREAM_EMPTY_TTL;
-  return cacheWrap(`${STREAM_KEY_PREFIX}:${id}`, method, ttl, streamMemoryCache);
+  return cacheWrap('stream', `${STREAM_KEY_PREFIX}:${id}`, method, ttl, streamMemoryCache);
 }
 
 export function cacheWrapResolvedUrl(id, method) {
   const ttl = (url) => isStaticUrl(url) ? MESSAGE_VIDEO_URL_TTL : RESOLVED_URL_TTL;
-  return cacheWrap(`${RESOLVED_URL_KEY_PREFIX}:${id}`, method, ttl, resolvedMemoryCache);
+  return cacheWrap('resolved', `${RESOLVED_URL_KEY_PREFIX}:${id}`, method, ttl, resolvedMemoryCache);
 }
 
 export function cacheAvailabilityResults(infoHash, fileIds) {
@@ -108,8 +114,10 @@ export function removeAvailabilityResults(infoHash, fileIds) {
 
 export function getCachedAvailabilityResults(infoHashes) {
   const keys = infoHashes.map(infoHash => `${AVAILABILITY_KEY_PREFIX}:${infoHash}`)
+  const end = cacheTimer('getMany');
   return mongoCache.getMany(keys)
       .then(result => {
+        end();
         const availabilityResults = {};
         infoHashes.forEach((infoHash, index) => {
           if (result[index]) {
@@ -119,6 +127,7 @@ export function getCachedAvailabilityResults(infoHashes) {
         return availabilityResults;
       })
       .catch(error => {
+        end();
         console.log('Failed retrieve availability cache', error)
         return {};
       });
@@ -136,8 +145,10 @@ export function removeMochAvailabilityResult(moch, infoHash) {
 
 export function getMochCachedAvailabilityResults(moch, infoHashes) {
     const keys = infoHashes.map(infoHash => `${AVAILABILITY_KEY_PREFIX}:${moch}:${infoHash}`)
+    const end = cacheTimer('getMany');
     return mongoCache.getMany(keys)
         .then(result => {
+            end();
             const availabilityResults = {};
             infoHashes.forEach((infoHash, index) => {
                 if (result[index]) {
@@ -147,6 +158,7 @@ export function getMochCachedAvailabilityResults(moch, infoHashes) {
             return availabilityResults;
         })
         .catch(error => {
+            end();
             console.log('Failed retrieve availability cache', error)
             return {};
         });

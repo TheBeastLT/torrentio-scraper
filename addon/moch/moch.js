@@ -10,13 +10,15 @@ import * as putio from './putio.js';
 import StaticResponse, { isStaticUrl } from './static.js';
 import { cacheWrapResolvedUrl } from '../lib/cache.js';
 import { timeout } from '../lib/promises.js';
-import { BadTokenError, streamFilename, AccessDeniedError, enrichMeta, AccessBlockedError } from './mochHelper.js';
+import { streamFilename, enrichMeta, BadTokenError, AccessDeniedError, AccessBlockedError, NotFoundError } from './mochHelper.js';
 import { createNamedQueue } from "../lib/namedQueue.js";
+import { mochResolveTimer, mochAvailabilityTimer, mochQueueTimer, recordTokenBlacklist } from "../lib/metrics.js";
 
 const RESOLVE_TIMEOUT = 2 * 60 * 1000; // 2 minutes
 const AVAILABILITY_TIMEOUT = 30 * 1000;
 const MIN_API_KEY_SYMBOLS = 15;
-const TOKEN_BLACKLIST = [];
+const TOKEN_BLACKLIST_MAX = 20000;
+const tokenBlacklist = new Set();
 export const MochOptions = {
   realdebrid: {
     key: 'realdebrid',
@@ -82,6 +84,14 @@ Object.values(MochOptions)
     .map(moch => moch.key)
     .forEach(mochKey => unrestrictQueues[mochKey] = createNamedQueue(100));
 
+export function queueDepths() {
+  return Object.fromEntries(Object.entries(unrestrictQueues).map(([moch, queue]) => [moch, queue.length()]));
+}
+
+export function blacklistSize() {
+  return tokenBlacklist.size;
+}
+
 export function hasMochConfigured(config) {
   return Object.keys(MochOptions).find(moch => config?.[moch])
 }
@@ -97,9 +107,11 @@ export async function applyMochs(streams, config) {
         if (isInvalidToken(config[moch.key], moch.key)) {
           return { moch, error: BadTokenError };
         }
+        const end = mochAvailabilityTimer(moch.key);
         return timeout(AVAILABILITY_TIMEOUT, moch.instance.getCachedStreams(streams, config[moch.key], config.ip))
-            .then(mochStreams => ({ moch, mochStreams }))
+            .then(mochStreams => { end({ outcome: 'ok' }); return { moch, mochStreams }; })
             .catch(rawError => {
+              end({ outcome: rawError?.message === 'Timed out' ? 'timeout' : 'error' });
               const error = moch.instance.toCommonError(rawError) || rawError;
               if (error === BadTokenError) {
                 blackListToken(config[moch.key], moch.key);
@@ -120,12 +132,28 @@ export async function resolve(parameters) {
     return Promise.reject(new Error("No valid parameters passed"));
   }
   const id = `${parameters.ip}_${parameters.mochKey}_${parameters.apiKey}_${parameters.infoHash}_${parameters.fileIndex}`;
-  const method = () => timeout(RESOLVE_TIMEOUT, cacheWrapResolvedUrl(id, () => moch.instance.resolve(parameters)))
-      .catch(error => {
-        console.warn(error);
-        return StaticResponse.FAILED_UNEXPECTED;
-      })
-      .then(url => isStaticUrl(url) ? `${parameters.host}/${url}` : url);
+  const resolveApi = () => {
+    const end = mochResolveTimer(moch.key);
+    return moch.instance.resolve(parameters)
+        .then(url => {
+          end({ outcome: resolveOutcome(url) });
+          return url;
+        })
+        .catch(error => {
+          end({ outcome: 'failed' });
+          throw error;
+        });
+  };
+  const queueWaitEnd = mochQueueTimer(moch.key);
+  const method = () => {
+    queueWaitEnd();
+    return timeout(RESOLVE_TIMEOUT, cacheWrapResolvedUrl(id, resolveApi))
+        .catch(error => {
+          console.warn(error);
+          return StaticResponse.FAILED_UNEXPECTED;
+        })
+        .then(url => isStaticUrl(url) ? `${parameters.host}/${url}` : url);
+  };
   return unrestrictQueues[moch.key].wrap(id, method);
 }
 
@@ -150,7 +178,7 @@ export async function getMochCatalog(mochKey, catalogId, config, ) {
 export async function getMochItemMeta(mochKey, itemId, config) {
   const moch = MochOptions[mochKey];
   if (!moch) {
-    return Promise.reject(new Error(`Not a valid moch provider: ${mochKey}`));
+    return Promise.reject(NotFoundError);
   }
 
   return moch.instance.getItemMeta(itemId, config[moch.key], config.ip)
@@ -225,13 +253,25 @@ function isHealthyStreamForDebrid(streams, stream) {
 }
 
 function isInvalidToken(token, mochKey) {
-  return !token || token.length < MIN_API_KEY_SYMBOLS || TOKEN_BLACKLIST.includes(`${mochKey}|${token}`);
+  return !token || token.length < MIN_API_KEY_SYMBOLS || tokenBlacklist.has(`${mochKey}|${token}`);
 }
 
 function blackListToken(token, mochKey) {
   const tokenKey = `${mochKey}|${token}`;
   console.log(`Blacklisting invalid token: ${tokenKey}`)
-  TOKEN_BLACKLIST.push(tokenKey);
+  recordTokenBlacklist(mochKey);
+  if (tokenBlacklist.size >= TOKEN_BLACKLIST_MAX) {
+    tokenBlacklist.delete(tokenBlacklist.values().next().value);
+  }
+  tokenBlacklist.add(tokenKey);
+}
+
+function resolveOutcome(url) {
+  if (!isStaticUrl(url)) {
+    return 'success';
+  }
+  const match = Object.entries(StaticResponse).find(([, value]) => url.endsWith(value));
+  return match?.[0]?.toLowerCase() || 'failed';
 }
 
 function errorStreamResponse(mochKey, error, config) {

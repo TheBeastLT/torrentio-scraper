@@ -27,7 +27,7 @@
     "parse-torrent-title": "git+https://github.com/TheBeastLT/parse-torrent-title.git#ea4ab26d2394055443f3671a80b4ea8c055c9591",
     "pg": "^8.16.3",
     "premiumize-api": "^1.1.1",
-    "prom-client": "^14.2.0",
+    "prom-client": "^15.1.3",
     "rate-limit-redis": "^4.3.1",
     "real-debrid-api": "^1.2.1",
     "redis": "^5.10.0",
@@ -35,7 +35,6 @@
     "router": "^2.2.0",
     "sequelize": "^6.37.7",
     "stremio-addon-sdk": "^1.6.10",
-    "swagger-stats": "^0.99.7",
     "ua-parser-js": "^1.0.36",
     "user-agents": "^1.0.1444"
   }
