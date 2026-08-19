@@ -1,10 +1,9 @@
-import os from 'node:os';
-import fs from 'node:fs';
 import KeyvMongo from "@keyv/mongo";
 import { KeyvCacheableMemory } from "cacheable";
 import { isStaticUrl }  from '../moch/static.js';
 import { timeout } from './promises.js';
 import { cacheTimer, cacheResult } from './metrics.js';
+import { availableMemoryBytes } from "./requestHelper.js";
 
 const CACHE_READ_TIMEOUT = 3 * 1000;
 
@@ -22,15 +21,16 @@ const MESSAGE_VIDEO_URL_TTL = 60 * 1000; // 1 minutes
 
 const MONGO_URI = process.env.MONGODB_URI;
 
-const STREAM_MEM_FRACTION = Number(process.env.CACHE_MEM_FRACTION) || 0.10;
-const STREAM_ENTRY_BYTES = 10 * 1024;
+const STREAM_ENTRY_BYTES = 40 * 1024;
+const STREAM_MEM_FRACTION = Number(process.env.CACHE_MEM_FRACTION) || 0.25;
+const availableMem = availableMemoryBytes();
 const streamLruSize = Number(process.env.STREAM_LRU_SIZE)
-    || Math.min(100000, Math.max(10000, Math.floor(os.totalmem() * STREAM_MEM_FRACTION / STREAM_ENTRY_BYTES)));
+    || Math.min(50000, Math.max(5000, Math.floor(availableMem * STREAM_MEM_FRACTION / STREAM_ENTRY_BYTES)));
 
 const streamMemoryCache = new KeyvCacheableMemory({ lruSize: streamLruSize });
 const resolvedMemoryCache = new KeyvCacheableMemory({ lruSize: 20000 });
 const memoryCache = new KeyvCacheableMemory({ lruSize: 10000 });
-console.log(`Cache LRU sizes: stream=${streamLruSize} resolved=20000 memory=10000 (totalMem=${(os.totalmem() / 1024 ** 3).toFixed(1)}GB)`);
+console.log(`Cache LRU sizes: stream=${streamLruSize} resolved=20000 memory=10000 (availMem=${(availableMem / 1024 ** 3).toFixed(1)}GB)`);
 const mongoCache = MONGO_URI && new KeyvMongo(MONGO_URI, {
   collection: 'torrentio_addon_collection',
   minPoolSize: 50,
