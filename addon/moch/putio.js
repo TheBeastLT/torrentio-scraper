@@ -103,7 +103,7 @@ async function _resolve(Putio, infoHash, cachedEntryInfo, fileIndex) {
 
 async function _createOrFindTorrent(Putio, infoHash) {
   return _findTorrent(Putio, infoHash)
-      .catch(() => _createTorrent(Putio, infoHash));
+      .then(torrent => torrent ?? _createTorrent(Putio, infoHash));
 }
 
 async function _retryCreateTorrent(Putio, infoHash, encodedFileName, fileIndex) {
@@ -118,10 +118,10 @@ async function _findTorrent(Putio, infoHash) {
   const foundTorrents = torrents.filter(torrent => torrent.source.toLowerCase().includes(infoHash));
   const nonFailedTorrent = foundTorrents.find(torrent => !statusError(torrent.status));
   const foundTorrent = nonFailedTorrent || foundTorrents[0];
-  if (foundTorrents && !foundTorrents.userfile_exists) {
-    return await Putio.Transfers.Cancel(foundTorrents.id).then(() => Promise.reject())
+  if (foundTorrent && !foundTorrent.userfile_exists) {
+    return Putio.Transfers.Cancel(foundTorrent.id).then(() => undefined);
   }
-  return foundTorrent || Promise.reject('No recent torrent found in Putio');
+  return foundTorrent;
 }
 
 async function _findInfoHash(Putio, fileId) {

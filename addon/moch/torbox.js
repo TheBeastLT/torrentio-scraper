@@ -116,15 +116,14 @@ async function _resolve(apiKey, infoHash, cachedEntryInfo, fileIndex, ip) {
 
 async function _createOrFindTorrent(apiKey, infoHash) {
   return _findTorrent(apiKey, infoHash)
-      .catch(() => _createTorrent(apiKey, infoHash));
+      .then(torrent => torrent ?? _createTorrent(apiKey, infoHash));
 }
 
 async function _findTorrent(apiKey, infoHash) {
   const torrents = await getTorrentList(apiKey);
   const foundTorrents = torrents.filter(torrent => torrent.hash === infoHash);
   const nonFailedTorrent = foundTorrents.find(torrent => !statusError(torrent));
-  const foundTorrent = nonFailedTorrent || foundTorrents[0];
-  return foundTorrent || Promise.reject('No recent torrent found');
+  return nonFailedTorrent || foundTorrents[0];
 }
 
 async function _createTorrent(apiKey, infoHash, attempts = 1) {

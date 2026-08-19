@@ -109,15 +109,14 @@ async function _resolve(OC, infoHash, cachedEntryInfo, fileIndex) {
 
 async function _createOrFindTorrent(OC, infoHash) {
   return _findTorrent(OC, infoHash)
-      .catch(() => _createTorrent(OC, infoHash));
+      .then(torrent => torrent ?? _createTorrent(OC, infoHash));
 }
 
 async function _findTorrent(OC, infoHash) {
   const torrents = await OC.cloud.history();
   const foundTorrents = torrents.filter(torrent => torrent.originalLink.toLowerCase().includes(infoHash));
   const nonFailedTorrent = foundTorrents.find(torrent => !statusError(torrent));
-  const foundTorrent = nonFailedTorrent || foundTorrents[0];
-  return foundTorrent || Promise.reject('No recent torrent found');
+  return nonFailedTorrent || foundTorrents[0];
 }
 
 async function _createTorrent(OC, infoHash) {

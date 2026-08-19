@@ -110,7 +110,7 @@ async function _resolve(AD, infoHash, cachedEntryInfo, fileIndex) {
 
 async function _createOrFindTorrent(AD, infoHash) {
   return _findTorrent(AD, infoHash)
-      .catch(() => _createTorrent(AD, infoHash));
+      .then(torrent => torrent ?? _createTorrent(AD, infoHash));
 }
 
 async function _retryCreateTorrent(AD, infoHash, encodedFileName, fileIndex) {
@@ -131,8 +131,7 @@ async function _findTorrent(AD, infoHash) {
   const torrents = await AD.magnet.status().then(response => response.data.magnets);
   const foundTorrents = torrents.filter(torrent => torrent.hash.toLowerCase() === infoHash);
   const nonFailedTorrent = foundTorrents.find(torrent => !statusError(torrent.statusCode));
-  const foundTorrent = nonFailedTorrent || foundTorrents[0];
-  return foundTorrent || Promise.reject('No recent torrent found');
+  return nonFailedTorrent || foundTorrents[0];
 }
 
 async function _createTorrent(AD, infoHash) {

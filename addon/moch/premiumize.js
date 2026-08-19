@@ -96,7 +96,7 @@ export async function resolve({ ip, isBrowser, apiKey, infoHash, cachedEntryInfo
   const options = await getDefaultOptions();
   const PM = new PremiumizeClient(apiKey, options);
   return _getCachedLink(PM, infoHash, cachedEntryInfo, fileIndex, ip, isBrowser)
-      .catch(() => _resolve(PM, infoHash, cachedEntryInfo, fileIndex, ip, isBrowser))
+      .then(link => link ?? _resolve(PM, infoHash, cachedEntryInfo, fileIndex, ip, isBrowser))
       .catch(error => {
         if (isAccessDeniedError(error)) {
           console.log(`Access denied to Premiumize ${infoHash} [${fileIndex}]`);
@@ -113,7 +113,8 @@ export async function resolve({ ip, isBrowser, apiKey, infoHash, cachedEntryInfo
 async function _resolve(PM, infoHash, cachedEntryInfo, fileIndex, ip, isBrowser) {
   const torrent = await _createTorrent(PM, infoHash);
   if (torrent && statusReady(torrent.status)) {
-    return _getCachedLink(PM, infoHash, cachedEntryInfo, fileIndex, ip, isBrowser);
+    return _getCachedLink(PM, infoHash, cachedEntryInfo, fileIndex, ip, isBrowser)
+        .then(link => link ?? Promise.reject(`Failed Premiumize adding torrent ${JSON.stringify(torrent)}`));
   } else if (torrent && statusDownloading(torrent.status)) {
     console.log(`Downloading to Premiumize ${infoHash} [${fileIndex}]...`);
     return StaticResponse.DOWNLOADING;
@@ -141,7 +142,7 @@ async function _getCachedLink(PM, infoHash, encodedFileName, fileIndex, ip, isBr
     console.log(`Unrestricted Premiumize ${infoHash} [${fileIndex}] to ${unrestrictedLink}`);
     return unrestrictedLink;
   }
-  return Promise.reject('No cached entry found');
+  return undefined;
 }
 
 async function _findTorrent(PM, itemId) {

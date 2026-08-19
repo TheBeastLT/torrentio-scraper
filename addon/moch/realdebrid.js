@@ -181,7 +181,7 @@ async function _resolve(RD, infoHash, fileIndex, isBrowser) {
 
 async function _createOrFindTorrentId(RD, infoHash, fileIndex) {
   return _findTorrent(RD, infoHash, fileIndex)
-      .catch(() => _createTorrentId(RD, infoHash, fileIndex));
+      .then(torrentId => torrentId ?? _createTorrentId(RD, infoHash, fileIndex));
 }
 
 async function _findTorrent(RD, infoHash, fileIndex) {
@@ -190,7 +190,7 @@ async function _findTorrent(RD, infoHash, fileIndex) {
       .filter(torrent => torrent.hash.toLowerCase() === infoHash)
       .filter(torrent => !statusError(torrent.status));
   const foundTorrent = await _findBestFitTorrent(RD, foundTorrents, fileIndex);
-  return foundTorrent?.id || Promise.reject('No recent torrent found');
+  return foundTorrent?.id;
 }
 
 async function _findBestFitTorrent(RD, torrents, fileIndex) {

@@ -93,13 +93,13 @@ async function _resolve(DL, infoHash, fileIndex) {
 
 async function _createOrFindTorrent(DL, infoHash) {
   return _findTorrent(DL, infoHash)
-      .catch(() => _createTorrent(DL, infoHash));
+      .then(torrent => torrent ?? _createTorrent(DL, infoHash));
 }
 
 async function _findTorrent(DL, infoHash) {
   const torrents = await DL.seedbox.list().then(response => response.value);
   const foundTorrents = torrents.filter(torrent => torrent.hashString.toLowerCase() === infoHash);
-  return foundTorrents[0] || Promise.reject('No recent torrent found');
+  return foundTorrents[0];
 }
 
 async function _createTorrent(DL, infoHash) {
