@@ -19,8 +19,10 @@ const server = app.listen(process.env.PORT || 7000, () => {
 
 async function shutdown(signal) {
   console.log(`Received ${signal}, shutting down gracefully`);
-  const forced = setTimeout(() => process.exit(1), 15000);
-  await new Promise(resolve => server.close(resolve));
+  const forced = setTimeout(() => process.exit(1), 40000);
+  const closed = new Promise(resolve => server.close(resolve));
+  server.closeIdleConnections();
+  await closed;
   await Promise.allSettled([closeDatabase(), closeCache(), redisClient.quit()]);
   clearTimeout(forced);
   process.exit(0);
