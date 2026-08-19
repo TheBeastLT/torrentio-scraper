@@ -103,9 +103,9 @@ async function _resolve(apiKey, infoHash, cachedEntryInfo, fileIndex, ip) {
     const [type, rootId, fileId] = infoHash.split('-');
     return getDownloadLink(apiKey, type, rootId, fileId);
   }
-  const torrent = await _createOrFindTorrent(apiKey, infoHash);
+  const torrent = await _createTorrent(apiKey, infoHash);
   if (torrent && statusReady(torrent)) {
-    return _unrestrictLink(apiKey, infoHash, torrent, cachedEntryInfo, fileIndex, ip);
+    return _unrestrictLink(apiKey, infoHash, torrent, cachedEntryInfo, fileIndex);
   } else if (torrent && statusDownloading(torrent)) {
     console.log(`Downloading to TorBox ${infoHash} [${fileIndex}]...`);
     return StaticResponse.DOWNLOADING;
@@ -116,18 +116,6 @@ async function _resolve(apiKey, infoHash, cachedEntryInfo, fileIndex, ip) {
   }
 
   return Promise.reject(`Failed TorBox adding torrent ${JSON.stringify(torrent)}`);
-}
-
-async function _createOrFindTorrent(apiKey, infoHash) {
-  return _findTorrent(apiKey, infoHash)
-      .then(torrent => torrent ?? _createTorrent(apiKey, infoHash));
-}
-
-async function _findTorrent(apiKey, infoHash) {
-  const torrents = await getTorrentList(apiKey);
-  const foundTorrents = torrents.filter(torrent => torrent.hash === infoHash);
-  const nonFailedTorrent = foundTorrents.find(torrent => !statusError(torrent));
-  return nonFailedTorrent || foundTorrents[0];
 }
 
 async function _createTorrent(apiKey, infoHash, attempts = 1) {
@@ -157,12 +145,12 @@ async function _retryCreateTorrent(apiKey, infoHash, cachedEntryInfo, fileIndex)
 
 async function freeLastActiveTorrent(apiKey) {
   const torrents = await getTorrentList(apiKey);
-  const seedingTorrent = torrents.filter(statusSeeding).pop();
+  const seedingTorrent = torrents.findLast(statusSeeding);
   if (seedingTorrent) {
     console.log(`Stopping seeded item in TorBox to make space...`);
     return controlTorrent(apiKey, seedingTorrent.id, 'stop_seeding');
   }
-  const downloadingTorrent = torrents.filter(statusDownloading).pop();
+  const downloadingTorrent = torrents.findLast(statusDownloading);
   if (downloadingTorrent) {
     console.log(`Deleting downloading item in TorBox to make space...`);
     return controlTorrent(apiKey, downloadingTorrent.id, 'delete');
@@ -204,12 +192,12 @@ async function controlTorrent(apiKey, torrent_id, operation){
   return torboxRequest(apiKey, 'POST', '/api/torrents/controltorrent', { body: { torrent_id, operation } });
 }
 
-async function getTorrentList(apiKey, id = undefined, offset = 0) {
-  return getItemList(apiKey, 'torrents', id, offset);
+async function getTorrentList(apiKey, id = undefined) {
+  return getItemList(apiKey, 'torrents', id);
 }
 
-async function getItemList(apiKey, type, id = undefined, offset = 0, bypass_cache = true) {
-  const params = id ? { id, offset, bypass_cache } : { offset, bypass_cache };
+async function getItemList(apiKey, type, id = undefined, offset = 0, limit = 100) {
+  const params = id ? { id } : { offset, limit };
   return torboxRequest(apiKey, 'GET', `/api/${type}/mylist`, { params })
       .then(data => {
         if (Array.isArray(data)) {
