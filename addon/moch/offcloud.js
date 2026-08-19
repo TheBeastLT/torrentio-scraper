@@ -157,7 +157,7 @@ async function _getFileUrls(OC, torrent) {
 }
 
 async function getDefaultOptions(ip) {
-  return { ip, timeout: 10000 };
+  return { ip, timeout: 20000 };
 }
 
 export function toCommonError(error) {

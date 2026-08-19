@@ -218,5 +218,5 @@ function isFailedDownloadError(error) {
 }
 
 async function getDefaultOptions(ip) {
-  return { timeout: 5000 };
+  return { timeout: 15000 };
 }
