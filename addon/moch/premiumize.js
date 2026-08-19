@@ -126,7 +126,8 @@ async function _resolve(PM, infoHash, cachedEntryInfo, fileIndex, ip, isBrowser)
 }
 
 async function _getCachedLink(PM, infoHash, encodedFileName, fileIndex, ip, isBrowser) {
-  const cachedTorrent = await PM.transfer.directDownload(magnet.encode({ infoHash }), ip);
+  const cachedTorrent = await PM.transfer.directDownload(magnet.encode({ infoHash }), ip)
+      .catch(error => isFailedDownloadError(error) ? undefined : Promise.reject(error));
   if (cachedTorrent?.content?.length) {
     const targetFileName = decodeURIComponent(encodedFileName);
     const videos = cachedTorrent.content.filter(file => isVideo(file.path)).sort((a, b) => b.size - a.size);
@@ -206,6 +207,13 @@ function isLimitExceededError(error) {
       'Fair use limit reached!',
       'You already have a maximum of 25 active downloads in progress!',
       'Your space is full! Please delete old files first!'
+  ].some(value => error?.message?.includes(value));
+}
+
+function isFailedDownloadError(error) {
+  return [
+      'Error downloading this file',
+      'Unsupported link for direct download',
   ].some(value => error?.message?.includes(value));
 }
 
