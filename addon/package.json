@@ -36,6 +36,7 @@
     "sequelize": "^6.37.7",
     "stremio-addon-sdk": "^1.6.10",
     "ua-parser-js": "^1.0.36",
+    "undici": "^8.5.0",
     "user-agents": "^1.0.1444"
   }
 }

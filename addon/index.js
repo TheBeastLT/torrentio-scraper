@@ -1,3 +1,4 @@
+import './lib/httpAgent.js';
 import express from 'express';
 import serverless, { redisClient } from './serverless.js';
 import { initBestTrackers } from './lib/magnetHelper.js';
