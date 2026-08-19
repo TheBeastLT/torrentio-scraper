@@ -125,11 +125,15 @@ export async function applyMochs(streams, config) {
 export async function resolve(parameters) {
   const moch = MochOptions[parameters.mochKey];
   if (!moch) {
-    return Promise.reject(new Error(`Not a valid moch provider: ${parameters.mochKey}`));
+    return Promise.reject(NotFoundError);
   }
 
   if (!parameters.apiKey || !parameters.infoHash || !parameters.cachedEntryInfo) {
     return Promise.reject(new Error("No valid parameters passed"));
+  }
+  if (isInvalidToken(parameters.apiKey, moch.key)) {
+    mochResolveTimer(moch.key)({ outcome: resolveOutcome(StaticResponse.FAILED_ACCESS) });
+    return `${parameters.host}/${StaticResponse.FAILED_ACCESS}`;
   }
   const id = `${parameters.ip}_${parameters.mochKey}_${parameters.apiKey}_${parameters.infoHash}_${parameters.fileIndex}`;
   const resolveApi = () => {
@@ -160,7 +164,7 @@ export async function resolve(parameters) {
 export async function getMochCatalog(mochKey, catalogId, config, ) {
   const moch = MochOptions[mochKey];
   if (!moch) {
-    return Promise.reject(new Error(`Not a valid moch provider: ${mochKey}`));
+    return Promise.reject(NotFoundError);
   }
   if (isInvalidToken(config[mochKey], mochKey)) {
     return Promise.reject(new Error(`Invalid API key for moch provider: ${mochKey}`));

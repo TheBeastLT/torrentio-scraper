@@ -82,7 +82,7 @@ export async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex
 
   return _resolve(OC, infoHash, cachedEntryInfo, fileIndex)
       .catch(error => {
-        if (errorExpiredSubscriptionError(error)) {
+        if (isAccessDeniedError(error)) {
           console.log(`Access denied to Offcloud ${infoHash} [${fileIndex}]`);
           return StaticResponse.FAILED_ACCESS;
         }
@@ -161,7 +161,7 @@ async function getDefaultOptions(ip) {
 }
 
 export function toCommonError(error) {
-  if (error?.error === 'NOAUTH' || error?.message?.startsWith('Cannot read property')) {
+  if (error === 'NOAUTH' || error?.message?.startsWith('Cannot read property')) {
     return BadTokenError;
   }
   return undefined;
@@ -179,6 +179,6 @@ function statusReady(torrent) {
   return torrent.status === 'downloaded';
 }
 
-function errorExpiredSubscriptionError(error) {
-  return error?.includes && (error.includes('not_available') || error.includes('NOAUTH') || error.includes('premium membership'));
+function isAccessDeniedError(error) {
+  return error?.includes && ['not_available', 'NOAUTH', 'premium membership', 'not premium'].some(value => error?.includes(value));
 }

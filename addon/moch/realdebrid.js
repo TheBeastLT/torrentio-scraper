@@ -138,6 +138,10 @@ export async function resolve({ ip, isBrowser, apiKey, infoHash, fileIndex }) {
           console.log(`Torrent too big for RealDebrid ${infoHash} [${fileIndex}]`);
           return StaticResponse.FAILED_TOO_BIG;
         }
+        if (isFailedOpeningError(error)) {
+          console.log(`Failed RealDebrid opening torrent ${infoHash} [${fileIndex}]`);
+          return StaticResponse.FAILED_OPENING;
+        }
         return Promise.reject(`Failed RealDebrid adding torrent ${JSON.stringify(error?.message || error)}`);
       });
 }
@@ -197,9 +201,9 @@ async function _findBestFitTorrent(RD, torrents, fileIndex) {
   if (torrents.length === 1) {
     return torrents[0];
   }
-  const torrentInfos = await Promise.all(torrents.map(torrent => _getTorrentInfo(RD, torrent.id)));
+  const torrentInfos = await Promise.all(torrents.map(torrent => _getTorrentInfo(RD, torrent.id).catch(() => undefined)));
   const bestFitTorrents = torrentInfos
-      .filter(torrent => torrent.files.find(f => f.id === fileIndex + 1 && f.selected))
+      .filter(torrent => torrent?.files?.find(f => f.id === fileIndex + 1 && f.selected))
       .sort((a, b) => b.links.length - a.links.length);
   return bestFitTorrents[0] || torrents[0];
 }
@@ -246,6 +250,9 @@ async function _selectTorrentFiles(RD, torrent, fileIndex) {
         .filter(file => file.bytes > MIN_SIZE)
         .map(file => file.id)
         .join(',');
+    if (!videoFileIds.length) {
+      return Promise.reject('Failed RealDebrid torrent file selection');
+    }
     return RD.torrents.selectFiles(torrent.id, videoFileIds);
   } else if (statusReady(torrent.status) || statusDownloading(torrent.status)) {
     return torrent;
@@ -314,10 +321,10 @@ async function _unrestrictFileLink(RD, fileLink, torrent, fileIndex, isBrowser, 
 }
 
 export function toCommonError(error) {
-  if (error && error.code === 8) {
+  if (isBadTokenError(error)) {
     return BadTokenError;
   }
-  if (error && isAccessDeniedError(error)) {
+  if (isAccessDeniedError(error)) {
     return AccessDeniedError;
   }
   return undefined;
@@ -347,6 +354,10 @@ function statusReady(status) {
   return ['downloaded', 'dead'].includes(status);
 }
 
+function isBadTokenError(error) {
+  return [8].includes(error?.code);
+}
+
 function isAccessDeniedError(error) {
   return [8, 9, 20].includes(error?.code);
 }
@@ -361,6 +372,10 @@ function isLimitExceededError(error) {
 
 function isTorrentTooBigError(error) {
   return [29].includes(error?.code);
+}
+
+function isFailedOpeningError(error) {
+  return `${error?.message || error}`.includes('file selection');
 }
 
 async function getDefaultOptions(ip) {

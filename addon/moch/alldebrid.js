@@ -73,15 +73,23 @@ export async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex
 
   return _resolve(AD, infoHash, cachedEntryInfo, fileIndex)
       .catch(error => {
-        if (isExpiredSubscriptionError(error)) {
+        if (isAccessDeniedError(error?.code) || isBadTokenError(error?.code)) {
           console.log(`Access denied to AllDebrid ${infoHash} [${fileIndex}]`);
           return StaticResponse.FAILED_ACCESS;
         }
-        if (isBlockedAccessError(error)) {
+        if (isBlockedAccessError(error?.code)) {
           console.log(`Access blocked to AllDebrid ${infoHash} [${fileIndex}]`);
           return StaticResponse.BLOCKED_ACCESS;
         }
-        if (error.code === 'MAGNET_TOO_MANY') {
+        if (isFailedDownloadError(error?.code)) {
+          console.log(`Failed opening torrent in AllDebrid ${infoHash} [${fileIndex}]`);
+          return StaticResponse.FAILED_OPENING;
+        }
+        if (isLimitExceededError(error?.code)) {
+          console.log(`Limits exceeded in AllDebrid ${infoHash} [${fileIndex}]`);
+          return StaticResponse.LIMITS_EXCEEDED;
+        }
+        if (isTooManyTorrentsError(error?.code)) {
           console.log(`Deleting and retrying adding to AllDebrid ${infoHash} [${fileIndex}]...`);
           return _deleteAndRetry(AD, infoHash, cachedEntryInfo, fileIndex);
         }
@@ -97,12 +105,12 @@ async function _resolve(AD, infoHash, cachedEntryInfo, fileIndex) {
     console.log(`Downloading to AllDebrid ${infoHash} [${fileIndex}]...`);
     removeMochAvailabilityResult(KEY, infoHash);
     return StaticResponse.DOWNLOADING;
-  } else if (statusHandledError(torrent?.statusCode)) {
-    console.log(`Retrying downloading to AllDebrid ${infoHash} [${fileIndex}]...`);
-    return _retryCreateTorrent(AD, infoHash, cachedEntryInfo, fileIndex);
   } else if (statusTooBigEntry(torrent?.statusCode)) {
     console.log(`Torrent too big for AllDebrid ${infoHash} [${fileIndex}]`);
     return StaticResponse.FAILED_TOO_BIG;
+  } else if (statusError(torrent?.statusCode)) {
+    console.log(`Retrying downloading to AllDebrid ${infoHash} [${fileIndex}]...`);
+    return _retryCreateTorrent(AD, infoHash, cachedEntryInfo, fileIndex);
   }
 
   return Promise.reject(`Failed AllDebrid adding torrent ${JSON.stringify(torrent)}`);
@@ -137,11 +145,11 @@ async function _findTorrent(AD, infoHash) {
 async function _createTorrent(AD, infoHash) {
   const magnetLink = await getMagnetLink(infoHash);
   const uploadResponse = await AD.magnet.upload(magnetLink);
-  const torrentId = uploadResponse.data.magnets[0].id;
-  if (!torrentId) {
-    return Promise.reject(`No magnet added with response: ${JSON.stringify(uploadResponse)}`);
+  const torrent = uploadResponse.data.magnets[0];
+  if (!torrent?.id) {
+    return Promise.reject(torrent?.error || `No magnet added with response: ${JSON.stringify(uploadResponse)}`);
   }
-  return AD.magnet.status(torrentId).then(statusResponse => statusResponse.data.magnets);
+  return AD.magnet.status(torrent.id).then(statusResponse => statusResponse.data.magnets);
 }
 
 async function _unrestrictLink(AD, torrent, encodedFileName, fileIndex) {
@@ -181,24 +189,20 @@ async function getDefaultOptions(ip) {
 }
 
 export function toCommonError(error) {
-  if (error && error.code === 'AUTH_BAD_APIKEY') {
+  if (isBadTokenError(error?.code)) {
     return BadTokenError;
   }
-  if (error && error.code === 'AUTH_USER_BANNED') {
+  if (isAccessDeniedError(error?.code)) {
     return AccessDeniedError;
   }
-  if (error && error.code === 'AUTH_BLOCKED') {
+  if (isBlockedAccessError(error?.code)) {
     return AccessBlockedError;
   }
   return undefined;
 }
 
 function statusError(statusCode) {
-  return [5, 6, 7, 8, 9, 10, 11].includes(statusCode);
-}
-
-function statusHandledError(statusCode) {
-  return [5, 7, 9, 10, 11].includes(statusCode);
+  return statusCode > 4;
 }
 
 function statusDownloading(statusCode) {
@@ -213,11 +217,26 @@ function statusTooBigEntry(statusCode) {
   return statusCode === 8;
 }
 
-function isExpiredSubscriptionError(error) {
-  return ['AUTH_BAD_APIKEY', 'MUST_BE_PREMIUM', 'MAGNET_MUST_BE_PREMIUM', 'FREE_TRIAL_LIMIT_REACHED', 'AUTH_USER_BANNED']
-      .includes(error.code);
+function isBadTokenError(code) {
+  return ['AUTH_BAD_APIKEY'].includes(code);
 }
 
-function isBlockedAccessError(error) {
-  return ['AUTH_BLOCKED'].includes(error.code);
+function isAccessDeniedError(code) {
+  return ['MUST_BE_PREMIUM', 'MAGNET_MUST_BE_PREMIUM', 'FREE_TRIAL_LIMIT_REACHED', 'AUTH_USER_BANNED'].includes(code);
+}
+
+function isBlockedAccessError(code) {
+  return ['AUTH_BLOCKED'].includes(code);
+}
+
+function isFailedDownloadError(code) {
+  return ['MAGNET_INVALID_FILE', 'MAGNET_PROCESSING_COOLDOWN', 'MAGNET_PROCESSING_FAILED'].includes(code);
+}
+
+function isTooManyTorrentsError(code) {
+  return ['MAGNET_TOO_MANY'].includes(code);
+}
+
+function isLimitExceededError(code) {
+  return ['MAGNET_TOO_MANY_ACTIVE'].includes(code);
 }

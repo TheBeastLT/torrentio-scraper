@@ -4,7 +4,7 @@ import { Type } from '../lib/types.js';
 import { isVideo, isArchive } from '../lib/extension.js';
 import StaticResponse from './static.js';
 import { getMagnetLink } from '../lib/magnetHelper.js';
-import { chunkArray, sameFilename, streamFilename, BadTokenError, NotFoundError } from './mochHelper.js';
+import { chunkArray, sameFilename, streamFilename, BadTokenError, AccessDeniedError, NotFoundError } from './mochHelper.js';
 
 const KEY = 'premiumize';
 
@@ -98,7 +98,7 @@ export async function resolve({ ip, isBrowser, apiKey, infoHash, cachedEntryInfo
   return _getCachedLink(PM, infoHash, cachedEntryInfo, fileIndex, ip, isBrowser)
       .then(link => link ?? _resolve(PM, infoHash, cachedEntryInfo, fileIndex, ip, isBrowser))
       .catch(error => {
-        if (isAccessDeniedError(error)) {
+        if (isAccessDeniedError(error) || isBadTokenError(error)) {
           console.log(`Access denied to Premiumize ${infoHash} [${fileIndex}]`);
           return StaticResponse.FAILED_ACCESS;
         }
@@ -172,8 +172,11 @@ async function _retryCreateTorrent(PM, infoHash, encodedFileName, fileIndex) {
 }
 
 export function toCommonError(error) {
-  if (error?.message === 'Not logged in.') {
+  if (isBadTokenError(error)) {
     return BadTokenError;
+  }
+  if (isAccessDeniedError(error)) {
+    return AccessDeniedError;
   }
   return undefined;
 }
@@ -191,7 +194,11 @@ function statusReady(status) {
 }
 
 function isAccessDeniedError(error) {
-  return ['Account not premium.'].some(value => error?.message?.includes(value));
+  return ['Account not premium', 'payment issue'].some(value => error?.message?.includes(value));
+}
+
+function isBadTokenError(error) {
+  return error?.message?.includes('Not logged in');
 }
 
 function isLimitExceededError(error) {

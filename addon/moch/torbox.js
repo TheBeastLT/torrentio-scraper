@@ -90,6 +90,10 @@ export async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex
           console.log(`Torrent too big for TorBox ${infoHash} [${fileIndex}]`);
           return StaticResponse.FAILED_TOO_BIG;
         }
+        if (isDownloadingError(error)) {
+          console.log(`Downloading to TorBox ${infoHash} [${fileIndex}]...`);
+          return StaticResponse.DOWNLOADING;
+        }
         return Promise.reject(`Failed TorBox adding torrent: ${JSON.stringify(error.message || error)}`);
       });
 }
@@ -273,7 +277,12 @@ function isAccessDeniedError(error) {
 }
 
 function isLimitExceededError(error) {
-  return ['MONTHLY_LIMIT', 'COOLDOWN_LIMIT', 'ACTIVE_LIMIT'].includes(error?.error);
+  return ['MONTHLY_LIMIT', 'COOLDOWN_LIMIT', 'ACTIVE_LIMIT'].includes(error?.error)
+      || (error?.error === 'DIFF_ISSUE' && error?.detail?.includes('maximum queued'));
+}
+
+function isDownloadingError(error) {
+  return error?.error === 'DIFF_ISSUE' && error?.detail?.includes('already queued');
 }
 
 function isTorrentTooBigError(error) {
