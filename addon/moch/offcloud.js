@@ -4,17 +4,15 @@ import { Type } from '../lib/types.js';
 import { isVideo } from '../lib/extension.js';
 import StaticResponse from './static.js';
 import { getMagnetLink } from '../lib/magnetHelper.js';
-import { chunkArray, sameFilename, streamFilename, BadTokenError, NotFoundError } from './mochHelper.js';
+import { sameFilename, streamFilename, BadTokenError, AccessDeniedError, NotFoundError } from './mochHelper.js';
 
 const KEY = 'offcloud';
 
 export async function getCachedStreams(streams, apiKey) {
   const options = await getDefaultOptions();
   const OC = new OffcloudClient(apiKey, options);
-  const hashBatches = chunkArray(streams.map(stream => stream.infoHash), 100);
-  const available = await Promise.all(hashBatches.map(hashes => OC.instant.cache(hashes)))
-      .then(results => results.map(result => result.cachedItems))
-      .then(results => results.reduce((all, result) => all.concat(result), []))
+  const magnets = streams.map(stream => magnet.encode({ infoHash: stream.infoHash }));
+  const available = await OC.cache.info(magnets)
       .catch(error => {
         if (toCommonError(error)) {
           return Promise.reject(error);
@@ -23,12 +21,11 @@ export async function getCachedStreams(streams, apiKey) {
         return undefined;
       });
   return available && streams
-      .reduce((mochStreams, stream) => {
-        const isCached = available.includes(stream.infoHash);
+      .reduce((mochStreams, stream, index) => {
         const fileName = streamFilename(stream);
         mochStreams[`${stream.infoHash}@${stream.fileIdx}`] = {
           url: `${apiKey}/${stream.infoHash}/${fileName}/${stream.fileIdx}`,
-          cached: isCached
+          cached: available[index]?.cached || false
         };
         return mochStreams;
       }, {})
@@ -41,8 +38,8 @@ export async function getCatalog(apiKey, catalogId, config) {
   const options = await getDefaultOptions();
   const OC = new OffcloudClient(apiKey, options);
   return OC.cloud.history()
-      .then(torrents => torrents)
       .then(torrents => (torrents || [])
+          .filter(torrent => statusReady(torrent))
           .map(torrent => ({
             id: `${KEY}:${torrent.requestId}`,
             type: Type.OTHER,
@@ -53,36 +50,32 @@ export async function getCatalog(apiKey, catalogId, config) {
 export async function getItemMeta(itemId, apiKey, ip) {
   const options = await getDefaultOptions(ip);
   const OC = new OffcloudClient(apiKey, options);
-  const torrents = await OC.cloud.history();
-  const torrent = (torrents || []).find(torrent => torrent.requestId === itemId)
-  if (!torrent) {
-    return Promise.reject(NotFoundError);
-  }
-  return _getFileUrls(OC, torrent)
-      .then(files => ({
-        id: `${KEY}:${itemId}`,
-        type: Type.OTHER,
-        name: torrent.name,
-        infoHash: magnet.decode(torrent.originalLink).infoHash,
-        videos: (files || [])
-            .filter(file => isVideo(file))
-            .map((file, index) => ({
-              id: `${KEY}:${itemId}:${index}`,
-              title: file.split('/').pop(),
-              released: new Date(new Date(torrent.createdOn).getTime() - index).toISOString(),
-              streams: [{ url: file }]
-            }))
-      }))
+  const files = await OC.cloud.explore(itemId)
+      .then(response => response?.files?.length ? response.files : Promise.reject(NotFoundError));
+  return {
+    id: `${KEY}:${itemId}`,
+    type: Type.OTHER,
+    name: files[0].path.split('/')[0],
+    videos: files
+        .filter(file => isVideo(file.path))
+        .map((file, index) => ({
+          id: `${KEY}:${itemId}:${index}`,
+          title: file.path,
+          released: new Date(Date.now() - index).toISOString(),
+          streams: [{ url: file.url }]
+        }))
+  };
 }
 
 export async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex }) {
   console.log(`Unrestricting Offcloud ${infoHash} [${fileIndex}]`);
   const options = await getDefaultOptions(ip);
   const OC = new OffcloudClient(apiKey, options);
-
-  return _resolve(OC, infoHash, cachedEntryInfo, fileIndex)
+  const magnetLink = await getMagnetLink(infoHash);
+  return _getCachedLink(OC, magnetLink, infoHash, cachedEntryInfo, fileIndex)
+      .then(link => link ?? _resolve(OC, magnetLink, infoHash, cachedEntryInfo, fileIndex))
       .catch(error => {
-        if (isAccessDeniedError(error)) {
+        if (isAccessDeniedError(error) || isBadTokenError(error)) {
           console.log(`Access denied to Offcloud ${infoHash} [${fileIndex}]`);
           return StaticResponse.FAILED_ACCESS;
         }
@@ -90,95 +83,78 @@ export async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex
       });
 }
 
-async function _resolve(OC, infoHash, cachedEntryInfo, fileIndex) {
-  const torrent = await _createOrFindTorrent(OC, infoHash)
-      .then(info => info.requestId ? OC.cloud.status(info.requestId) : Promise.resolve(info))
-      .then(info => info.status || info);
-  if (torrent && statusReady(torrent)) {
-    return _unrestrictLink(OC, infoHash, torrent, cachedEntryInfo, fileIndex);
-  } else if (torrent && statusDownloading(torrent)) {
+async function _getCachedLink(OC, magnetLink, infoHash, encodedFileName, fileIndex) {
+  const files = await OC.cache.download(magnetLink)
+      .catch(error => isFailedDownloadError(error) ? undefined : Promise.reject(error));
+  if (files?.length) {
+    const targetFileName = decodeURIComponent(encodedFileName);
+    const videos = files.filter(file => isVideo(file.filename)).sort((a, b) => b.size - a.size);
+    const targetVideo = Number.isInteger(fileIndex)
+        && videos.find(video => sameFilename([...(video.folder || []), video.filename].join('/'), targetFileName))
+        || videos[0];
+    if (targetVideo) {
+      console.log(`Unrestricted Offcloud ${infoHash} [${fileIndex}] to ${targetVideo.url}`);
+      return targetVideo.url;
+    }
+  }
+  return undefined;
+}
+
+async function _resolve(OC, magnetLink, infoHash, cachedEntryInfo, fileIndex) {
+  const download = await OC.cloud.download(magnetLink);
+  if (statusReady(download)) {
+    return _getCachedLink(OC, magnetLink, infoHash, cachedEntryInfo, fileIndex)
+        .then(link => link ?? Promise.reject(`Failed Offcloud adding torrent ${JSON.stringify(download)}`));
+  } else if (statusDownloading(download)) {
     console.log(`Downloading to Offcloud ${infoHash} [${fileIndex}]...`);
     return StaticResponse.DOWNLOADING;
-  } else if (torrent && statusError(torrent)) {
-    console.log(`Retry failed download in Offcloud ${infoHash} [${fileIndex}]...`);
-    return _retryCreateTorrent(OC, infoHash, cachedEntryInfo, fileIndex);
+  } else if (statusError(download)) {
+    console.log(`Failed download in Offcloud ${infoHash} [${fileIndex}]`);
+    return StaticResponse.FAILED_DOWNLOAD;
   }
-
-  return Promise.reject(`Failed Offcloud adding torrent ${JSON.stringify(torrent)}`);
-}
-
-async function _createOrFindTorrent(OC, infoHash) {
-  return _findTorrent(OC, infoHash)
-      .then(torrent => torrent ?? _createTorrent(OC, infoHash));
-}
-
-async function _findTorrent(OC, infoHash) {
-  const torrents = await OC.cloud.history();
-  const foundTorrents = torrents.filter(torrent => torrent.originalLink.toLowerCase().includes(infoHash));
-  const nonFailedTorrent = foundTorrents.find(torrent => !statusError(torrent));
-  return nonFailedTorrent || foundTorrents[0];
-}
-
-async function _createTorrent(OC, infoHash) {
-  const magnetLink = await getMagnetLink(infoHash);
-  return OC.cloud.download(magnetLink)
-}
-
-async function _retryCreateTorrent(OC, infoHash, cachedEntryInfo, fileIndex) {
-  const newTorrent = await _createTorrent(OC, infoHash);
-  return newTorrent && statusReady(newTorrent.status)
-      ? _unrestrictLink(OC, infoHash, newTorrent, cachedEntryInfo, fileIndex)
-      : StaticResponse.FAILED_DOWNLOAD;
-}
-
-async function _unrestrictLink(OC, infoHash, torrent, cachedEntryInfo, fileIndex) {
-  const targetFileName = decodeURIComponent(cachedEntryInfo);
-  const files = await _getFileUrls(OC, torrent)
-  const targetFile = files.find(file => sameFilename(targetFileName, file.split('/').pop()))
-      || files.find(file => file.includes(`/${torrent.requestId}/${fileIndex + 1}/`) && isVideo(file))
-      || files.find(file => isVideo(file))
-      || files.pop();
-
-  if (!targetFile) {
-    return Promise.reject(`No Offcloud links found for index ${fileIndex} in: ${JSON.stringify(torrent)}`);
-  }
-  console.log(`Unrestricted Offcloud ${infoHash} [${fileIndex}] to ${targetFile}`);
-  return targetFile;
-}
-
-async function _getFileUrls(OC, torrent) {
-  return OC.cloud.explore(torrent.requestId)
-      .catch(error => {
-        if (error === 'Bad archive') {
-          return [`https://${torrent.server}.offcloud.com/cloud/download/${torrent.requestId}/${torrent.fileName}`];
-        }
-        throw error;
-      })
+  return Promise.reject(`Failed Offcloud adding torrent ${JSON.stringify(download)}`);
 }
 
 async function getDefaultOptions(ip) {
-  return { ip, timeout: 20000 };
+  return { ip, timeout: 10000 };
 }
 
 export function toCommonError(error) {
-  if (error === 'NOAUTH' || error?.message?.startsWith('Cannot read property')) {
+  if (isBadTokenError(error)) {
     return BadTokenError;
+  }
+  if (isAccessDeniedError(error)) {
+    return AccessDeniedError;
   }
   return undefined;
 }
 
 function statusDownloading(torrent) {
-  return ['downloading', 'created', 'queued'].includes(torrent.status);
+  return ['created', 'downloading', 'queued'].includes(torrent?.status);
 }
 
 function statusError(torrent) {
-  return ['error', 'canceled'].includes(torrent.status);
+  return ['error', 'canceled'].includes(torrent?.status);
 }
 
 function statusReady(torrent) {
-  return torrent.status === 'downloaded';
+  return torrent?.status === 'downloaded';
+}
+
+function isBadTokenError(error) {
+  const message = `${error?.message || error}`;
+  return ['NOAUTH', 'Unauthorized'].some(value => message.includes(value));
 }
 
 function isAccessDeniedError(error) {
-  return error?.includes && ['not_available', 'NOAUTH', 'premium membership', 'not premium'].some(value => error?.includes(value));
+  return `${error?.message || error}`.includes('not premium');
 }
+
+function isSingleFileError(error) {
+  return `${error?.message || error}`.includes('Bad archive');
+}
+
+function isFailedDownloadError(error) {
+  return `${error?.message || error}`.includes('Unsupported link for direct download');
+}
+
