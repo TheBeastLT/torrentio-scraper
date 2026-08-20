@@ -22,7 +22,7 @@ new client.Gauge({
 const httpDuration = new client.Histogram({
   name: 'http_request_duration_seconds',
   help: 'HTTP request duration',
-  labelNames: ['resource', 'type', 'status'],
+  labelNames: ['resource', 'status'],
   buckets: [0.05, 0.1, 0.5, 1, 2.5, 10, 30],
   registers: [register]
 });
@@ -156,7 +156,6 @@ new client.Gauge({
 });
 
 const KNOWN_RESOURCES = new Set(['stream', 'meta', 'catalog']);
-const KNOWN_TYPES = new Set(['movie', 'series', 'channel', 'tv', 'anime', 'other']);
 let knownMochs;
 
 function isKnownMoch(key) {
@@ -184,30 +183,29 @@ function routeLabels(req) {
   const path = req.url.split('?')[0];
   const parts = path.split('/').filter(Boolean);
   if (parts[0] === 'resolve') {
-    return { resource: 'resolve', type: 'na', moch: configMoch(parts[1]) };
+    return { resource: 'resolve', moch: configMoch(parts[1]) };
   }
   const idx = parts.findIndex(part => KNOWN_RESOURCES.has(part));
   if (idx >= 0) {
     const resource = parts[idx];
     const moch = configMoch(parts[idx - 1]);
-    const type = KNOWN_TYPES.has(parts[idx + 1]) ? parts[idx + 1] : 'other';
-    return { resource, type, moch };
+    return { resource, moch };
   }
   if (path.includes('manifest.json')) {
-    return { resource: 'manifest', type: 'na', moch: 'na' };
+    return { resource: 'manifest', moch: 'na' };
   }
   if (path.includes('/configure')) {
-    return { resource: 'configure', type: 'na', moch: 'na' };
+    return { resource: 'configure', moch: 'na' };
   }
-  return { resource: 'other', type: 'na', moch: 'na' };
+  return { resource: 'other', moch: 'na' };
 }
 
 export function metricsMiddleware(req, res, next) {
   const end = httpDuration.startTimer();
   res.on('finish', () => {
     try {
-      const { resource, type, moch } = routeLabels(req);
-      end({ resource, type, status: res.statusCode });
+      const { resource, moch } = routeLabels(req);
+      end({ resource, status: res.statusCode });
       httpRequests.inc({ resource, moch });
     } catch (error) {
       console.error('Failed recording request metric', error?.message || error);
