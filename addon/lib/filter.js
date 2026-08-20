@@ -20,6 +20,10 @@ export const Providers = {
       label: '1337x'
     },
     {
+      key: 'ext',
+      label: 'EXT'
+    },
+    {
       key: 'thepiratebay',
       label: 'ThePirateBay'
     },

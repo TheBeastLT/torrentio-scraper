@@ -25,7 +25,7 @@ const STREAM_ENTRY_BYTES = 40 * 1024;
 const STREAM_MEM_FRACTION = Number(process.env.CACHE_MEM_FRACTION) || 0.25;
 const availableMem = availableMemoryBytes();
 const streamLruSize = Number(process.env.STREAM_LRU_SIZE)
-    || Math.min(100000, Math.max(5000, Math.floor(availableMem * STREAM_MEM_FRACTION / STREAM_ENTRY_BYTES)));
+    || Math.min(15000, Math.max(5000, Math.floor(availableMem * STREAM_MEM_FRACTION / STREAM_ENTRY_BYTES)));
 
 const streamMemoryCache = new KeyvCacheableMemory({ lruSize: streamLruSize });
 const resolvedMemoryCache = new KeyvCacheableMemory({ lruSize: 20000 });
