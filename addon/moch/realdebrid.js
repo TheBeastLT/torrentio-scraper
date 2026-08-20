@@ -142,6 +142,11 @@ export async function resolve({ ip, isBrowser, apiKey, infoHash, fileIndex }) {
           console.log(`Failed RealDebrid opening torrent ${infoHash} [${fileIndex}]`);
           return StaticResponse.FAILED_OPENING;
         }
+        if (isNotFoundError(error)) {
+          console.log(`Stale RealDebrid torrent, recreating ${infoHash} [${fileIndex}]...`);
+          return _retryCreateTorrent(RD, infoHash, fileIndex)
+              .catch((error) => Promise.reject(`Failed RealDebrid adding torrent ${JSON.stringify(error?.message || error)}`));
+        }
         return Promise.reject(`Failed RealDebrid adding torrent ${JSON.stringify(error?.message || error)}`);
       });
 }
@@ -218,6 +223,9 @@ async function _getTorrentInfo(RD, torrentId) {
 async function _createTorrentId(RD, infoHash, fileIndex, force = false) {
   const magnetLink = await getMagnetLink(infoHash);
   const addedMagnet = await RD.torrents.addMagnet(magnetLink);
+  if (!addedMagnet?.id) {
+    return Promise.reject(`No RealDebrid torrent id in addMagnet response: ${JSON.stringify(addedMagnet)}`);
+  }
   const cachedFileIds = !force && await _resolveCachedFileIds(infoHash, fileIndex);
   if (cachedFileIds && !['null', 'undefined'].includes(cachedFileIds)) {
     await RD.torrents.selectFiles(addedMagnet.id, cachedFileIds);
@@ -356,6 +364,10 @@ function statusReady(status) {
 
 function isBadTokenError(error) {
   return [8].includes(error?.code);
+}
+
+function isNotFoundError(error) {
+  return [7].includes(error?.code);
 }
 
 function isAccessDeniedError(error) {
