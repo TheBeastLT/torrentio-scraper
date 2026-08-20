@@ -98,7 +98,7 @@ export async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex
 }
 
 async function _resolve(AD, infoHash, cachedEntryInfo, fileIndex) {
-  const torrent = await _createOrFindTorrent(AD, infoHash);
+  const torrent = await _createTorrent(AD, infoHash);
   if (statusReady(torrent?.statusCode)) {
     return _unrestrictLink(AD, torrent, cachedEntryInfo, fileIndex);
   } else if (statusDownloading(torrent?.statusCode)) {
@@ -116,11 +116,6 @@ async function _resolve(AD, infoHash, cachedEntryInfo, fileIndex) {
   return Promise.reject(`Failed AllDebrid adding torrent ${JSON.stringify(torrent)}`);
 }
 
-async function _createOrFindTorrent(AD, infoHash) {
-  return _findTorrent(AD, infoHash)
-      .then(torrent => torrent ?? _createTorrent(AD, infoHash));
-}
-
 async function _retryCreateTorrent(AD, infoHash, encodedFileName, fileIndex) {
   const newTorrent = await _createTorrent(AD, infoHash);
   return newTorrent && statusReady(newTorrent.statusCode)
@@ -133,13 +128,6 @@ async function _deleteAndRetry(AD, infoHash, encodedFileName, fileIndex) {
   const lastTorrent = torrents[torrents.length - 1];
   return AD.magnet.delete(lastTorrent.id)
       .then(() => _retryCreateTorrent(AD, infoHash, encodedFileName, fileIndex));
-}
-
-async function _findTorrent(AD, infoHash) {
-  const torrents = await AD.magnet.status().then(response => response.data.magnets);
-  const foundTorrents = torrents.filter(torrent => torrent.hash.toLowerCase() === infoHash);
-  const nonFailedTorrent = foundTorrents.find(torrent => !statusError(torrent.statusCode));
-  return nonFailedTorrent || foundTorrents[0];
 }
 
 async function _createTorrent(AD, infoHash) {

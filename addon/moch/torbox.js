@@ -6,7 +6,7 @@ import { sameFilename, streamFilename, BadTokenError, AccessDeniedError, NotFoun
 import * as querystring from "node:querystring";
 
 const KEY = 'torbox';
-const timeout = 25000;
+const timeout = 10000;
 const baseUrl = 'https://api.torbox.app/v1'
 
 export async function getCachedStreams(streams, apiKey) {
