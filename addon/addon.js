@@ -55,7 +55,7 @@ builder.defineMetaHandler((args) => {
   return getMochItemMeta(mochKey, metaId, args.extra)
       .then(meta => ({
         meta: meta,
-        cacheMaxAge: metaId === 'Downloads' ? 0 : CACHE_MAX_AGE
+        cacheMaxAge: meta?.noCache ? 0 : CACHE_MAX_AGE
       }))
       .catch(error => error?.code === 'NOT_FOUND'
           ? Promise.reject(error)

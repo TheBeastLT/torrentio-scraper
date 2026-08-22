@@ -79,7 +79,8 @@ export async function getItemMeta(itemId, apiKey, ip) {
       id: `${KEY}:${DEBRID_DOWNLOADS}`,
       type: Type.OTHER,
       name: DEBRID_DOWNLOADS,
-      videos: videos
+      videos: videos,
+      noCache: true
     };
   }
   return _getTorrentInfo(RD, itemId)

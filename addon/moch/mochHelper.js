@@ -5,6 +5,7 @@ export const BadTokenError = { code: 'BAD_TOKEN' }
 export const AccessDeniedError = { code: 'ACCESS_DENIED' }
 export const AccessBlockedError = { code: 'ACCESS_BLOCKED' }
 export const NotFoundError = { code: 'NOT_FOUND' }
+export const MochUnavailableError = { code: 'UNAVAILABLE' }
 
 export function chunkArray(arr, size) {
   return arr.length > size

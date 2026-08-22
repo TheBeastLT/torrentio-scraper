@@ -9,12 +9,13 @@ import * as torbox from './torbox.js';
 import * as putio from './putio.js';
 import StaticResponse, { isStaticUrl } from './static.js';
 import { cacheWrapResolvedUrl } from '../lib/cache.js';
+import { executeWithBreaker, isBreakerOpen } from './circuitBreaker.js';
 import { timeout } from '../lib/promises.js';
-import { streamFilename, enrichMeta, BadTokenError, AccessDeniedError, AccessBlockedError, NotFoundError } from './mochHelper.js';
+import { Type } from '../lib/types.js';
+import { streamFilename, enrichMeta, BadTokenError, AccessDeniedError, AccessBlockedError, NotFoundError, MochUnavailableError } from './mochHelper.js';
 import { createNamedQueue } from "../lib/namedQueue.js";
 import { mochResolveTimer, mochAvailabilityTimer, mochQueueTimer, recordTokenBlacklist } from "../lib/metrics.js";
 
-const RESOLVE_TIMEOUT = 2 * 60 * 1000; // 2 minutes
 const AVAILABILITY_TIMEOUT = 30 * 1000;
 const MIN_API_KEY_SYMBOLS = 15;
 const TOKEN_BLACKLIST_MAX = 20000;
@@ -107,6 +108,9 @@ export async function applyMochs(streams, config) {
         if (isInvalidToken(config[moch.key], moch.key)) {
           return { moch, error: BadTokenError };
         }
+        if (isBreakerOpen(moch)) {
+          return { moch, error: MochUnavailableError };
+        }
         const end = mochAvailabilityTimer(moch.key);
         return timeout(AVAILABILITY_TIMEOUT, moch.instance.getCachedStreams(streams, config[moch.key], config.ip))
             .then(mochStreams => { end({ outcome: 'ok' }); return { moch, mochStreams }; })
@@ -138,7 +142,7 @@ export async function resolve(parameters) {
   const id = `${parameters.ip}_${parameters.mochKey}_${parameters.apiKey}_${parameters.infoHash}_${parameters.fileIndex}`;
   const resolveApi = () => {
     const end = mochResolveTimer(moch.key);
-    return moch.instance.resolve(parameters)
+    return executeWithBreaker(moch, [parameters], StaticResponse.FAILED_UNAVAILABLE)
         .then(url => {
           end({ outcome: resolveOutcome(url) });
           return url;
@@ -151,7 +155,7 @@ export async function resolve(parameters) {
   const queueWaitEnd = mochQueueTimer(moch.key);
   const method = () => {
     queueWaitEnd();
-    return timeout(RESOLVE_TIMEOUT, cacheWrapResolvedUrl(id, resolveApi))
+    return cacheWrapResolvedUrl(id, resolveApi)
         .catch(error => {
           console.warn(error);
           return StaticResponse.FAILED_UNEXPECTED;
@@ -169,6 +173,9 @@ export async function getMochCatalog(mochKey, catalogId, config, ) {
   if (isInvalidToken(config[mochKey], mochKey)) {
     return Promise.reject(new Error(`Invalid API key for moch provider: ${mochKey}`));
   }
+  if (isBreakerOpen(moch)) {
+    return [];
+  }
   return moch.instance.getCatalog(config[moch.key], catalogId, config)
       .catch(rawError => {
         const commonError = moch.instance.toCommonError(rawError);
@@ -185,6 +192,9 @@ export async function getMochItemMeta(mochKey, itemId, config) {
     return Promise.reject(NotFoundError);
   }
 
+  if (isBreakerOpen(moch)) {
+    return unavailableMeta(mochKey, itemId);
+  }
   return moch.instance.getItemMeta(itemId, config[moch.key], config.ip)
       .then(meta => enrichMeta(meta))
       .then(meta => {
@@ -300,5 +310,16 @@ function errorStreamResponse(mochKey, error, config) {
       url: `${config.host}/${StaticResponse.FAILED_ACCESS}`
     };
   }
+  if (error === MochUnavailableError) {
+    return {
+      name: `Torrentio\n${MochOptions[mochKey].shortName} error`,
+      title: `${MochOptions[mochKey].name} is currently unavailable!\nPlease try again later.`,
+      url: `${config.host}/${StaticResponse.FAILED_UNAVAILABLE}`
+    };
+  }
   return undefined;
+}
+
+function unavailableMeta(mochKey, itemId) {
+  return { id: `${mochKey}:${itemId}`, type: Type.OTHER, name: 'Debrid provider is currently unavailable', videos: [], noCache: true };
 }

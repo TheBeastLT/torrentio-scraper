@@ -69,7 +69,7 @@ const mochAvailability = new client.Histogram({
   name: 'moch_availability_duration_seconds',
   help: 'Debrid availability check duration by moch and outcome',
   labelNames: ['moch', 'outcome'],
-  buckets: [0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 30],
+  buckets: [0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 15, 20, 30],
   registers: [register]
 });
 
@@ -124,6 +124,17 @@ export function recordTokenBlacklist(moch) {
 
 export function recordRateLimiterStoreError() {
   rateLimiterStoreErrors.inc();
+}
+
+const mochBreakerEvents = new client.Counter({
+  name: 'moch_breaker_events_total',
+  help: 'Resolve circuit breaker events by moch and event',
+  labelNames: ['moch', 'event'],
+  registers: [register],
+});
+
+export function recordBreakerEvent(moch, event) {
+  mochBreakerEvents.inc({ moch, event });
 }
 
 new client.Gauge({

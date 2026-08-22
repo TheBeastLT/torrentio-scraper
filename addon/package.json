@@ -23,6 +23,7 @@
     "name-to-imdb": "^3.0.4",
     "named-queue": "^2.2.1",
     "offcloud-api": "^2.0.0",
+    "opossum": "^10.0.0",
     "p-limit": "^5.0.0",
     "parse-torrent-title": "git+https://github.com/TheBeastLT/parse-torrent-title.git#ea4ab26d2394055443f3671a80b4ea8c055c9591",
     "pg": "^8.16.3",
