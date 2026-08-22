@@ -9,7 +9,7 @@ import * as torbox from './torbox.js';
 import * as putio from './putio.js';
 import StaticResponse, { isStaticUrl } from './static.js';
 import { cacheWrapResolvedUrl } from '../lib/cache.js';
-import { executeWithBreaker, isBreakerOpen } from './circuitBreaker.js';
+import { executeWithBreaker, isBreakerOpen, isBreakerTripped } from './circuitBreaker.js';
 import { timeout } from '../lib/promises.js';
 import { Type } from '../lib/types.js';
 import { streamFilename, enrichMeta, BadTokenError, AccessDeniedError, AccessBlockedError, NotFoundError, MochUnavailableError } from './mochHelper.js';
@@ -173,7 +173,7 @@ export async function getMochCatalog(mochKey, catalogId, config, ) {
   if (isInvalidToken(config[mochKey], mochKey)) {
     return Promise.reject(new Error(`Invalid API key for moch provider: ${mochKey}`));
   }
-  if (isBreakerOpen(moch)) {
+  if (isBreakerTripped(moch)) {
     return [];
   }
   return moch.instance.getCatalog(config[moch.key], catalogId, config)
@@ -192,7 +192,7 @@ export async function getMochItemMeta(mochKey, itemId, config) {
     return Promise.reject(NotFoundError);
   }
 
-  if (isBreakerOpen(moch)) {
+  if (isBreakerTripped(moch)) {
     return unavailableMeta(mochKey, itemId);
   }
   return moch.instance.getItemMeta(itemId, config[moch.key], config.ip)

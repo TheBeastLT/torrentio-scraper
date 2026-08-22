@@ -7,7 +7,7 @@ import * as repository from './lib/repository.js';
 import applySorting from './lib/sort.js';
 import applyFilters from './lib/filter.js';
 import { applyMochs, getMochCatalog, getMochItemMeta } from './moch/moch.js';
-import StaticLinks from './moch/static.js';
+import StaticLinks, {isStaticUrl} from './moch/static.js';
 import { createNamedQueue } from "./lib/namedQueue.js";
 import pLimit from "p-limit";
 
@@ -111,7 +111,7 @@ function enrichCacheParams(streams) {
   let cacheAge = CACHE_MAX_AGE;
   if (!streams.length) {
     cacheAge = CACHE_MAX_AGE_EMPTY;
-  } else if (streams.every(stream => stream?.url?.endsWith(StaticLinks.FAILED_ACCESS))) {
+  } else if (streams.every(stream => isStaticUrl(stream?.url))) {
     cacheAge = 0;
   }
   return {

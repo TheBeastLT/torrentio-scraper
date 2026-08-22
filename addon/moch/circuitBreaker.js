@@ -51,3 +51,7 @@ export function executeWithBreaker(moch, args, openValue) {
 export function isBreakerOpen(moch) {
   return getBreaker(moch).opened;
 }
+
+export function isBreakerTripped(moch) {
+  return !getBreaker(moch).closed;
+}
