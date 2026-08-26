@@ -5,8 +5,8 @@ import { extractSeeders, extractSize } from './titleHelper.js';
 
 const OTHER_QUALITIES = QualityFilter.options.find(option => option.key === 'other');
 const CAM_QUALITIES = QualityFilter.options.find(option => option.key === 'cam');
-const HEALTHY_SEEDERS = 5;
-const SEEDED_SEEDERS = 1;
+export const HEALTHY_SEEDERS = 5;
+export const SEEDED_SEEDERS = 1;
 const MIN_HEALTHY_COUNT = 50;
 const MAX_UNHEALTHY_COUNT = 5;
 
