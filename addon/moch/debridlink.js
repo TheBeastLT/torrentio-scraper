@@ -4,16 +4,23 @@ import { isVideo, isArchive } from '../lib/extension.js';
 import StaticResponse from './static.js';
 import { getMagnetLink } from '../lib/magnetHelper.js';
 import { BadTokenError, NotFoundError } from './mochHelper.js';
+import {
+    cacheMochAvailabilityResult,
+    getMochCachedAvailabilityResults,
+    removeMochAvailabilityResult
+} from "../lib/cache.js";
 
 const KEY = 'debridlink';
 
 export async function getCachedStreams(streams, apiKey) {
+  const hashes = streams.map(stream => stream.infoHash);
+  const available = await getMochCachedAvailabilityResults(KEY, hashes);
   return streams
       .reduce((mochStreams, stream) => {
         mochStreams[`${stream.infoHash}@${stream.fileIdx}`] = {
           url: `${apiKey}/${stream.infoHash}/null/${stream.fileIdx}`,
-          cached: false
-        };
+          cached: available[stream.infoHash]?.cached || false
+        }
         return mochStreams;
       }, {})
 }
@@ -85,6 +92,7 @@ async function _resolve(DL, infoHash, fileIndex) {
     return _unrestrictLink(DL, torrent, fileIndex);
   } else if (torrent && statusDownloading(torrent)) {
     console.log(`Downloading to DebridLink ${infoHash} [${fileIndex}]...`);
+    removeMochAvailabilityResult(KEY, infoHash);
     return StaticResponse.DOWNLOADING;
   }
 
@@ -120,6 +128,7 @@ async function _unrestrictLink(DL, torrent, fileIndex) {
   if (!targetFile || !targetFile.downloadUrl) {
     return Promise.reject(`No DebridLink links found for index ${fileIndex} in: ${JSON.stringify(torrent)}`);
   }
+  cacheMochAvailabilityResult(KEY, torrent.hashString.toLowerCase());
   console.log(`Unrestricted DebridLink ${torrent.hashString} [${fileIndex}] to ${targetFile.downloadUrl}`);
   return targetFile.downloadUrl;
 }
