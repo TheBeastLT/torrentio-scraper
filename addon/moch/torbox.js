@@ -164,8 +164,8 @@ async function _unrestrictLink(apiKey, infoHash, torrent, cachedEntryInfo, fileI
       .filter(file => isVideo(file.short_name))
       .sort((a, b) => b.size - a.size);
   const targetVideo = Number.isInteger(fileIndex)
-      && videos.find(video => sameFilename(video.name, targetFileName))
-      || videos[0];
+      ? videos.find(video => sameFilename(video.name, targetFileName))
+      : videos[0];
 
   if (!targetVideo) {
     if (torrent.files.every(file => file.zipped)) {
