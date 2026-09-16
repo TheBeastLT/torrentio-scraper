@@ -24,6 +24,7 @@ export default function landingTemplate(manifest, config = {}) {
     [MochOptions.offcloud.key]: config[MochOptions.offcloud.key] || '',
     [MochOptions.torbox.key]: config[MochOptions.torbox.key] || '',
     [MochOptions.putio.key]: config[MochOptions.putio.key] || '',
+    [MochOptions.highway.key]: config[MochOptions.highway.key] || '',
   };
 
   let putioClientId = '';
@@ -354,7 +355,8 @@ export default function landingTemplate(manifest, config = {}) {
                                   debridProvider === '${MochOptions.premiumize.key}' ? 'https://www.premiumize.me/account' :
                                   debridProvider === '${MochOptions.debridlink.key}' ? 'https://debrid-link.fr/webapp/apikey' :
                                   debridProvider === '${MochOptions.offcloud.key}' ? 'https://offcloud.com/#/account' :
-                                  debridProvider === '${MochOptions.torbox.key}' ? 'https://torbox.app/settings' : '#'
+                                  debridProvider === '${MochOptions.torbox.key}' ? 'https://torbox.app/settings' :
+                                  debridProvider === '${MochOptions.highway.key}' ? 'https://cloud.high-way.me/#sessions' : '#'
                                  "
                                  class="text-[10px] md:text-xs text-indigo-400 hover:text-indigo-300 hover:underline focus:outline-none focus:ring-1 focus:ring-indigo-400 rounded">
                                   Find API Key &rarr;

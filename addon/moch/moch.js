@@ -7,6 +7,7 @@ import * as easydebrid from './easydebrid.js';
 import * as offcloud from './offcloud.js';
 import * as torbox from './torbox.js';
 import * as putio from './putio.js';
+import * as highway from './highway.js';
 import StaticResponse, { isStaticUrl } from './static.js';
 import { cacheWrapResolvedUrl } from '../lib/cache.js';
 import { executeWithBreaker, isBreakerOpen, isBreakerTripped } from './circuitBreaker.js';
@@ -77,6 +78,14 @@ export const MochOptions = {
     name: 'Put.io',
     shortName: 'Putio',
     catalogs: ['']
+  },
+  highway: {
+    key: 'highway',
+    instance: highway,
+    name: 'HighWay',
+    shortName: 'HW',
+    // No folder-browsing catalog (getCatalog/getItemMeta) - like easydebrid, stream resolution only.
+    catalogs: []
   }
 };
 
