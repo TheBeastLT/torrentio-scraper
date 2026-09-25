@@ -6,7 +6,7 @@ import { MochOptions } from '../moch/moch.js';
 
 export default function landingTemplate(manifest, config = {}) {
   const savedProviders = config[Providers.key] || Providers.options.map(p => p.key);
-  const savedSort = config[SortOptions.key] || SortOptions.options.qualitySeeders.key;
+  const savedSort = config[SortOptions.key] || SortOptions.options.seeders.key;
   const savedLanguages = config[LanguageOptions.key] || [];
   const savedQuality = config[QualityFilter.key] || [];
   const savedSize = (config[SizeFilter.key] || []).join(',');
@@ -145,7 +145,7 @@ export default function landingTemplate(manifest, config = {}) {
                           : '';
 
                       const qualityStr = this.qualities.join(',');
-                      const sortStr = (this.sort !== '${SortOptions.options.qualitySeeders.key}') ? this.sort : '';
+                      const sortStr = (this.sort !== '${SortOptions.options.seeders.key}') ? this.sort : '';
                       const langStr = this.languages.join(',');
                       const limitStr = (/^[1-9][0-9]{0,2}$/.test(this.limit)) ? this.limit : '';
                       const sizeStr = this.sizeFilter;
@@ -259,7 +259,10 @@ export default function landingTemplate(manifest, config = {}) {
 
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
                   <div>
-                      <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Sorting</label>
+                      <label class="flex items-center gap-1.5 text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
+                          Sorting
+                          <span x-show="sort === '${SortOptions.options.seeders.key}'" class="normal-case font-medium text-indigo-400" title="Ranked by seeders, most peers first">⚡ fastest</span>
+                      </label>
                       <select x-model="sort" class="w-full bg-gray-800 border border-gray-700 text-xs md:text-sm text-white rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-indigo-500 outline-none">
                           <template x-for="opt in options.sort">
                               <option :value="opt.value" x-text="opt.label" :selected="opt.value === sort"></option>
