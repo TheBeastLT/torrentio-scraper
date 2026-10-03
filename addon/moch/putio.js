@@ -72,11 +72,11 @@ export async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex
 
   return _resolve(Putio, infoHash, cachedEntryInfo, fileIndex)
       .catch(error => {
-        if (error?.data?.status_code === 401) {
+        if ([401, 402].includes(error?.data?.status_code)) {
           console.log(`Access denied to Putio ${infoHash} [${fileIndex}]`);
           return StaticResponse.FAILED_ACCESS;
         }
-        return Promise.reject(`Failed Putio adding torrent ${JSON.stringify(error.data || error)}`);
+        return Promise.reject(`Failed Putio adding torrent ${JSON.stringify(error?.data || error?.message || error)}`);
       });
 }
 
@@ -94,7 +94,7 @@ async function _resolve(Putio, infoHash, cachedEntryInfo, fileIndex) {
     console.log(`Retrying downloading to Putio ${infoHash} [${fileIndex}]...`);
     return _retryCreateTorrent(Putio, infoHash, cachedEntryInfo, fileIndex);
   }
-  return Promise.reject("Failed Putio adding torrent");
+  return Promise.reject(`Unexpected Putio transfer status ${torrent?.status}`);
 }
 
 async function _createOrFindTorrent(Putio, infoHash) {
@@ -200,7 +200,7 @@ function statusError(status) {
 }
 
 function statusDownloading(status) {
-  return ['WAITING', 'IN_QUEUE', 'DOWNLOADING'].includes(status);
+  return ['WAITING', 'IN_QUEUE', 'PREPARING_DOWNLOAD', 'DOWNLOADING', 'COMPLETING'].includes(status);
 }
 
 function statusProcessing(status) {
