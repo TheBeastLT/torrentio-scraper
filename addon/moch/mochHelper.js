@@ -62,5 +62,28 @@ export function sameFilename(filename, expectedFilename) {
 }
 
 function mostCommonValue(array) {
-  return array.sort((a, b) => array.filter(v => v === a).length - array.filter(v => v === b).length).pop();
+  const counts = new Map();
+  array.forEach(value => counts.set(value, (counts.get(value) || 0) + 1));
+  return [...counts.entries()].reduce((best, entry) => entry[1] > best[1] ? entry : best, [undefined, 0])[0];
+}
+
+const MAX_WALK_FOLDERS = 50;
+const MAX_WALK_FILES = 2000;
+const WALK_CONCURRENCY = 5;
+
+export async function walkFolders(rootId, listFolder) {
+  const files = [];
+  const pending = [{ id: rootId, prefix: '' }];
+  let listed = 0;
+  while (pending.length && listed < MAX_WALK_FOLDERS && files.length < MAX_WALK_FILES) {
+    const batch = pending.splice(0, Math.min(WALK_CONCURRENCY, MAX_WALK_FOLDERS - listed));
+    listed += batch.length;
+    const results = await Promise.all(batch.map(folder => listFolder(folder.id)));
+    results.forEach(({ folders, videos }, index) => {
+      const prefix = batch[index].prefix;
+      videos.forEach(video => files.push({ ...video, name: [prefix, video.name].join('/') }));
+      folders.forEach(folder => pending.push({ id: folder.id, prefix: [prefix, folder.name].join('/') }));
+    });
+  }
+  return files.slice(0, MAX_WALK_FILES);
 }

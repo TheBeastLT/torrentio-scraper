@@ -4,7 +4,7 @@ import { Type } from '../lib/types.js';
 import { isVideo, isArchive } from '../lib/extension.js';
 import StaticResponse from './static.js';
 import { getMagnetLink } from '../lib/magnetHelper.js';
-import { chunkArray, sameFilename, streamFilename, BadTokenError, AccessDeniedError, NotFoundError } from './mochHelper.js';
+import { chunkArray, sameFilename, streamFilename, walkFolders, BadTokenError, AccessDeniedError, NotFoundError } from './mochHelper.js';
 
 const KEY = 'premiumize';
 
@@ -78,17 +78,13 @@ export async function getItemMeta(itemId, apiKey, ip) {
       }))
 }
 
-async function getFolderContents(PM, itemId, ip, folderPrefix = '') {
-  return PM.folder.list(itemId, null, ip)
-      .then(response => response.content)
-      .then(contents => Promise.all(contents
-              .filter(content => content.type === 'folder')
-              .map(content => getFolderContents(PM, content.id, ip, [folderPrefix, content.name].join('/'))))
-          .then(otherContents => otherContents.reduce((a, b) => a.concat(b), []))
-          .then(otherContents => contents
-              .filter(content => content.type === 'file' && isVideo(content.name))
-              .map(content => ({ ...content, name: [folderPrefix, content.name].join('/') }))
-              .concat(otherContents)));
+async function getFolderContents(PM, itemId, ip) {
+  return walkFolders(itemId, folderId => PM.folder.list(folderId, null, ip)
+      .then(response => response.content || [])
+      .then(contents => ({
+        folders: contents.filter(content => content.type === 'folder'),
+        videos: contents.filter(content => content.type === 'file' && isVideo(content.name))
+      })));
 }
 
 export async function resolve({ ip, isBrowser, apiKey, infoHash, cachedEntryInfo, fileIndex }) {

@@ -5,7 +5,7 @@ import StaticResponse from './static.js';
 import { getMagnetLink } from '../lib/magnetHelper.js';
 import { Type } from "../lib/types.js";
 import { decode } from "magnet-uri";
-import { sameFilename, streamFilename } from "./mochHelper.js";
+import { sameFilename, streamFilename, walkFolders } from "./mochHelper.js";
 const PutioAPI = PutioClient.default;
 
 const KEY = 'putio';
@@ -56,18 +56,14 @@ export async function getItemMeta(itemId, apiKey) {
       }))
 }
 
-async function getFolderContents(Putio, itemId, folderPrefix = '') {
-  return await Putio.Files.Query(itemId)
+async function getFolderContents(Putio, itemId) {
+  return walkFolders(itemId, folderId => Putio.Files.Query(folderId)
       .then(response => response?.body)
       .then(body => body?.files?.length ? body.files : [body?.parent].filter(x => x))
-      .then(contents => Promise.all(contents
-              .filter(content => content.file_type === 'FOLDER')
-              .map(content => getFolderContents(Putio, content.id, [folderPrefix, content.name].join('/'))))
-          .then(otherContents => otherContents.reduce((a, b) => a.concat(b), []))
-          .then(otherContents => contents
-              .filter(content => content.file_type === 'VIDEO')
-              .map(content => ({ ...content, name: [folderPrefix, content.name].join('/') }))
-              .concat(otherContents)));
+      .then(contents => ({
+        folders: contents.filter(content => content.file_type === 'FOLDER'),
+        videos: contents.filter(content => content.file_type === 'VIDEO')
+      })));
 }
 
 export async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex }) {
