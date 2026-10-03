@@ -84,7 +84,6 @@ export const MochOptions = {
     instance: highway,
     name: 'HighWay',
     shortName: 'HW',
-    // No folder-browsing catalog (getCatalog/getItemMeta) - like easydebrid, stream resolution only.
     catalogs: []
   }
 };
@@ -93,6 +92,7 @@ const unrestrictQueues = {}
 Object.values(MochOptions)
     .map(moch => moch.key)
     .forEach(mochKey => unrestrictQueues[mochKey] = createNamedQueue(100));
+const metaQueue = createNamedQueue(20);
 
 export function queueDepths() {
   return Object.fromEntries(Object.entries(unrestrictQueues).map(([moch, queue]) => [moch, queue.length()]));
@@ -204,17 +204,22 @@ export async function getMochItemMeta(mochKey, itemId, config) {
   if (isBreakerTripped(moch)) {
     return unavailableMeta(mochKey, itemId);
   }
-  return moch.instance.getItemMeta(itemId, config[moch.key], config.ip)
-      .then(meta => enrichMeta(meta))
-      .then(meta => {
-        meta.videos.forEach(video => video.streams.forEach(stream => {
-          if (!stream.url.startsWith('http')) {
-            stream.url = `${config.host}/resolve/${moch.key}/${stream.url}/${streamFilename(video)}`
-          }
-          stream.behaviorHints = { bingeGroup: itemId }
+  const metaKey = `${moch.key}:${itemId}:${config[moch.key]}`;
+  return metaQueue.wrap(metaKey, () => moch.instance.getItemMeta(itemId, config[moch.key], config.ip)
+          .then(meta => enrichMeta(meta)))
+      .then(meta => ({
+        ...meta,
+        videos: meta.videos.map(video => ({
+          ...video,
+          streams: video.streams.map(stream => ({
+            ...stream,
+            url: stream.url.startsWith('http')
+                ? stream.url
+                : `${config.host}/resolve/${moch.key}/${stream.url}/${streamFilename(video)}`,
+            behaviorHints: { bingeGroup: itemId }
+          }))
         }))
-        return meta;
-      });
+      }));
 }
 
 function processMochResults(streams, config, results) {
