@@ -16,7 +16,8 @@ const STREAM_TTL = 3 * 24 * 60 * 60 * 1000; // 3 days
 const STREAM_MEM_TTL = 2 * 60 * 60 * 1000; // 2 hours
 const STREAM_EMPTY_TTL = 60 * 1000; // 1 minute
 const RESOLVED_URL_TTL = 3 * 60 * 60 * 1000; // 3 hours
-const AVAILABILITY_TTL =  5 * 24 * 60 * 60 * 1000; // 5 days
+const AVAILABILITY_TTL =  14 * 24 * 60 * 60 * 1000; // 14 days
+const INFRINGING_TTL =  60 * 24 * 60 * 60 * 1000; // 60 days
 const MESSAGE_VIDEO_URL_TTL = 60 * 1000; // 1 minutes
 
 const MONGO_URI = process.env.MONGODB_URI;
@@ -116,7 +117,7 @@ export function cacheAvailabilityResults(infoHash, fileIds) {
   const containsFileIds = (array) => array.some(ids => ids.toString() === fileIdsString)
   return mongoCache.get(key)
       .then(result => {
-        const newResult = result || [];
+        const newResult = Array.isArray(result) ? result : [];
         if (!containsFileIds(newResult)) {
           newResult.push(fileIds);
           newResult.sort((a, b) => b.length - a.length);
@@ -133,7 +134,7 @@ export function removeAvailabilityResults(infoHash, fileIds) {
   const fileIdsString = fileIds.toString();
   return mongoCache.get(key)
       .then(result => {
-        const storedIndex = result?.findIndex(ids => ids.toString() === fileIdsString);
+        const storedIndex = Array.isArray(result) ? result.findIndex(ids => ids.toString() === fileIdsString) : -1;
         if (storedIndex >= 0) {
           result.splice(storedIndex, 1);
           return mongoCache.set(key, result, AVAILABILITY_TTL);
@@ -160,6 +161,10 @@ export function getCachedAvailabilityResults(infoHashes) {
         console.log('Failed retrieve availability cache', error)
         return {};
       });
+}
+
+export function cacheInfringingResult(infoHash) {
+  return mongoCache.set(`${AVAILABILITY_KEY_PREFIX}:${infoHash}`, { infringing: true }, INFRINGING_TTL);
 }
 
 export function cacheMochAvailabilityResult(moch, infoHash, result = { cached: true }) {

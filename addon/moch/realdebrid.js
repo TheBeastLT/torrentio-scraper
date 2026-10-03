@@ -2,7 +2,12 @@ import RealDebridClient from 'real-debrid-api';
 import { Type } from '../lib/types.js';
 import { isVideo, isArchive } from '../lib/extension.js';
 import { delay } from '../lib/promises.js';
-import { cacheAvailabilityResults, getCachedAvailabilityResults, removeAvailabilityResults } from '../lib/cache.js';
+import {
+  cacheAvailabilityResults,
+  getCachedAvailabilityResults,
+  removeAvailabilityResults,
+  cacheInfringingResult
+} from '../lib/cache.js';
 import StaticResponse from './static.js';
 import { getMagnetLink } from '../lib/magnetHelper.js';
 import { BadTokenError, AccessDeniedError } from './mochHelper.js';
@@ -17,6 +22,7 @@ export async function getCachedStreams(streams, apiKey) {
   const hashes = streams.map(stream => stream.infoHash);
   const available = await getCachedAvailabilityResults(hashes);
   return available && streams
+      .filter(stream => !available[stream.infoHash]?.infringing)
       .reduce((mochStreams, stream) => {
         const cachedEntry = available[stream.infoHash];
         const cachedIds = _getCachedFileIds(stream.fileIdx, cachedEntry);
@@ -128,7 +134,7 @@ export async function resolve({ ip, isBrowser, apiKey, infoHash, fileIndex }) {
         }
         if (isInfringingFileError(error)) {
           console.log(`Infringing file removed from RealDebrid ${infoHash} [${fileIndex}]`);
-          removeAvailabilityResults(infoHash);
+          cacheInfringingResult(infoHash);
           return StaticResponse.FAILED_INFRINGEMENT;
         }
         if (isLimitExceededError(error)) {
