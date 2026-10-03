@@ -88,7 +88,11 @@ export function getTorrent(infoHash) {
 }
 
 export function getFiles(infoHashes) {
-  return File.findAll({ where: { infoHash: { [Op.in]: infoHashes} } });
+  return File.findAll({
+    attributes: ['infoHash', 'title', 'imdbId', 'imdbSeason', 'imdbEpisode'],
+    where: { infoHash: { [Op.in]: infoHashes } },
+    raw: true
+  });
 }
 
 export function getImdbIdMovieEntries(imdbId) {
