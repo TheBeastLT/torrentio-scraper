@@ -226,7 +226,8 @@ async function _getTorrentInfo(RD, torrentId) {
   if (!torrentId || typeof torrentId === 'object') {
     return torrentId || Promise.reject('No RealDebrid torrentId provided')
   }
-  return RD.torrents.info(torrentId);
+  return RD.torrents.info(torrentId)
+      .catch(logNotFound(`torrent info ${torrentId}`));
 }
 
 async function _createTorrentId(RD, infoHash, fileIndex, force = false) {
@@ -237,7 +238,8 @@ async function _createTorrentId(RD, infoHash, fileIndex, force = false) {
   }
   const cachedFileIds = !force && await _resolveCachedFileIds(infoHash, fileIndex);
   if (cachedFileIds && !['null', 'undefined'].includes(cachedFileIds)) {
-    await RD.torrents.selectFiles(addedMagnet.id, cachedFileIds);
+    await RD.torrents.selectFiles(addedMagnet.id, cachedFileIds)
+        .catch(logNotFound(`selectFiles cached ids ${cachedFileIds}`, infoHash));
   } else if (!force) {
     await _selectTorrentFiles(RD, { id: addedMagnet.id });
   }
@@ -270,7 +272,10 @@ async function _selectTorrentFiles(RD, torrent, fileIndex) {
     if (!videoFileIds.length) {
       return Promise.reject('Failed RealDebrid torrent file selection');
     }
-    return RD.torrents.selectFiles(torrent.id, videoFileIds);
+    const paddingFiles = torrent.files.filter(file => /(^|\/)\.pad\/|_____padding_file/.test(file.path)).length;
+    return RD.torrents.selectFiles(torrent.id, videoFileIds)
+        .catch(logNotFound(`selectFiles ids ${videoFileIds} of ${torrent.files.length} files `
+            + `(max id ${Math.max(...torrent.files.map(file => file.id))}, padding ${paddingFiles})`, torrent.hash));
   } else if (statusReady(torrent.status) || statusDownloading(torrent.status)) {
     return torrent;
   }
@@ -328,6 +333,7 @@ async function _unrestrictFileLink(RD, fileLink, torrent, fileIndex, isBrowser, 
         cacheAvailabilityResults(torrent.hash.toLowerCase(), cachedFileIds); // no need to await can happen async
         return unrestrictedLink || Promise.reject(`No download link returned for ${torrent.hash} [${fileIndex}]`);
       })
+      .catch(logNotFound('unrestrict link', torrent.hash))
       .catch(error => {
         if (shouldRetry && error.code === 19) {
           console.log(`Retry download as hoster is unavailable for ${torrent.hash} [${fileIndex}]`);
@@ -381,6 +387,15 @@ function isBadTokenError(error) {
 
 function isNotFoundError(error) {
   return [7].includes(errorCode(error));
+}
+
+function logNotFound(step, infoHash = '') {
+  return error => {
+    if (isNotFoundError(error)) {
+      console.log(`RealDebrid not found on ${step} ${infoHash}`.trim());
+    }
+    return Promise.reject(error);
+  };
 }
 
 function isAccessDeniedError(error) {
