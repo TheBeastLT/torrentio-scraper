@@ -1,5 +1,5 @@
 import { Type } from '../lib/types.js';
-import { isVideo } from '../lib/extension.js';
+import { isVideo, isArchive } from '../lib/extension.js';
 import StaticResponse from './static.js';
 import { getMagnetLink } from '../lib/magnetHelper.js';
 import { sameFilename, streamFilename, BadTokenError, AccessDeniedError, NotFoundError } from './mochHelper.js';
@@ -28,7 +28,7 @@ export async function getCachedStreams(streams, apiKey) {
             .filter(file => isVideo(file.short_name))
             .sort((a, b) => b.size - a.size);
         const targetVideo = Number.isInteger(stream.fileIdx)
-            && videos.find(video => sameFilename(video.name, targetFileName))
+            && videos.find(video => sameTorboxFilename(video.name, targetFileName))
             || videos[0];
         mochStreams[`${stream.infoHash}@${stream.fileIdx}`] = {
           url: `${apiKey}/${stream.infoHash}/${fileName}/${stream.fileIdx}`,
@@ -158,18 +158,23 @@ async function freeLastActiveTorrent(apiKey) {
   return Promise.reject({ detail: 'No torrent to pause found' });
 }
 
-async function _unrestrictLink(apiKey, infoHash, torrent, cachedEntryInfo, fileIndex) {
-  const targetFileName = decodeURIComponent(cachedEntryInfo);
+async function _unrestrictLink(apiKey, infoHash, torrent, targetFileName, fileIndex) {
   const videos = torrent.files
       .filter(file => isVideo(file.short_name))
       .sort((a, b) => b.size - a.size);
   const targetVideo = Number.isInteger(fileIndex)
-      ? videos.find(video => sameFilename(video.name, targetFileName))
+      ? videos.find(video => sameTorboxFilename(video.name, targetFileName))
       : videos[0];
 
   if (!targetVideo) {
     if (torrent.files.every(file => file.zipped)) {
       return StaticResponse.FAILED_RAR;
+    }
+    if (!videos.length) {
+      console.log(`No TorBox video files found for ${infoHash} [${fileIndex}]`);
+      return torrent.files.some(file => isArchive(file.short_name))
+          ? StaticResponse.FAILED_RAR
+          : StaticResponse.FAILED_OPENING;
     }
     return Promise.reject(`No TorBox file found for index ${fileIndex} in: ${JSON.stringify(torrent)}`);
   }
@@ -244,6 +249,15 @@ export function toCommonError(data) {
   return undefined;
 }
 
+function sameTorboxFilename(filename, expectedFilename) {
+  return sameFilename(filename, expectedFilename)
+      || sameFilename(normalizeTorboxFilename(filename), normalizeTorboxFilename(expectedFilename));
+}
+
+function normalizeTorboxFilename(filename) {
+  return filename.replace(/&/g, 'and').replace(/[^\p{L}\p{N}]/gu, '');
+}
+
 function statusDownloading(torrent) {
   return (!statusReady(torrent) && !statusError(torrent)) || !!torrent?.queued_id;
 }
@@ -265,7 +279,7 @@ function isAccessDeniedError(error) {
 }
 
 function isLimitExceededError(error) {
-  return ['MONTHLY_LIMIT', 'COOLDOWN_LIMIT', 'ACTIVE_LIMIT'].includes(error?.error)
+  return ['MONTHLY_LIMIT', 'COOLDOWN_LIMIT', 'ACTIVE_LIMIT', 'RATE_LIMIT_EXCEEDED'].includes(error?.error)
       || (error?.error === 'DIFF_ISSUE' && error?.detail?.includes('maximum queued'));
 }
 
