@@ -1,7 +1,7 @@
 import OffcloudClient from 'offcloud-api';
 import magnet from 'magnet-uri';
 import { Type } from '../lib/types.js';
-import { isVideo } from '../lib/extension.js';
+import { isVideo, isArchive } from '../lib/extension.js';
 import StaticResponse from './static.js';
 import { getMagnetLink } from '../lib/magnetHelper.js';
 import { sameFilename, streamFilename, BadTokenError, AccessDeniedError, NotFoundError } from './mochHelper.js';
@@ -79,15 +79,22 @@ export async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex
           console.log(`Access denied to Offcloud ${infoHash} [${fileIndex}]`);
           return StaticResponse.FAILED_ACCESS;
         }
+        if (isLimitExceededError(error)) {
+          console.log(`Limits exceeded in Offcloud ${infoHash} [${fileIndex}]`);
+          return StaticResponse.LIMITS_EXCEEDED;
+        }
+        if (isFailedDownloadError(error)) {
+          console.log(`Failed download in Offcloud ${infoHash} [${fileIndex}]`);
+          return StaticResponse.FAILED_DOWNLOAD;
+        }
         return Promise.reject(`Failed Offcloud adding torrent ${JSON.stringify(error?.message || error)}`);
       });
 }
 
-async function _getCachedLink(OC, magnetLink, infoHash, encodedFileName, fileIndex) {
+async function _getCachedLink(OC, magnetLink, infoHash, targetFileName, fileIndex) {
   const files = await OC.cache.download(magnetLink)
       .catch(error => isFailedDownloadError(error) ? undefined : Promise.reject(error));
   if (files?.length) {
-    const targetFileName = decodeURIComponent(encodedFileName);
     const videos = files.filter(file => isVideo(file.filename)).sort((a, b) => b.size - a.size);
     const targetVideo = Number.isInteger(fileIndex)
         && videos.find(video => sameFilename([...(video.folder || []), video.filename].join('/'), targetFileName))
@@ -96,6 +103,10 @@ async function _getCachedLink(OC, magnetLink, infoHash, encodedFileName, fileInd
       console.log(`Unrestricted Offcloud ${infoHash} [${fileIndex}] to ${targetVideo.url}`);
       return targetVideo.url;
     }
+    console.log(`No Offcloud video files found for ${infoHash} [${fileIndex}]`);
+    return files.some(file => isArchive(file.filename))
+        ? StaticResponse.FAILED_RAR
+        : StaticResponse.FAILED_OPENING;
   }
   return undefined;
 }
@@ -154,7 +165,12 @@ function isSingleFileError(error) {
   return `${error?.message || error}`.includes('Bad archive');
 }
 
+function isLimitExceededError(error) {
+  return `${error?.message || error}`.includes('maximum of 25 active downloads');
+}
+
 function isFailedDownloadError(error) {
-  return `${error?.message || error}`.includes('Unsupported link for direct download');
+  const message = `${error?.message || error}`;
+  return ['Unsupported link for direct download', 'Error downloading this file'].some(value => message.includes(value));
 }
 
