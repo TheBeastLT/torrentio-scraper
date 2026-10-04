@@ -3,3 +3,4 @@
 **.env
 .now
 /scraper/manual/examples.js
+/upstreams.conf
