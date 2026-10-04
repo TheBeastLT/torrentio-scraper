@@ -128,6 +128,13 @@ export async function resolve({ ip, isBrowser, apiKey, infoHash, fileIndex }) {
 
   return _resolve(RD, infoHash, fileIndex, isBrowser)
       .catch(error => {
+        if (isNotFoundError(error)) {
+          console.log(`Stale RealDebrid torrent, recreating ${infoHash} [${fileIndex}]...`);
+          return _retryCreateTorrent(RD, infoHash, fileIndex);
+        }
+        return Promise.reject(error);
+      })
+      .catch(error => {
         if (isAccessDeniedError(error)) {
           console.log(`Access denied to RealDebrid ${infoHash} [${fileIndex}]`);
           return StaticResponse.FAILED_ACCESS;
@@ -148,11 +155,6 @@ export async function resolve({ ip, isBrowser, apiKey, infoHash, fileIndex }) {
         if (isFailedOpeningError(error)) {
           console.log(`Failed RealDebrid opening torrent ${infoHash} [${fileIndex}]`);
           return StaticResponse.FAILED_OPENING;
-        }
-        if (isNotFoundError(error)) {
-          console.log(`Stale RealDebrid torrent, recreating ${infoHash} [${fileIndex}]...`);
-          return _retryCreateTorrent(RD, infoHash, fileIndex)
-              .catch((error) => Promise.reject(`Failed RealDebrid adding torrent ${JSON.stringify(error?.message || error)}`));
         }
         return Promise.reject(`Failed RealDebrid adding torrent ${JSON.stringify(error?.message || error)}`);
       });
@@ -369,28 +371,32 @@ function statusReady(status) {
   return ['downloaded', 'dead'].includes(status);
 }
 
+function errorCode(error) {
+  return error?.code ?? error?.error_code;
+}
+
 function isBadTokenError(error) {
-  return [8].includes(error?.code);
+  return [8].includes(errorCode(error));
 }
 
 function isNotFoundError(error) {
-  return [7].includes(error?.code);
+  return [7].includes(errorCode(error));
 }
 
 function isAccessDeniedError(error) {
-  return [8, 9, 20].includes(error?.code);
+  return [8, 9, 20].includes(errorCode(error));
 }
 
 function isInfringingFileError(error) {
-  return [35].includes(error?.code);
+  return [35].includes(errorCode(error));
 }
 
 function isLimitExceededError(error) {
-  return [21, 23, 26, 36].includes(error?.code);
+  return [21, 23, 26, 36].includes(errorCode(error));
 }
 
 function isTorrentTooBigError(error) {
-  return [29].includes(error?.code);
+  return [29].includes(errorCode(error));
 }
 
 function isFailedOpeningError(error) {
