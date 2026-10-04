@@ -52,7 +52,7 @@ export async function resolve({ apiKey, infoHash, cachedEntryInfo, fileIndex }) 
 // api/transfers.php's POST dedupes on its own (attachKnownTorrent) - calling it again with the
 // same infoHash (e.g. because the Stremio player resolves again after the "downloading"
 // placeholder) doesn't create a second transfer, it just returns the current state.
-async function _addAndResolve(apiKey, infoHash, encodedFileName, fileIndex) {
+async function _addAndResolve(apiKey, infoHash, targetFileName, fileIndex) {
   const added = await _request(apiKey, '', {
     method: 'POST',
     body: new URLSearchParams({ magnet: infoHash })
@@ -63,7 +63,6 @@ async function _addAndResolve(apiKey, infoHash, encodedFileName, fileIndex) {
   }
 
   const status = await _request(apiKey, `?id=${added.id}&service=${added.service}`);
-  const targetFileName = decodeURIComponent(encodedFileName);
   const videos = (status.files || []).filter(file => isVideo(file.path)).sort((a, b) => b.size - a.size);
   const targetVideo = Number.isInteger(fileIndex)
       && videos.find(video => sameFilename(video.path, targetFileName))

@@ -43,7 +43,7 @@ export async function resolve({ ip, isBrowser, apiKey, infoHash, cachedEntryInfo
       });
 }
 
-async function _getCachedLink(ED, infoHash, encodedFileName, fileIndex, ip, isBrowser) {
+async function _getCachedLink(ED, infoHash, targetFileName, fileIndex, ip, isBrowser) {
   const magnetLink = magnet.encode({ infoHash })
   const cachedTorrent = await ED.generateDebridLink(magnetLink);
   if (cachedTorrent?.files?.length) {
@@ -51,7 +51,6 @@ async function _getCachedLink(ED, infoHash, encodedFileName, fileIndex, ip, isBr
           ...file,
           path: file.directory.join("/") + `/${file.filename}`,
       }))
-    const targetFileName = decodeURIComponent(encodedFileName);
     const videos = files.filter(file => isVideo(file.path)).sort((a, b) => b.size - a.size);
     const targetVideo = Number.isInteger(fileIndex)
         && videos.find(video => sameFilename(video.path, targetFileName))

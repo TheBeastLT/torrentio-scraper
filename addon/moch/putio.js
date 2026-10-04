@@ -102,10 +102,10 @@ async function _createOrFindTorrent(Putio, infoHash) {
       .then(torrent => torrent ?? _createTorrent(Putio, infoHash));
 }
 
-async function _retryCreateTorrent(Putio, infoHash, encodedFileName, fileIndex) {
+async function _retryCreateTorrent(Putio, infoHash, targetFileName, fileIndex) {
   const newTorrent = await _createTorrent(Putio, infoHash);
   return newTorrent && statusReady(newTorrent.status)
-      ? _unrestrictLink(Putio, newTorrent, encodedFileName, fileIndex)
+      ? _unrestrictLink(Putio, newTorrent, targetFileName, fileIndex)
       : StaticResponse.FAILED_DOWNLOAD;
 }
 
@@ -141,8 +141,8 @@ async function _getNewTorrent(Putio, torrentId, pollCounter = 0, pollRate = 2000
           : torrent);
 }
 
-async function _unrestrictLink(Putio, torrent, encodedFileName, fileIndex) {
-  const targetVideo = await _getTargetFile(Putio, torrent, encodedFileName, fileIndex);
+async function _unrestrictLink(Putio, torrent, targetFileName, fileIndex) {
+  const targetVideo = await _getTargetFile(Putio, torrent, targetFileName, fileIndex);
   return _unrestrictVideo(Putio, targetVideo.id);
 }
 
@@ -153,8 +153,7 @@ async function _unrestrictVideo(Putio, videoId) {
   return downloadUrl;
 }
 
-async function _getTargetFile(Putio, torrent, encodedFileName, fileIndex) {
-  const targetFileName = decodeURIComponent(encodedFileName);
+async function _getTargetFile(Putio, torrent, targetFileName, fileIndex) {
   let targetFile;
   let files = await _getFiles(Putio, torrent.file_id);
   let videos = [];

@@ -121,11 +121,10 @@ async function _resolve(PM, infoHash, cachedEntryInfo, fileIndex, ip, isBrowser)
   return Promise.reject(`Failed Premiumize adding torrent ${JSON.stringify(torrent)}`);
 }
 
-async function _getCachedLink(PM, infoHash, encodedFileName, fileIndex, ip, isBrowser) {
+async function _getCachedLink(PM, infoHash, targetFileName, fileIndex, ip, isBrowser) {
   const cachedTorrent = await PM.transfer.directDownload(magnet.encode({ infoHash }), ip)
       .catch(error => isFailedDownloadError(error) ? undefined : Promise.reject(error));
   if (cachedTorrent?.content?.length) {
-    const targetFileName = decodeURIComponent(encodedFileName);
     const videos = cachedTorrent.content.filter(file => isVideo(file.path)).sort((a, b) => b.size - a.size);
     const targetVideo = Number.isInteger(fileIndex)
         && videos.find(video => sameFilename(video.path, targetFileName))
@@ -161,10 +160,10 @@ async function _createTorrent(PM, infoHash) {
   return PM.transfer.create(magnetLink).then((item) => _findTorrent(PM, item.id));
 }
 
-async function _retryCreateTorrent(PM, infoHash, encodedFileName, fileIndex) {
+async function _retryCreateTorrent(PM, infoHash, targetFileName, fileIndex) {
   const newTorrent = await _createTorrent(PM, infoHash);
   return newTorrent && statusReady(newTorrent.status)
-      ? _getCachedLink(PM, infoHash, encodedFileName, fileIndex)
+      ? _getCachedLink(PM, infoHash, targetFileName, fileIndex)
       : StaticResponse.FAILED_DOWNLOAD;
 }
 
