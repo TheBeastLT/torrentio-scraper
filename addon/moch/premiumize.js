@@ -202,7 +202,9 @@ function isLimitExceededError(error) {
   return [
       'Fair use limit reached!',
       'You already have a maximum of 25 active downloads in progress!',
-      'Your space is full! Please delete old files first!'
+      'Your space is full! Please delete old files first!',
+      'Bandwidth limit exceeded',
+      'Rate limit exceeded'
   ].some(value => error?.message?.includes(value));
 }
 
