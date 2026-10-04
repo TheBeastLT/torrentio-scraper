@@ -73,6 +73,13 @@ export async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex
 
   return _resolve(AD, infoHash, cachedEntryInfo, fileIndex)
       .catch(error => {
+        if (isTooManyTorrentsError(error?.code)) {
+          console.log(`Deleting and retrying adding to AllDebrid ${infoHash} [${fileIndex}]...`);
+          return _deleteAndRetry(AD, infoHash, cachedEntryInfo, fileIndex, error);
+        }
+        return Promise.reject(error);
+      })
+      .catch(error => {
         if (isAccessDeniedError(error?.code) || isBadTokenError(error?.code)) {
           console.log(`Access denied to AllDebrid ${infoHash} [${fileIndex}]`);
           return StaticResponse.FAILED_ACCESS;
@@ -85,13 +92,9 @@ export async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex
           console.log(`Failed opening torrent in AllDebrid ${infoHash} [${fileIndex}]`);
           return StaticResponse.FAILED_OPENING;
         }
-        if (isLimitExceededError(error?.code)) {
+        if (isLimitExceededError(error?.code) || isTooManyTorrentsError(error?.code)) {
           console.log(`Limits exceeded in AllDebrid ${infoHash} [${fileIndex}]`);
           return StaticResponse.LIMITS_EXCEEDED;
-        }
-        if (isTooManyTorrentsError(error?.code)) {
-          console.log(`Deleting and retrying adding to AllDebrid ${infoHash} [${fileIndex}]...`);
-          return _deleteAndRetry(AD, infoHash, cachedEntryInfo, fileIndex);
         }
         return Promise.reject(`Failed AllDebrid adding torrent ${JSON.stringify(error?.message || error)}`);
       });
@@ -116,18 +119,21 @@ async function _resolve(AD, infoHash, cachedEntryInfo, fileIndex) {
   return Promise.reject(`Failed AllDebrid adding torrent ${JSON.stringify(torrent)}`);
 }
 
-async function _retryCreateTorrent(AD, infoHash, encodedFileName, fileIndex) {
+async function _retryCreateTorrent(AD, infoHash, targetFileName, fileIndex) {
   const newTorrent = await _createTorrent(AD, infoHash);
   return newTorrent && statusReady(newTorrent.statusCode)
-      ? _unrestrictLink(AD, newTorrent, encodedFileName, fileIndex)
+      ? _unrestrictLink(AD, newTorrent, targetFileName, fileIndex)
       : StaticResponse.FAILED_DOWNLOAD;
 }
 
-async function _deleteAndRetry(AD, infoHash, encodedFileName, fileIndex) {
+async function _deleteAndRetry(AD, infoHash, targetFileName, fileIndex, error) {
   const torrents = await AD.magnet.status().then(response => response.data.magnets);
-  const lastTorrent = torrents[torrents.length - 1];
+  const lastTorrent = Array.isArray(torrents) ? torrents.at(-1) : undefined;
+  if (!lastTorrent) {
+    return Promise.reject(error);
+  }
   return AD.magnet.delete(lastTorrent.id)
-      .then(() => _retryCreateTorrent(AD, infoHash, encodedFileName, fileIndex));
+      .then(() => _retryCreateTorrent(AD, infoHash, targetFileName, fileIndex));
 }
 
 async function _createTorrent(AD, infoHash) {
@@ -140,8 +146,7 @@ async function _createTorrent(AD, infoHash) {
   return AD.magnet.status(torrent.id).then(statusResponse => statusResponse.data.magnets);
 }
 
-async function _unrestrictLink(AD, torrent, encodedFileName, fileIndex) {
-  const targetFileName = decodeURIComponent(encodedFileName);
+async function _unrestrictLink(AD, torrent, targetFileName, fileIndex) {
   let files = await AD.magnet.files(torrent.id)
       .then(response => response.data.magnets[0].files)
       .then(files => getNestedFiles({ e: files }))
@@ -151,11 +156,11 @@ async function _unrestrictLink(AD, torrent, encodedFileName, fileIndex) {
       || videos[0];
 
   if (!targetVideo && videos.every(link => isArchive(link.n))) {
-    console.log(`Only AllDebrid archive is available for [${torrent.hash}] ${encodedFileName}`)
+    console.log(`Only AllDebrid archive is available for [${torrent.hash}] ${targetFileName}`)
     return StaticResponse.FAILED_RAR;
   }
   if (!targetVideo?.l?.length) {
-    return Promise.reject(`No AllDebrid links found for [${torrent.hash}] ${encodedFileName}`);
+    return Promise.reject(`No AllDebrid links found for [${torrent.hash}] ${targetFileName}`);
   }
   const unrestrictedLink = await AD.link.unlock(targetVideo.l).then(response => response.data.link);
   cacheMochAvailabilityResult(KEY, torrent.hash.toLowerCase());
