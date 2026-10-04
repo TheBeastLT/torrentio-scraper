@@ -153,7 +153,7 @@ function statusReady(torrent) {
 }
 
 function isAccessDeniedError(error) {
-  return ['badToken', 'accountLocked'].includes(error);
+  return ['badToken', 'accountLocked', 'unverifiedEmail'].includes(error);
 }
 
 function isLimitsExceededError(error) {
