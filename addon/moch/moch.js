@@ -19,6 +19,7 @@ import { mochResolveTimer, mochAvailabilityTimer, mochQueueTimer, recordTokenBla
 
 const AVAILABILITY_TIMEOUT = 30 * 1000;
 const MIN_API_KEY_SYMBOLS = 15;
+const INVALID_API_KEY_SYMBOLS = /[^\x20-\x7e]/;
 const TOKEN_BLACKLIST_MAX = 20000;
 const tokenBlacklist = new Set();
 export const MochOptions = {
@@ -281,7 +282,10 @@ function isHealthyStreamForDebrid(streams, stream) {
 }
 
 function isInvalidToken(token, mochKey) {
-  return !token || token.length < MIN_API_KEY_SYMBOLS || tokenBlacklist.has(`${mochKey}|${token}`);
+  return !token
+      || token.length < MIN_API_KEY_SYMBOLS
+      || INVALID_API_KEY_SYMBOLS.test(token)
+      || tokenBlacklist.has(`${mochKey}|${token}`);
 }
 
 function blackListToken(token, mochKey) {
