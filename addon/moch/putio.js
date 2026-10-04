@@ -115,7 +115,7 @@ async function _findTorrent(Putio, infoHash) {
   const nonFailedTorrent = foundTorrents.find(torrent => !statusError(torrent.status));
   const foundTorrent = nonFailedTorrent || foundTorrents[0];
   if (foundTorrent && !foundTorrent.userfile_exists) {
-    return Putio.Transfers.Cancel(foundTorrent.id).then(() => undefined);
+    return Putio.Transfers.Cancel([foundTorrent.id]).then(() => undefined);
   }
   return foundTorrent;
 }
@@ -149,7 +149,7 @@ async function _unrestrictLink(Putio, torrent, targetFileName, fileIndex) {
 async function _unrestrictVideo(Putio, videoId) {
   const response = await Putio.File.GetStorageURL(videoId);
   const downloadUrl = response.data.url
-  console.log(`Unrestricted Putio [${videoId}] to ${downloadUrl}`);
+  console.log(`Unrestricted Putio [${videoId}] to ${new URL(downloadUrl).host}`);
   return downloadUrl;
 }
 
