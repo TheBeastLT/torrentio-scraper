@@ -82,6 +82,10 @@ export async function resolve({ ip, apiKey, infoHash, fileIndex }) {
           console.log(`Torrent too big for DebridLink ${infoHash} [${fileIndex}]`);
           return StaticResponse.FAILED_TOO_BIG;
         }
+        if (isFailedOpeningError(error)) {
+          console.log(`Failed DebridLink opening torrent ${infoHash} [${fileIndex}]`);
+          return StaticResponse.FAILED_OPENING;
+        }
         return Promise.reject(`Failed DebridLink adding torrent ${JSON.stringify(error?.message || error)}`);
       });
 }
@@ -162,4 +166,8 @@ function isLimitsExceededError(error) {
 
 function isTorrentTooBigError(error) {
   return ['torrentTooBig'].includes(error);
+}
+
+function isFailedOpeningError(error) {
+  return ['notAddTorrent'].includes(error);
 }
