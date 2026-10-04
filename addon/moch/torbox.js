@@ -2,6 +2,7 @@ import { Type } from '../lib/types.js';
 import { isVideo, isArchive } from '../lib/extension.js';
 import StaticResponse from './static.js';
 import { getMagnetLink } from '../lib/magnetHelper.js';
+import * as repository from '../lib/repository.js';
 import { sameFilename, streamFilename, BadTokenError, AccessDeniedError, NotFoundError } from './mochHelper.js';
 import * as querystring from "node:querystring";
 
@@ -176,9 +177,17 @@ async function _unrestrictLink(apiKey, infoHash, torrent, targetFileName, fileIn
           ? StaticResponse.FAILED_RAR
           : StaticResponse.FAILED_OPENING;
     }
+    if (videos.length === 1 && await isSingleVideoTorrent(infoHash)) {
+      return getDownloadLink(apiKey, 'torrents', torrent.id, videos[0].id);
+    }
     return Promise.reject(`No TorBox file found for index ${fileIndex} in: ${JSON.stringify(torrent)}`);
   }
   return getDownloadLink(apiKey, 'torrents', torrent.id, targetVideo.id);
+}
+
+async function isSingleVideoTorrent(infoHash) {
+  const files = await repository.getFiles([infoHash]).catch(() => []);
+  return new Set(files.map(file => file.title)).size === 1;
 }
 
 async function getAvailabilityResponse(apiKey, hashes) {
