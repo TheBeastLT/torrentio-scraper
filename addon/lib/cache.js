@@ -34,6 +34,7 @@ const memoryCache = new KeyvCacheableMemory({ lruSize: 10000 });
 console.log(`Cache LRU sizes: stream=${streamLruSize} resolved=20000 memory=10000 (availMem=${(availableMem / 1024 ** 3).toFixed(1)}GB)`);
 const mongoCache = MONGO_URI && new KeyvMongo(MONGO_URI, {
   collection: 'torrentio_addon_collection',
+  compressors: ['zstd'],
   minPoolSize: 50,
   maxPoolSize: 200,
   maxConnecting: 5,

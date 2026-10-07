@@ -11,6 +11,7 @@
   "dependencies": {
     "@keyv/mongo": "^3.1.0",
     "@keyv/redis": "^5.1.6",
+    "@mongodb-js/zstd": "^7.0.0",
     "@paradise-cloud/easy-debrid": "^3.0.0",
     "@putdotio/api-client": "^8.42.0",
     "all-debrid-api": "^1.4.2",
