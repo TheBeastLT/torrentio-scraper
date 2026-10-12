@@ -1,0 +1,191 @@
+{
+  "positive": [
+    {
+      "name": "Quarantine [2008] [DVDRiP.XviD-M14CH0] [Lektor PL] [Arx]",
+      "expectedConfidence": "high",
+      "expectedTags": { "lektor": true }
+    },
+    {
+      "name": "The.Mandalorian.S01E06.POLISH.WEBRip.x264-FLAME",
+      "expectedConfidence": "high"
+    },
+    {
+      "name": "Bukmacher.Bookie.E02E07.MULTi.1080p.AMZN.WEB-DL.H264.DDP5.1.Atmos-K83.Lektor.PL",
+      "expectedConfidence": "high",
+      "expectedTags": { "lektor": true, "multi": true }
+    },
+    {
+      "name": "Avatar.2009.PL.1080p.BluRay.x264-DSiTE",
+      "expectedConfidence": "high"
+    },
+    {
+      "name": "Shrek.2001.PLDUB.1080p.BluRay.x264",
+      "expectedConfidence": "high",
+      "expectedTags": { "dubbing": true }
+    },
+    {
+      "name": "Wladca.Pierscieni.Druzyna.Pierscienia.2001.MULTi.2160p.UHD.BluRay.Remux-B89",
+      "expectedConfidence": "medium",
+      "expectedTags": { "multi": true }
+    },
+    {
+      "name": "Diuna.Czesc.Druga.2024.MULTi.1080p.BluRay.x264-KiT",
+      "expectedConfidence": "medium",
+      "expectedTags": { "multi": true }
+    },
+    {
+      "name": "Kler.2018.PL.1080p.WEB-DL.x264-PSiG",
+      "expectedConfidence": "high"
+    },
+    {
+      "name": "Znachor.2023.1080p.NF.WEB-DL.DDP5.1.x264.Napisy.PL",
+      "expectedConfidence": "high",
+      "expectedTags": { "napisy": true }
+    },
+    {
+      "name": "Kraina.Lodu.2013.Dubbing.PL.720p.BluRay",
+      "expectedConfidence": "high",
+      "expectedTags": { "dubbing": true }
+    },
+    {
+      "name": "Chłopi.2023.1080p.WEB-DL.H264",
+      "expectedConfidence": "medium"
+    },
+    {
+      "name": "Gra.o.Tron.Sezon.1.PL.480p.DVDRip",
+      "expectedConfidence": "high"
+    },
+    {
+      "name": "Oppenheimer.2023.MULTi.2160p.www.electro-torrent.pl",
+      "expectedConfidence": "high",
+      "expectedTags": { "multi": true }
+    },
+    {
+      "name": "[Devil-Torrents.pl] Vaiana 2 2024 MULTI 2160p WEB-DL",
+      "expectedConfidence": "high",
+      "expectedTags": { "multi": true }
+    },
+    {
+      "name": "Akademia.Pana.Kleksa.2023.PL.DUB.1080p.WEB-DL",
+      "expectedConfidence": "high",
+      "expectedTags": { "dubbing": true }
+    },
+    {
+      "name": "Dune.Part.Two.2024.MULTi.2160p.UHD.BluRay.x265",
+      "provider": "BestTorrents",
+      "expectedConfidence": "medium",
+      "expectedTags": { "multi": true }
+    },
+    {
+      "name": "Ostatnia.Rodzina.2016.Lektor.IVO.1080p.WEB-DL",
+      "expectedConfidence": "high",
+      "expectedTags": { "lektor": true }
+    },
+    {
+      "name": "Wonka.2023.MULTi.1080p.PLSUB.WEB-DL",
+      "expectedConfidence": "high",
+      "expectedTags": { "napisy": true, "multi": true }
+    },
+    {
+      "name": "Cały.Film.Po.Polsku.2021.720p",
+      "expectedConfidence": "high"
+    },
+    {
+      "name": "Listy.do.M.5.2022.PL.1080p.WEB-DL.x264-K83",
+      "expectedConfidence": "high"
+    },
+    {
+      "name": "Furiosa.A.Mad.Max.Saga.2024.MULTi.2160p.WEB-DL.x265-LTS",
+      "expectedConfidence": "medium",
+      "expectedTags": { "multi": true }
+    },
+    {
+      "name": "Shogun.S01E05.MULTi.1080p.AMZN.WEB-DL.H264-ANONiM",
+      "expectedConfidence": "medium",
+      "expectedTags": { "multi": true }
+    },
+    {
+      "name": "Bridgerton.S03.LektorPL.1080p.NF.WEB-DL",
+      "expectedConfidence": "high",
+      "expectedTags": { "lektor": true }
+    },
+    {
+      "name": "Vaiana.2.2024.DUBBPL.720p.WEB-DL",
+      "expectedConfidence": "high",
+      "expectedTags": { "dubbing": true }
+    },
+    {
+      "name": "Glina.S01.Odc.1-13.PL.480p.DVDRip.Paczka",
+      "expectedConfidence": "high"
+    },
+    {
+      "name": "Twisters.2024.MULTi.1080p.WEB.x264-spajk85",
+      "expectedConfidence": "medium",
+      "expectedTags": { "multi": true }
+    },
+    {
+      "name": "Gladiator.II.2024.1080p.WEB-DL.Napisy.NapiProjekt",
+      "expectedConfidence": "high",
+      "expectedTags": { "napisy": true }
+    }
+  ],
+  "negative": [
+    {
+      "name": "Deadpool.3.2024.MULTi.1080p.WEB.H264-FLUX",
+      "expectedConfidence": "none"
+    },
+    {
+      "name": "The.Matrix.1999.1080p.BluRay.x264-RARBG",
+      "expectedConfidence": "none"
+    },
+    {
+      "name": "Polish Wedding (1998) 1080p (moviesbyrizzo upl).mp4",
+      "expectedConfidence": "none"
+    },
+    {
+      "name": "La.Casa.De.Papel.S01.SPANISH.1080p.NF.WEB-DL",
+      "expectedConfidence": "none"
+    },
+    {
+      "name": "Kurtlar.Vadisi.Pusu.Sezon.1.TURKISH.480p",
+      "expectedConfidence": "low"
+    },
+    {
+      "name": "Movie.Title.2023.DUBBED.720p.WEB",
+      "expectedConfidence": "none"
+    },
+    {
+      "name": "Knight.Rider.S01.KITT.Special.1080p",
+      "expectedConfidence": "none"
+    },
+    {
+      "name": "Multi.Facial.1995.720p.WEB",
+      "expectedConfidence": "none"
+    },
+    {
+      "name": "Señora.Acero.S01E01.SPANISH.720p",
+      "expectedConfidence": "none"
+    },
+    {
+      "name": "Inception.2010.1080p.BluRay.x264-SPARKS",
+      "provider": "BestTorrents",
+      "expectedConfidence": "low"
+    },
+    {
+      "name": "Explosion.Imminent.2023.1080p.WEB",
+      "expectedConfidence": "none"
+    },
+    {
+      "name": "www.UIndex.pl - The.Movie.2023.1080p.WEB",
+      "expectedConfidence": "low"
+    },
+    {
+      "name": "Dune.Part.Two.2024.MULTi.1080p.WEB.H264-FLAME",
+      "expectedConfidence": "none"
+    },
+    {
+      "name": "Nobody.2.2025.1080p.WEB.H264-LTS",
+      "expectedConfidence": "low"
+    }
+  ]
+}
