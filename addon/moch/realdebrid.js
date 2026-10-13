@@ -17,6 +17,8 @@ const CATALOG_MAX_PAGE = 1;
 const CATALOG_PAGE_SIZE = 50;
 const KEY = 'realdebrid';
 const DEBRID_DOWNLOADS = 'Downloads';
+const NOT_FOUND_RETRIES = 2;
+const NOT_FOUND_RETRY_DELAY = 1000;
 
 export async function getCachedStreams(streams, apiKey) {
   const hashes = streams.map(stream => stream.infoHash);
@@ -144,6 +146,10 @@ export async function resolve({ ip, isBrowser, apiKey, infoHash, fileIndex }) {
           cacheInfringingResult(infoHash);
           return StaticResponse.FAILED_INFRINGEMENT;
         }
+        if (isTooManyRequestsError(error)) {
+          console.log(`Too many requests to RealDebrid ${infoHash} [${fileIndex}]`);
+          return StaticResponse.FAILED_UNAVAILABLE;
+        }
         if (isLimitExceededError(error)) {
           console.log(`Limits exceeded in RealDebrid ${infoHash} [${fileIndex}]`);
           return StaticResponse.LIMITS_EXCEEDED;
@@ -226,8 +232,7 @@ async function _getTorrentInfo(RD, torrentId) {
   if (!torrentId || typeof torrentId === 'object') {
     return torrentId || Promise.reject('No RealDebrid torrentId provided')
   }
-  return RD.torrents.info(torrentId)
-      .catch(logNotFound(`torrent info ${torrentId}`));
+  return _retryNotFound(`torrent info ${torrentId}`, () => RD.torrents.info(torrentId));
 }
 
 async function _createTorrentId(RD, infoHash, fileIndex, force = false) {
@@ -238,8 +243,7 @@ async function _createTorrentId(RD, infoHash, fileIndex, force = false) {
   }
   const cachedFileIds = !force && await _resolveCachedFileIds(infoHash, fileIndex);
   if (cachedFileIds && !['null', 'undefined'].includes(cachedFileIds)) {
-    await RD.torrents.selectFiles(addedMagnet.id, cachedFileIds)
-        .catch(logNotFound(`selectFiles cached ids ${cachedFileIds}`, infoHash));
+    await _retryNotFound(`selectFiles cached ids ${infoHash}`, () => RD.torrents.selectFiles(addedMagnet.id, cachedFileIds));
   } else if (!force) {
     await _selectTorrentFiles(RD, { id: addedMagnet.id });
   }
@@ -272,10 +276,7 @@ async function _selectTorrentFiles(RD, torrent, fileIndex) {
     if (!videoFileIds.length) {
       return Promise.reject('Failed RealDebrid torrent file selection');
     }
-    const paddingFiles = torrent.files.filter(file => /(^|\/)\.pad\/|_____padding_file/.test(file.path)).length;
-    return RD.torrents.selectFiles(torrent.id, videoFileIds)
-        .catch(logNotFound(`selectFiles ids ${videoFileIds} of ${torrent.files.length} files `
-            + `(max id ${Math.max(...torrent.files.map(file => file.id))}, padding ${paddingFiles})`, torrent.hash));
+    return _retryNotFound(`selectFiles ${torrent.hash}`, () => RD.torrents.selectFiles(torrent.id, videoFileIds));
   } else if (statusReady(torrent.status) || statusDownloading(torrent.status)) {
     return torrent;
   }
@@ -287,6 +288,19 @@ async function _openTorrent(RD, torrentId, pollCounter = 0, pollRate = 2000, max
       .then(torrent => torrent && statusOpening(torrent.status) && pollCounter < maxPollNumber
           ? delay(pollRate).then(() => _openTorrent(RD, torrentId, pollCounter + 1))
           : torrent);
+}
+
+async function _retryNotFound(step, method, attempt = 0) {
+  return method()
+      .then(result => {
+        if (attempt) {
+          console.log(`RealDebrid found on ${step} after ${attempt} retries`);
+        }
+        return result;
+      })
+      .catch(error => isNotFoundError(error) && attempt < NOT_FOUND_RETRIES
+          ? delay(NOT_FOUND_RETRY_DELAY).then(() => _retryNotFound(step, method, attempt + 1))
+          : logNotFound(step)(error));
 }
 
 async function _unrestrictLink(RD, torrent, fileIndex, isBrowser, shouldRetry = true) {
@@ -408,6 +422,10 @@ function isInfringingFileError(error) {
 
 function isLimitExceededError(error) {
   return [21, 23, 26, 36].includes(errorCode(error));
+}
+
+function isTooManyRequestsError(error) {
+  return [34].includes(errorCode(error));
 }
 
 function isTorrentTooBigError(error) {
