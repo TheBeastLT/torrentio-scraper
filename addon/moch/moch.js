@@ -10,7 +10,7 @@ import * as putio from './putio.js';
 import * as highway from './highway.js';
 import StaticResponse, { isStaticUrl } from './static.js';
 import { cacheWrapResolvedUrl } from '../lib/cache.js';
-import { executeWithBreaker, isAvailabilityBlocked, checkAvailability, isBreakerTripped } from './circuitBreaker.js';
+import { executeWithResolveBreaker, executeWithAvailabilityBreaker, isResolveBreakerOpen, isResolveBreakerTripped } from './circuitBreaker.js';
 import { timeout } from '../lib/promises.js';
 import { Type } from '../lib/types.js';
 import { streamFilename, enrichMeta, BadTokenError, AccessDeniedError, AccessBlockedError, NotFoundError, MochUnavailableError } from './mochHelper.js';
@@ -118,14 +118,17 @@ export async function applyMochs(streams, config) {
         if (isInvalidToken(config[moch.key], moch.key)) {
           return { moch, error: BadTokenError };
         }
-        if (isAvailabilityBlocked(moch)) {
+        if (isResolveBreakerOpen(moch)) {
           return { moch, error: MochUnavailableError };
         }
         const end = mochAvailabilityTimer(moch.key);
-        return checkAvailability(moch, () => timeout(AVAILABILITY_TIMEOUT,
-            moch.instance.getCachedStreams(streams, config[moch.key], config.ip)))
+        return executeWithAvailabilityBreaker(moch, () => timeout(AVAILABILITY_TIMEOUT,
+            moch.instance.getCachedStreams(streams, config[moch.key], config.ip)), MochUnavailableError)
             .then(mochStreams => { end({ outcome: 'ok' }); return { moch, mochStreams }; })
             .catch(rawError => {
+              if (rawError === MochUnavailableError) {
+                return { moch, error: rawError };
+              }
               end({ outcome: rawError?.message === 'Timed out' ? 'timeout' : 'error' });
               const error = moch.instance.toCommonError(rawError) || rawError;
               if (error === BadTokenError) {
@@ -153,7 +156,7 @@ export async function resolve(parameters) {
   const id = `${parameters.ip}_${parameters.mochKey}_${parameters.apiKey}_${parameters.infoHash}_${parameters.fileIndex}`;
   const resolveApi = () => {
     const end = mochResolveTimer(moch.key);
-    return executeWithBreaker(moch, [parameters], StaticResponse.FAILED_UNAVAILABLE)
+    return executeWithResolveBreaker(moch, [parameters], StaticResponse.FAILED_UNAVAILABLE)
         .then(url => {
           end({ outcome: resolveOutcome(url) });
           return url;
@@ -184,7 +187,7 @@ export async function getMochCatalog(mochKey, catalogId, config, ) {
   if (isInvalidToken(config[mochKey], mochKey)) {
     return Promise.reject(new Error(`Invalid API key for moch provider: ${mochKey}`));
   }
-  if (isBreakerTripped(moch)) {
+  if (isResolveBreakerTripped(moch)) {
     return [];
   }
   return moch.instance.getCatalog(config[moch.key], catalogId, config)
@@ -203,7 +206,7 @@ export async function getMochItemMeta(mochKey, itemId, config) {
     return Promise.reject(NotFoundError);
   }
 
-  if (isBreakerTripped(moch)) {
+  if (isResolveBreakerTripped(moch)) {
     return unavailableMeta(mochKey, itemId);
   }
   const metaKey = `${moch.key}:${itemId}:${config[moch.key]}`;

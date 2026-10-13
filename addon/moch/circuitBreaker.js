@@ -4,9 +4,8 @@ import { recordBreakerEvent } from '../lib/metrics.js';
 
 const RESOLVE_TIMEOUT = 2 * 60 * 1000;
 
-// Only resolve feeds the breaker's failure rate; catalog/meta use isBreakerTripped(). Availability is skipped while
-// tripped, except one probe per half-open window that closes or reopens it, since without availability results
-// there are no resolves to probe with. timeout:false => trip on failure RATE, not latency (a fast 5xx counts).
+// Resolve and availability each feed their own breaker, so a high volume of one cannot dilute the failure rate of the
+// other; catalog/meta use isResolveBreakerTripped(). timeout:false => trip on failure RATE, not latency (a fast 5xx counts).
 const BREAKER_OPTIONS = {
   timeout: false,
   errorThresholdPercentage: 75,
@@ -16,32 +15,45 @@ const BREAKER_OPTIONS = {
   resetTimeout: 10000,
 };
 
-const breakers = {};
-const availabilityProbes = new Set();
+const resolveBreakers = {};
+const availabilityBreakers = {};
 
 function isPerUserError(moch, error) {
   return !!moch.instance.toCommonError?.(error);
 }
 
-function getBreaker(moch) {
-  if (!breakers[moch.key]) {
-    const action = (...args) => timeout(RESOLVE_TIMEOUT, moch.instance.resolve(...args));
-    const breaker = new CircuitBreaker(action, {
-      ...BREAKER_OPTIONS,
-      name: moch.key,
-      errorFilter: (error) => isPerUserError(moch, error),
-    });
-    breaker.on('open', () => recordBreakerEvent(moch.key, 'open'));
-    breaker.on('halfOpen', () => recordBreakerEvent(moch.key, 'halfOpen'));
-    breaker.on('close', () => recordBreakerEvent(moch.key, 'close'));
-    breaker.on('reject', () => recordBreakerEvent(moch.key, 'reject'));
-    breakers[moch.key] = breaker;
-  }
-  return breakers[moch.key];
+function createBreaker(moch, name, action) {
+  const breaker = new CircuitBreaker(action, {
+    ...BREAKER_OPTIONS,
+    name,
+    errorFilter: (error) => isPerUserError(moch, error),
+  });
+  breaker.on('open', () => recordBreakerEvent(name, 'open'));
+  breaker.on('halfOpen', () => recordBreakerEvent(name, 'halfOpen'));
+  breaker.on('close', () => recordBreakerEvent(name, 'close'));
+  breaker.on('reject', () => recordBreakerEvent(name, 'reject'));
+  return breaker;
 }
 
-export function executeWithBreaker(moch, args, openValue) {
-  return getBreaker(moch).fire(...args)
+function getResolveBreaker(moch) {
+  if (!resolveBreakers[moch.key]) {
+    const action = (...args) => timeout(RESOLVE_TIMEOUT, moch.instance.resolve(...args));
+    resolveBreakers[moch.key] = createBreaker(moch, moch.key, action);
+  }
+  return resolveBreakers[moch.key];
+}
+
+function getAvailabilityBreaker(moch) {
+  if (!availabilityBreakers[moch.key]) {
+    const action = (method) => method()
+        .then(result => result || Promise.reject(new Error(`No ${moch.key} availability results`)));
+    availabilityBreakers[moch.key] = createBreaker(moch, `${moch.key}_availability`, action);
+  }
+  return availabilityBreakers[moch.key];
+}
+
+export function executeWithResolveBreaker(moch, args, openValue) {
+  return getResolveBreaker(moch).fire(...args)
       .catch(error => {
         if (error?.code === 'EOPENBREAKER') {
           return openValue;
@@ -50,31 +62,15 @@ export function executeWithBreaker(moch, args, openValue) {
       });
 }
 
-export function isAvailabilityBlocked(moch) {
-  const breaker = getBreaker(moch);
-  return breaker.opened || breaker.halfOpen && availabilityProbes.has(moch.key);
+export function executeWithAvailabilityBreaker(moch, method, openError) {
+  return getAvailabilityBreaker(moch).fire(method)
+      .catch(error => Promise.reject(error?.code === 'EOPENBREAKER' ? openError : error));
 }
 
-export function checkAvailability(moch, method) {
-  const breaker = getBreaker(moch);
-  if (!breaker.halfOpen) {
-    return method();
-  }
-  availabilityProbes.add(moch.key);
-  return method()
-      .then(result => {
-        result ? breaker.close() : breaker.open();
-        return result;
-      })
-      .catch(error => {
-        if (!isPerUserError(moch, error)) {
-          breaker.open();
-        }
-        throw error;
-      })
-      .finally(() => availabilityProbes.delete(moch.key));
+export function isResolveBreakerOpen(moch) {
+  return getResolveBreaker(moch).opened;
 }
 
-export function isBreakerTripped(moch) {
-  return !getBreaker(moch).closed;
+export function isResolveBreakerTripped(moch) {
+  return !getResolveBreaker(moch).closed;
 }
