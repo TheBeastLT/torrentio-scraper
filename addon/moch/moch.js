@@ -10,7 +10,7 @@ import * as putio from './putio.js';
 import * as highway from './highway.js';
 import StaticResponse, { isStaticUrl } from './static.js';
 import { cacheWrapResolvedUrl } from '../lib/cache.js';
-import { executeWithBreaker, isBreakerOpen, isBreakerTripped } from './circuitBreaker.js';
+import { executeWithBreaker, isAvailabilityBlocked, checkAvailability, isBreakerTripped } from './circuitBreaker.js';
 import { timeout } from '../lib/promises.js';
 import { Type } from '../lib/types.js';
 import { streamFilename, enrichMeta, BadTokenError, AccessDeniedError, AccessBlockedError, NotFoundError, MochUnavailableError } from './mochHelper.js';
@@ -118,11 +118,12 @@ export async function applyMochs(streams, config) {
         if (isInvalidToken(config[moch.key], moch.key)) {
           return { moch, error: BadTokenError };
         }
-        if (isBreakerOpen(moch)) {
+        if (isAvailabilityBlocked(moch)) {
           return { moch, error: MochUnavailableError };
         }
         const end = mochAvailabilityTimer(moch.key);
-        return timeout(AVAILABILITY_TIMEOUT, moch.instance.getCachedStreams(streams, config[moch.key], config.ip))
+        return checkAvailability(moch, () => timeout(AVAILABILITY_TIMEOUT,
+            moch.instance.getCachedStreams(streams, config[moch.key], config.ip)))
             .then(mochStreams => { end({ outcome: 'ok' }); return { moch, mochStreams }; })
             .catch(rawError => {
               end({ outcome: rawError?.message === 'Timed out' ? 'timeout' : 'error' });

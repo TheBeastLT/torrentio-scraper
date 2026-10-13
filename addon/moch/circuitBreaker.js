@@ -4,8 +4,9 @@ import { recordBreakerEvent } from '../lib/metrics.js';
 
 const RESOLVE_TIMEOUT = 2 * 60 * 1000;
 
-// Only resolve feeds the breaker; availability/catalog/meta stay out of the trip pool and use
-// isBreakerOpen() instead. timeout:false => trip on failure RATE, not latency (a fast 5xx counts).
+// Only resolve feeds the breaker's failure rate; catalog/meta use isBreakerTripped(). Availability is skipped while
+// tripped, except one probe per half-open window that closes or reopens it, since without availability results
+// there are no resolves to probe with. timeout:false => trip on failure RATE, not latency (a fast 5xx counts).
 const BREAKER_OPTIONS = {
   timeout: false,
   errorThresholdPercentage: 75,
@@ -16,6 +17,7 @@ const BREAKER_OPTIONS = {
 };
 
 const breakers = {};
+const availabilityProbes = new Set();
 
 function isPerUserError(moch, error) {
   return !!moch.instance.toCommonError?.(error);
@@ -48,8 +50,29 @@ export function executeWithBreaker(moch, args, openValue) {
       });
 }
 
-export function isBreakerOpen(moch) {
-  return getBreaker(moch).opened;
+export function isAvailabilityBlocked(moch) {
+  const breaker = getBreaker(moch);
+  return breaker.opened || breaker.halfOpen && availabilityProbes.has(moch.key);
+}
+
+export function checkAvailability(moch, method) {
+  const breaker = getBreaker(moch);
+  if (!breaker.halfOpen) {
+    return method();
+  }
+  availabilityProbes.add(moch.key);
+  return method()
+      .then(result => {
+        result ? breaker.close() : breaker.open();
+        return result;
+      })
+      .catch(error => {
+        if (!isPerUserError(moch, error)) {
+          breaker.open();
+        }
+        throw error;
+      })
+      .finally(() => availabilityProbes.delete(moch.key));
 }
 
 export function isBreakerTripped(moch) {
