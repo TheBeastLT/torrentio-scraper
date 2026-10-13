@@ -39,6 +39,7 @@ const mongoCache = MONGO_URI && new KeyvMongo(MONGO_URI, {
   maxPoolSize: 200,
   maxConnecting: 5,
 });
+mongoCache?.on('error', error => console.error('Mongo cache error', error?.message || error));
 
 async function cacheWrap(name, key, method, ttl, memCache = memoryCache) {
     if (!mongoCache) {
@@ -70,7 +71,11 @@ async function cacheGet(cache, key, withTimeout = false) {
 }
 
 function cacheSet(cache, key, value, ttl) {
-    cacheValue(cache, key, value, ttl).catch(error => console.warn('Failed to write cache', key, error?.message || error));
+    cacheValue(cache, key, value, ttl).catch(logWriteError(key));
+}
+
+function logWriteError(key) {
+    return error => console.warn('Failed to write cache', key, error?.message || error);
 }
 
 async function cacheValue(cache, key, value, ttl) {
@@ -124,13 +129,14 @@ export function cacheAvailabilityResults(infoHash, fileIds) {
           newResult.sort((a, b) => b.length - a.length);
         }
         return mongoCache.set(key, newResult, AVAILABILITY_TTL);
-      });
+      })
+      .catch(logWriteError(key));
 }
 
 export function removeAvailabilityResults(infoHash, fileIds) {
   const key = `${AVAILABILITY_KEY_PREFIX}:${infoHash}`;
   if (fileIds === undefined) {
-      return mongoCache.delete(key);
+      return mongoCache.delete(key).catch(logWriteError(key));
   }
   const fileIdsString = fileIds.toString();
   return mongoCache.get(key)
@@ -140,7 +146,8 @@ export function removeAvailabilityResults(infoHash, fileIds) {
           result.splice(storedIndex, 1);
           return mongoCache.set(key, result, AVAILABILITY_TTL);
         }
-      });
+      })
+      .catch(logWriteError(key));
 }
 
 export function getCachedAvailabilityResults(infoHashes) {
@@ -165,17 +172,18 @@ export function getCachedAvailabilityResults(infoHashes) {
 }
 
 export function cacheInfringingResult(infoHash) {
-  return mongoCache.set(`${AVAILABILITY_KEY_PREFIX}:${infoHash}`, { infringing: true }, INFRINGING_TTL);
+  const key = `${AVAILABILITY_KEY_PREFIX}:${infoHash}`;
+  return mongoCache.set(key, { infringing: true }, INFRINGING_TTL).catch(logWriteError(key));
 }
 
 export function cacheMochAvailabilityResult(moch, infoHash, result = { cached: true }) {
     const key = `${AVAILABILITY_KEY_PREFIX}:${moch}:${infoHash}`;
-    return mongoCache.set(key, result, AVAILABILITY_TTL);
+    return mongoCache.set(key, result, AVAILABILITY_TTL).catch(logWriteError(key));
 }
 
 export function removeMochAvailabilityResult(moch, infoHash) {
     const key = `${AVAILABILITY_KEY_PREFIX}:${moch}:${infoHash}`;
-    return mongoCache.delete(key);
+    return mongoCache.delete(key).catch(logWriteError(key));
 }
 
 export function getMochCachedAvailabilityResults(moch, infoHashes) {
