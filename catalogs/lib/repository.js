@@ -14,10 +14,10 @@ export async function getIds(providers, type, startDate, endDate) {
       ? 'AND files."imdbSeason" IS NOT NULL AND files."imdbEpisode" IS NOT NULL'
       : type === Type.MOVIE ? 'AND files."imdbSeason" IS NULL AND files."imdbEpisode" IS NULL' : '';
   const dateCondition = startDate && endDate
-      ? `AND torrents."uploadDate" BETWEEN '${startDate}' AND '${endDate}'`
+      ? `AND "uploadDate" BETWEEN '${startDate}' AND '${endDate}'`
       : '';
   const providersCondition = providers && providers.length
-      ? `AND torrents.provider in (${providers.map(it => `'${it}'`).join(',')})`
+      ? `AND provider in (${providers.map(it => `'${it}'`).join(',')})`
       : '';
   const titleCondition = type === Type.MOVIE
       ? `AND torrents.title NOT LIKE '%[Erotic]%'
@@ -26,14 +26,12 @@ export async function getIds(providers, type, startDate, endDate) {
          AND torrents.title !~* '${SEASON_TITLE}'`
       : '';
   const sortCondition = type === Type.MOVIE ? 'sum(torrents.seeders)' : 'max(torrents.seeders)';
-  const filesCondition = `files."${idName}" IS NOT NULL ${episodeCondition}`;
-  const filesJoin = dateCondition
-      ? `CROSS JOIN LATERAL (SELECT files."${idName}" FROM files
-            WHERE files."infoHash" = torrents."infoHash" AND ${filesCondition} OFFSET 0) as files`
-      : `JOIN files ON torrents."infoHash" = files."infoHash" AND ${filesCondition}`;
   const query = `SELECT files."${idName}"
-        FROM torrents ${filesJoin}
-        WHERE torrents.seeders > 0 AND torrents.type = '${type}' ${providersCondition} ${dateCondition} ${titleCondition}
+        FROM (SELECT torrents."infoHash", torrents.seeders FROM torrents
+                WHERE seeders > 0 AND type = '${type}' ${providersCondition} ${dateCondition} ${titleCondition}
+              ) as torrents
+        JOIN files ON torrents."infoHash" = files."infoHash"
+        WHERE files."${idName}" IS NOT NULL ${episodeCondition}
         GROUP BY files."${idName}"
         ORDER BY ${sortCondition} DESC
         LIMIT 5000`
