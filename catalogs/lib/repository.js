@@ -4,8 +4,8 @@ import { Type } from '../../addon/lib/types.js';
 const DATABASE_URI = process.env.DATABASE_URI;
 
 const database = new Sequelize(DATABASE_URI, { logging: false });
-const INDIAN_LANGUAGES_TITLE = '\\m(telugu|tamil|hindi|malayalam|kannada|bengali|marathi|punjabi)\\M|[[+(,] *(tel|tam|hin|mal|kan)\\M';
-const INDIAN_LANGUAGES_AUDIO = 'Audio\\([^)]*\\m(tel|tam|hin|mal|kan)\\M';
+const EXCLUDED_LANGUAGES_TITLE = '\\m(telugu|tamil|hindi|malayalam|kannada|bengali|marathi|punjabi|tagalog|filipino)\\M|[[+(,] *(tel|tam|hin|mal|kan)\\M';
+const EXCLUDED_LANGUAGES_AUDIO = 'Audio\\([^)]*\\m(tel|tam|hin|mal|kan|tgl|fil)\\M';
 const SEASON_TITLE = '\\mS\\d{1,2}(E\\d+)?\\M|\\mseason \\d|\\mcomplete series\\M';
 
 export async function getIds(providers, type, startDate, endDate) {
@@ -21,8 +21,8 @@ export async function getIds(providers, type, startDate, endDate) {
       : '';
   const titleCondition = type === Type.MOVIE
       ? `AND torrents.title NOT LIKE '%[Erotic]%'
-         AND torrents.title !~* '${INDIAN_LANGUAGES_TITLE}'
-         AND coalesce(torrents.languages, '') !~ '${INDIAN_LANGUAGES_AUDIO}'
+         AND torrents.title !~* '${EXCLUDED_LANGUAGES_TITLE}'
+         AND coalesce(torrents.languages, '') !~ '${EXCLUDED_LANGUAGES_AUDIO}'
          AND torrents.title !~* '${SEASON_TITLE}'`
       : '';
   const sortCondition = type === Type.MOVIE ? 'sum(torrents.seeders)' : 'max(torrents.seeders)';
