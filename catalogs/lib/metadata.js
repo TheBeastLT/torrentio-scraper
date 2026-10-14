@@ -26,10 +26,12 @@ function _requestMetadata(ids, type) {
 }
 
 function _getUrl(ids, type) {
-  const joinedIds = ids.slice(0, MAX_SIZE).join(',');
+  const pageIds = ids.slice(0, MAX_SIZE);
   if (type === Type.ANIME) {
+    const joinedIds = pageIds.map(id => `kitsu:${id}`).join(',');
     return `${KITSU_URL}/catalog/${type}/kitsu-anime-list/lastVideosIds=${joinedIds}.json`;
   }
+  const joinedIds = pageIds.join(',');
   return `${CINEMETA_URL}/catalog/${type}/last-videos/lastVideosIds=${joinedIds}.json`;
 }
 
