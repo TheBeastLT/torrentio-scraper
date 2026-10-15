@@ -9,7 +9,6 @@
   "author": "TheBeastLT <pauliox@beyond.lt>",
   "license": "MIT",
   "dependencies": {
-    "@keyv/mongo": "^3.1.0",
     "@keyv/redis": "^5.1.6",
     "@mongodb-js/zstd": "^7.0.0",
     "@paradise-cloud/easy-debrid": "^3.0.0",
@@ -21,6 +20,7 @@
     "debrid-link-api": "^1.1.1",
     "express-rate-limit": "^8.2.1",
     "magnet-uri": "^6.2.0",
+    "mongodb": "^7.7.0",
     "name-to-imdb": "^3.0.4",
     "named-queue": "^2.2.1",
     "offcloud-api": "^2.0.0",
