@@ -3,6 +3,7 @@ import { Type } from './types.js';
 import { mapLanguages } from './languages.js';
 import { enrichStreamSources, getSources } from './magnetHelper.js';
 import { getSubtitles } from './subtitles.js';
+import { HEALTHY_SEEDERS, SEEDED_SEEDERS } from './sort.js';
 
 const ADDON_NAME = 'Torrentio';
 const SIZE_DELTA = 0.05;
@@ -23,8 +24,9 @@ export function toStreamInfo(record) {
         joinDetailParts([record.torrent.title.replace(/[, ]+/g, ' ')]),
         joinDetailParts([!sameInfo && record.title || undefined]),
         joinDetailParts([
-          joinDetailParts([record.torrent.seeders], '👤 '),
+          joinDetailParts([record.torrent.seeders, healthIndicator(record.torrent.seeders)], '👤 '),
           joinDetailParts([formatSize(record.size)], '💾 '),
+          joinDetailParts([formatAge(record.torrent.uploadDate)], '📅 '),
           joinDetailParts([record.torrent.provider], '⚙️ ')
         ]),
         joinDetailParts(getLanguages(record, torrentInfo, fileInfo), '', ' / '),
@@ -105,6 +107,32 @@ function formatSize(size) {
   }
   const i = size === 0 ? 0 : Math.floor(Math.log(size) / Math.log(1024));
   return Number((size / Math.pow(1024, i)).toFixed(2)) + ' ' + ['B', 'kB', 'MB', 'GB', 'TB'][i];
+}
+
+// Mirrors the health tiers sort.js uses to rank/filter streams, so the
+// badge shown always matches the actual ranking behavior.
+function healthIndicator(seeders) {
+  if (seeders >= HEALTHY_SEEDERS) {
+    return '🟢';
+  } else if (seeders >= SEEDED_SEEDERS) {
+    return '🟡';
+  }
+  return '🔴';
+}
+
+function formatAge(uploadDate) {
+  if (!uploadDate) {
+    return undefined;
+  }
+  const days = Math.floor((Date.now() - new Date(uploadDate).getTime()) / (24 * 60 * 60 * 1000));
+  if (days < 1) {
+    return 'today';
+  } else if (days < 30) {
+    return `${days}d`;
+  } else if (days < 365) {
+    return `${Math.floor(days / 30)}mo`;
+  }
+  return `${Math.floor(days / 365)}y`;
 }
 
 export function applyStaticInfo(streams) {
