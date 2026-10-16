@@ -3,7 +3,10 @@ import { Type } from '../../addon/lib/types.js';
 
 const DATABASE_URI = process.env.DATABASE_URI;
 
-const database = new Sequelize(DATABASE_URI, { logging: false });
+const database = new Sequelize(DATABASE_URI, {
+  logging: false,
+  pool: { max: 5, min: 1, idle: 20 * 60 * 1000 }
+});
 const EXCLUDED_LANGUAGES_TITLE = '\\m(telugu|tamil|hindi|malayalam|kannada|bengali|marathi|punjabi|tagalog|filipino)\\M|[[+(,] *(tel|tam|hin|mal|kan)\\M';
 const EXCLUDED_LANGUAGES_AUDIO = 'Audio\\([^)]*\\m(tel|tam|hin|mal|kan|tgl|fil)\\M';
 const SEASON_TITLE = '\\mS\\d{1,2}(E\\d+)?\\M|\\mseason \\d|\\mcomplete series\\M';
