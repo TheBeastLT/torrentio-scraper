@@ -50,12 +50,3 @@ export function createMongoStore(client, name, { compressValues = false } = {}) 
     },
   };
 }
-
-export function withFallback(primary, fallback) {
-  return {
-    ...primary,
-    get(key) {
-      return primary.get(key).then(value => value !== undefined ? value : fallback.get(key));
-    },
-  };
-}

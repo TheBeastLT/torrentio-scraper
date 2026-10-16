@@ -3,7 +3,7 @@ import { isStaticUrl }  from '../moch/static.js';
 import { timeout } from './promises.js';
 import { cacheTimer, cacheResult } from './metrics.js';
 import { availableMemoryBytes } from "./requestHelper.js";
-import { createMongoClient, createMongoStore, withFallback } from "./mongoStore.js";
+import { createMongoClient, createMongoStore } from "./mongoStore.js";
 
 const CACHE_READ_TIMEOUT = 3 * 1000;
 
@@ -33,9 +33,7 @@ const resolvedMemoryCache = new KeyvCacheableMemory({ lruSize: 20000 });
 const memoryCache = new KeyvCacheableMemory({ lruSize: 10000 });
 console.log(`Cache LRU sizes: stream=${streamLruSize} resolved=20000 memory=10000 (availMem=${(availableMem / 1024 ** 3).toFixed(1)}GB)`);
 const mongoClient = MONGO_URI && createMongoClient(MONGO_URI);
-const streamStore = mongoClient && withFallback(
-    createMongoStore(mongoClient, 'torrentio_addon_stream', { compressValues: true }),
-    createMongoStore(mongoClient, 'torrentio_addon_collection'));
+const streamStore = mongoClient && createMongoStore(mongoClient, 'torrentio_addon_stream', { compressValues: true });
 const availabilityStore = mongoClient && createMongoStore(mongoClient, 'torrentio_addon_availability');
 
 async function cacheWrap(name, key, method, ttl, memCache, store) {
