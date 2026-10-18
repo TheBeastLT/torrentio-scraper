@@ -40,7 +40,6 @@ builder.defineStreamHandler((args) => {
 
 builder.defineCatalogHandler((args) => {
   const [_, mochKey, catalogId] = args.id.split('-');
-  console.log(`Incoming catalog ${args.id} request with skip=${args.extra.skip || 0}`)
   return getMochCatalog(mochKey, catalogId, args.extra)
       .then(metas => ({
         metas: metas,
@@ -51,7 +50,6 @@ builder.defineCatalogHandler((args) => {
 
 builder.defineMetaHandler((args) => {
   const [mochKey, metaId] = args.id.split(':');
-  console.log(`Incoming debrid meta ${args.id} request`)
   return getMochItemMeta(mochKey, metaId, args.extra)
       .then(meta => ({
         meta: meta,

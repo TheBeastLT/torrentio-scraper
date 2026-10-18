@@ -30,7 +30,6 @@ export async function getCachedStreams(streams, apiKey) {
 }
 
 export async function resolve({ ip, isBrowser, apiKey, infoHash, cachedEntryInfo, fileIndex }) {
-  console.log(`Unrestricting EasyDebrid ${infoHash} [${fileIndex}]`);
   const options = await getDefaultOptions(apiKey);
   const ED = new EasyDebridClient(options);
   return _getCachedLink(ED, infoHash, cachedEntryInfo, fileIndex, ip, isBrowser)
@@ -60,7 +59,6 @@ async function _getCachedLink(ED, infoHash, targetFileName, fileIndex, ip, isBro
       return StaticResponse.FAILED_RAR;
     }
     const unrestrictedLink = targetVideo.url;
-    console.log(`Unrestricted EasyDebrid ${infoHash} [${fileIndex}] to ${unrestrictedLink}`);
     return unrestrictedLink;
   }
   return Promise.reject('No cached entry found');

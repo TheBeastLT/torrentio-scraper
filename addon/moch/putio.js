@@ -67,7 +67,6 @@ async function getFolderContents(Putio, itemId) {
 }
 
 export async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex }) {
-  console.log(`Unrestricting Putio ${infoHash} [${fileIndex}]`);
   const Putio = createPutioAPI(apiKey)
 
   return _resolve(Putio, infoHash, cachedEntryInfo, fileIndex)
@@ -149,7 +148,6 @@ async function _unrestrictLink(Putio, torrent, targetFileName, fileIndex) {
 async function _unrestrictVideo(Putio, videoId) {
   const response = await Putio.File.GetStorageURL(videoId);
   const downloadUrl = response.data.url
-  console.log(`Unrestricted Putio [${videoId}] to ${new URL(downloadUrl).host}`);
   return downloadUrl;
 }
 

@@ -64,7 +64,6 @@ export async function getItemMeta(itemId, apiKey, ip) {
 }
 
 export async function resolve({ ip, apiKey, infoHash, fileIndex }) {
-  console.log(`Unrestricting DebridLink ${infoHash} [${fileIndex}]`);
   const options = await getDefaultOptions(ip);
   const DL = new DebridLinkClient(apiKey, options);
 
@@ -133,7 +132,6 @@ async function _unrestrictLink(DL, torrent, fileIndex) {
     return Promise.reject(`No DebridLink links found for index ${fileIndex} in: ${JSON.stringify(torrent)}`);
   }
   cacheMochAvailabilityResult(KEY, torrent.hashString.toLowerCase());
-  console.log(`Unrestricted DebridLink ${torrent.hashString} [${fileIndex}] to ${targetFile.downloadUrl}`);
   return targetFile.downloadUrl;
 }
 

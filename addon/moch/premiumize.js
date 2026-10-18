@@ -88,7 +88,6 @@ async function getFolderContents(PM, itemId, ip) {
 }
 
 export async function resolve({ ip, isBrowser, apiKey, infoHash, cachedEntryInfo, fileIndex }) {
-  console.log(`Unrestricting Premiumize ${infoHash} [${fileIndex}] for IP ${ip} from browser=${isBrowser}`);
   const options = await getDefaultOptions();
   const PM = new PremiumizeClient(apiKey, options);
   return _getCachedLink(PM, infoHash, cachedEntryInfo, fileIndex, ip, isBrowser)
@@ -135,7 +134,6 @@ async function _getCachedLink(PM, infoHash, targetFileName, fileIndex, ip, isBro
     }
     const streamLink = isBrowser && targetVideo.transcode_status === 'finished' && targetVideo.stream_link;
     const unrestrictedLink = streamLink || targetVideo.link;
-    console.log(`Unrestricted Premiumize ${infoHash} [${fileIndex}] to ${unrestrictedLink}`);
     return unrestrictedLink;
   }
   return undefined;

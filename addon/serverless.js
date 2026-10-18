@@ -96,7 +96,7 @@ router.get('{/:configuration}/:resource/:type/:id{/:extra}.json', limiter, (req,
             res.end(JSON.stringify({ err: 'not found' }));
           }
         } else {
-          console.error('handler error', { resource, type, id, err: err?.message || err, cause: err?.cause?.stack || err?.cause?.message });
+          console.error('handler error', JSON.stringify({ resource, type, id, err: err?.message || err, cause: err?.cause?.stack || err?.cause?.message }));
           res.writeHead(500);
           res.end(JSON.stringify({ err: 'handler error' }));
         }
@@ -124,7 +124,7 @@ router.get('/resolve/:moch/:apiKey/:infoHash/:cachedEntryInfo/:fileIndex{/:filen
         res.end();
       })
       .catch(error => {
-        console.warn('resolve failed', { mochKey: parameters.mochKey, infoHash: parameters.infoHash, err: error?.message || error });
+        console.warn('resolve failed', JSON.stringify({ mochKey: parameters.mochKey, infoHash: parameters.infoHash, err: error?.message || error }));
         res.statusCode = 404;
         res.end();
       });

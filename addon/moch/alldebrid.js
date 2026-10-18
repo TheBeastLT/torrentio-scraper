@@ -67,7 +67,6 @@ export async function getItemMeta(itemId, apiKey, ip) {
 }
 
 export async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex }) {
-  console.log(`Unrestricting AllDebrid ${infoHash} [${fileIndex}]`);
   const options = await getDefaultOptions(ip);
   const AD = new AllDebridClient(apiKey, options);
 
@@ -164,7 +163,6 @@ async function _unrestrictLink(AD, torrent, targetFileName, fileIndex) {
   }
   const unrestrictedLink = await AD.link.unlock(targetVideo.l).then(response => response.data.link);
   cacheMochAvailabilityResult(KEY, torrent.hash.toLowerCase());
-  console.log(`Unrestricted AllDebrid ${torrent.hash} [${fileIndex}] to ${unrestrictedLink}`);
   return unrestrictedLink;
 }
 

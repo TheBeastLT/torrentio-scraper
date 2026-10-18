@@ -68,7 +68,6 @@ export async function getItemMeta(itemId, apiKey, ip) {
 }
 
 export async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex }) {
-  console.log(`Unrestricting Offcloud ${infoHash} [${fileIndex}]`);
   const options = await getDefaultOptions(ip);
   const OC = new OffcloudClient(apiKey, options);
   const magnetLink = await getMagnetLink(infoHash);
@@ -100,7 +99,6 @@ async function _getCachedLink(OC, magnetLink, infoHash, targetFileName, fileInde
         && videos.find(video => sameFilename([...(video.folder || []), video.filename].join('/'), targetFileName))
         || videos[0];
     if (targetVideo) {
-      console.log(`Unrestricted Offcloud ${infoHash} [${fileIndex}] to ${targetVideo.url}`);
       return targetVideo.url;
     }
     console.log(`No Offcloud video files found for ${infoHash} [${fileIndex}]`);

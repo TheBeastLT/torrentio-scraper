@@ -76,7 +76,6 @@ export async function getItemMeta(itemId, apiKey) {
 }
 
 export async function resolve({ ip, apiKey, infoHash, cachedEntryInfo, fileIndex }) {
-  console.log(`Unrestricting TorBox ${infoHash} [${fileIndex}]`);
   return _resolve(apiKey, infoHash, cachedEntryInfo, fileIndex, ip)
       .catch(error => {
         if (isAccessDeniedError(error)) {

@@ -38,7 +38,6 @@ async function _getCachedStreams(apiKey, streams) {
 }
 
 export async function resolve({ apiKey, infoHash, cachedEntryInfo, fileIndex }) {
-  console.log(`Unrestricting HighWay ${infoHash} [${fileIndex}]`);
   return _addAndResolve(apiKey, infoHash, cachedEntryInfo, fileIndex)
       .catch(error => {
         if (isAccessDeniedError(error)) {
@@ -74,7 +73,6 @@ async function _addAndResolve(apiKey, infoHash, targetFileName, fileIndex) {
   if (!targetVideo?.download_url) {
     return Promise.reject(new Error(`No download_url for HighWay ${infoHash} [${fileIndex}]`));
   }
-  console.log(`Unrestricted HighWay ${infoHash} [${fileIndex}] to ${targetVideo.download_url}`);
   return targetVideo.download_url;
 }
 

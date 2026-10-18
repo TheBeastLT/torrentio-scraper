@@ -124,7 +124,6 @@ async function _getAllDownloads(RD, page = 1) {
 }
 
 export async function resolve({ ip, isBrowser, apiKey, infoHash, fileIndex }) {
-  console.log(`Unrestricting RealDebrid ${infoHash} [${fileIndex}]`);
   const options = await getDefaultOptions(ip);
   const RD = new RealDebridClient(apiKey, options);
 
@@ -342,7 +341,6 @@ async function _unrestrictFileLink(RD, fileLink, torrent, fileIndex, isBrowser, 
         return response.download;
       })
       .then(unrestrictedLink => {
-        console.log(`Unrestricted RealDebrid ${torrent.hash} [${fileIndex}] to ${unrestrictedLink}`);
         const cachedFileIds = torrent.files.filter(file => file.selected).map(file => file.id);
         cacheAvailabilityResults(torrent.hash.toLowerCase(), cachedFileIds); // no need to await can happen async
         return unrestrictedLink || Promise.reject(`No download link returned for ${torrent.hash} [${fileIndex}]`);
