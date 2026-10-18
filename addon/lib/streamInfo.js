@@ -1,6 +1,7 @@
 import titleParser from 'parse-torrent-title';
 import { Type } from './types.js';
-import { mapLanguages } from './languages.js';
+import { mapLanguages, LANGUAGES_PREFIX, LANGUAGES_DELIMITER } from './languages.js';
+import { stripFlags } from './titleHelper.js';
 import { enrichStreamSources, getSources } from './magnetHelper.js';
 import { getSubtitles } from './subtitles.js';
 
@@ -18,16 +19,18 @@ export function toStreamInfo(record) {
   const quality = getQuality(record, torrentInfo, fileInfo);
   const three3Quality = fileInfo.threeD || torrentInfo.threeD;
   const hdrProfiles = torrentInfo.hdr || fileInfo.hdr || [];
+  const releaseName = record.torrent.title.replace(/[, ]+/g, ' ');
+  const displayName = stripFlags(releaseName);
   const title = joinDetailParts(
       [
-        joinDetailParts([record.torrent.title.replace(/[, ]+/g, ' ')]),
-        joinDetailParts([!sameInfo && record.title || undefined]),
+        joinDetailParts([displayName]),
+        joinDetailParts([getEpisodeCode(record, torrentInfo), !sameInfo && stripFlags(record.title) || undefined], '', ' · '),
         joinDetailParts([
           joinDetailParts([record.torrent.seeders], '👤 '),
           joinDetailParts([formatSize(record.size)], '💾 '),
           joinDetailParts([record.torrent.provider], '⚙️ ')
         ]),
-        joinDetailParts(getLanguages(record, torrentInfo, fileInfo), '', ' / '),
+        joinDetailParts(getLanguages(record, torrentInfo, fileInfo), LANGUAGES_PREFIX, LANGUAGES_DELIMITER),
       ],
       '',
       '\n'
@@ -52,8 +55,28 @@ export function toStreamInfo(record) {
     fileIdx: record.fileIndex,
     behaviorHints: behaviorHints,
     sources: getSources(record.torrent.trackers, record.infoHash),
-    subtitles: getSubtitles(record)
+    subtitles: getSubtitles(record),
+    // internal only: the raw release name used for debrid resolve urls when flags were removed from the
+    // displayed one (see streamFilename), removed before responding
+    releaseName: !filename && displayName !== releaseName ? releaseName : undefined
   });
+}
+
+export function stripInternalInfo(streams) {
+  return streams.map(({ releaseName, ...stream }) => stream);
+}
+
+// identifies the episode file inside season/batch packs, e.g. `S02E03`, from the matched imdb/kitsu episode
+function getEpisodeCode(record, torrentInfo) {
+  const episode = Number.isInteger(record.imdbEpisode) ? record.imdbEpisode : record.kitsuEpisode;
+  const singleEpisodeRelease = torrentInfo.episodes?.length === 1 && torrentInfo.episodes[0] === episode;
+  if (!Number.isInteger(record.fileIndex) || !Number.isInteger(episode) || singleEpisodeRelease) {
+    return undefined;
+  }
+  const pad = value => `${value}`.padStart(2, '0');
+  return Number.isInteger(record.imdbEpisode) && Number.isInteger(record.imdbSeason)
+      ? `S${pad(record.imdbSeason)}E${pad(record.imdbEpisode)}`
+      : `E${pad(episode)}`;
 }
 
 function getQuality(record, torrentInfo, fileInfo) {

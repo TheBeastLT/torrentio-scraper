@@ -2,7 +2,7 @@ import { addonBuilder } from 'stremio-addon-sdk';
 import { Type } from './lib/types.js';
 import { dummyManifest } from './lib/manifest.js';
 import { cacheWrapStream } from './lib/cache.js';
-import { toStreamInfo, applyStaticInfo } from './lib/streamInfo.js';
+import { toStreamInfo, applyStaticInfo, stripInternalInfo } from './lib/streamInfo.js';
 import * as repository from './lib/repository.js';
 import applySorting from './lib/sort.js';
 import applyFilters from './lib/filter.js';
@@ -34,6 +34,7 @@ builder.defineStreamHandler((args) => {
       .then(streams => applySorting(streams, args.extra, args.type))
       .then(streams => applyStaticInfo(streams))
       .then(streams => applyMochs(streams, args.extra))
+      .then(streams => stripInternalInfo(streams))
       .then(streams => enrichCacheParams(streams))
       .catch(error => Promise.reject(new Error(`Failed request ${args.id}`, { cause: error })));
 });

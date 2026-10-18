@@ -55,19 +55,33 @@ export const LanguageOptions = {
   }))
 }
 
+export const LANGUAGES_PREFIX = '🌐 ';
+export const LANGUAGES_DELIMITER = ' · ';
+
+// maps parsed languages to plain display names (no flags), ordered by the language mapping order
 export function mapLanguages(languages) {
+  const order = Object.keys(languageMapping);
   const mapped = languages
-      .map(language => languageMapping[language])
-      .filter(language => language)
-      .sort((a, b) => Object.values(languageMapping).indexOf(a) - Object.values(languageMapping).indexOf(b));
+      .filter(language => languageMapping[language])
+      .sort((a, b) => order.indexOf(a) - order.indexOf(b));
   const unmapped = languages
       .filter(language => !languageMapping[language])
       .sort((a, b) => a.localeCompare(b))
-  return [...new Set([].concat(mapped).concat(unmapped))];
+  return [...new Set([].concat(mapped).concat(unmapped).map(languageLabel))];
+}
+
+export function languageLabel(language) {
+  return language.replace(/(^|\s)\S/g, letter => letter.toUpperCase());
 }
 
 export function containsLanguage(stream, languages) {
-  return languages.map(lang => languageMapping[lang]).some(lang => stream.title.includes(lang));
+  const languagesLine = stream.title.split('\n').find(line => line.startsWith(LANGUAGES_PREFIX));
+  if (languagesLine) {
+    const labels = languagesLine.slice(LANGUAGES_PREFIX.length).split(LANGUAGES_DELIMITER);
+    return languages.some(lang => labels.includes(languageLabel(lang)));
+  }
+  // streams cached before the plain-text languages line still display flags
+  return languages.map(lang => languageMapping[lang]).some(lang => lang && stream.title.includes(lang));
 }
 
 export function languageFromCode(code) {

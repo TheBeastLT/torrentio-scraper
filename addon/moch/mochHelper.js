@@ -15,6 +15,8 @@ export function chunkArray(arr, size) {
 
 export function streamFilename(stream) {
   const filename = stream?.behaviorHints?.filename
+      || stream.releaseName?.split('/').pop()
+      // streams cached before releaseName was introduced carry the raw name in the title
       || stream.title.replace(/\n👤.*/s, '').split('\n').pop().split('/').pop();
   return encodeURIComponent(filename)
 }
