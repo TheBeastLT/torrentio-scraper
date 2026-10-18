@@ -164,7 +164,8 @@ function isSingleFileError(error) {
 }
 
 function isLimitExceededError(error) {
-  return `${error?.message || error}`.includes('maximum of 25 active downloads');
+  const message = `${error?.message || error}`;
+  return ['maximum of 25 active downloads', 'Fair use limit reached'].some(value => message.includes(value));
 }
 
 function isFailedDownloadError(error) {
