@@ -30,8 +30,7 @@ const streamLruSize = Number(process.env.STREAM_LRU_SIZE)
 
 const streamMemoryCache = new KeyvCacheableMemory({ lruSize: streamLruSize });
 const resolvedMemoryCache = new KeyvCacheableMemory({ lruSize: 20000 });
-const memoryCache = new KeyvCacheableMemory({ lruSize: 10000 });
-console.log(`Cache LRU sizes: stream=${streamLruSize} resolved=20000 memory=10000 (availMem=${(availableMem / 1024 ** 3).toFixed(1)}GB)`);
+console.log(`Cache LRU sizes: stream=${streamLruSize} resolved=20000 (availMem=${(availableMem / 1024 ** 3).toFixed(1)}GB)`);
 const mongoClient = MONGO_URI && createMongoClient(MONGO_URI);
 const streamStore = mongoClient && createMongoStore(mongoClient, 'torrentio_addon_stream', { compressValues: true });
 const availabilityStore = mongoClient && createMongoStore(mongoClient, 'torrentio_addon_availability');
@@ -81,26 +80,6 @@ async function cacheValue(cache, key, value, ttl) {
 
 export function closeCache() {
   return mongoClient ? mongoClient.close() : Promise.resolve();
-}
-
-const CACHE_SAMPLE = 20;
-const memCaches = { stream: streamMemoryCache, resolved: resolvedMemoryCache, memory: memoryCache };
-
-function sampleAvgBytes(store) {
-  let count = 0, bytes = 0;
-  for (const item of store.items) {
-    bytes += JSON.stringify(item.value)?.length || 0;
-    if (++count >= CACHE_SAMPLE) break;
-  }
-  return count ? bytes / count : 0;
-}
-
-export function cacheSizes() {
-  return Object.fromEntries(Object.entries(memCaches).map(([name, cache]) => {
-    const store = cache._defaultCache;
-    const entries = store?.size || 0;
-    return [name, { entries, bytes: Math.round(entries * sampleAvgBytes(store)) }];
-  }));
 }
 
 export function cacheWrapStream(id, method) {

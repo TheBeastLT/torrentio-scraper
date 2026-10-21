@@ -1,8 +1,7 @@
 import client from 'prom-client';
 import { performance } from 'node:perf_hooks';
-import { MochOptions, queueDepths, blacklistSize } from '../moch/moch.js';
+import { MochOptions, blacklistSize } from '../moch/moch.js';
 import { poolStats } from './repository.js';
-import { cacheSizes } from './cache.js';
 
 const register = new client.Registry();
 register.setDefaultLabels({ app: 'torrentio-addon' });
@@ -74,14 +73,6 @@ const mochAvailability = new client.Histogram({
   registers: [register]
 });
 
-const mochQueueWait = new client.Histogram({
-  name: 'moch_queue_wait_seconds',
-  help: 'Wait time in the per-moch unrestrict queue before the API call',
-  labelNames: ['moch'],
-  buckets: [0.001, 0.01, 0.05, 0.1, 0.5, 1, 2.5, 5, 10, 30],
-  registers: [register]
-});
-
 const tokenBlacklistEvents = new client.Counter({
   name: 'moch_token_blacklist_events_total',
   help: 'Tokens added to the moch blacklist',
@@ -115,10 +106,6 @@ export function mochAvailabilityTimer(moch) {
   return mochAvailability.startTimer({ moch });
 }
 
-export function mochQueueTimer(moch) {
-  return mochQueueWait.startTimer({ moch });
-}
-
 export function recordTokenBlacklist(moch) {
   tokenBlacklistEvents.inc({ moch });
 }
@@ -137,36 +124,6 @@ const mochBreakerEvents = new client.Counter({
 export function recordBreakerEvent(moch, event) {
   mochBreakerEvents.inc({ moch, event });
 }
-
-new client.Gauge({
-  name: 'moch_queue_waiting',
-  help: 'Waiting tasks in the per-moch unrestrict queue',
-  labelNames: ['moch'],
-  registers: [register],
-  collect() {
-    Object.entries(queueDepths()).forEach(([moch, depth]) => this.set({ moch }, depth));
-  }
-});
-
-new client.Gauge({
-  name: 'addon_cache_entries',
-  help: 'In-memory LRU cache entry count by cache',
-  labelNames: ['cache'],
-  registers: [register],
-  collect() {
-    Object.entries(cacheSizes()).forEach(([cache, s]) => this.set({ cache }, s.entries));
-  }
-});
-
-new client.Gauge({
-  name: 'addon_cache_bytes',
-  help: 'In-memory LRU cache size estimate (entries x sampled avg serialized bytes) by cache',
-  labelNames: ['cache'],
-  registers: [register],
-  collect() {
-    Object.entries(cacheSizes()).forEach(([cache, s]) => this.set({ cache }, s.bytes));
-  }
-});
 
 new client.Gauge({
   name: 'moch_token_blacklist_size',

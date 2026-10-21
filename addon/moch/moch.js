@@ -15,7 +15,7 @@ import { timeout } from '../lib/promises.js';
 import { Type } from '../lib/types.js';
 import { streamFilename, enrichMeta, BadTokenError, AccessDeniedError, AccessBlockedError, NotFoundError, MochUnavailableError } from './mochHelper.js';
 import { createNamedQueue } from "../lib/namedQueue.js";
-import { mochResolveTimer, mochAvailabilityTimer, mochQueueTimer, recordTokenBlacklist } from "../lib/metrics.js";
+import { mochResolveTimer, mochAvailabilityTimer, recordTokenBlacklist } from "../lib/metrics.js";
 
 const AVAILABILITY_TIMEOUT = 30 * 1000;
 const MIN_API_KEY_SYMBOLS = 15;
@@ -95,10 +95,6 @@ Object.values(MochOptions)
     .forEach(mochKey => unrestrictQueues[mochKey] = createNamedQueue(100));
 const metaQueue = createNamedQueue(20);
 
-export function queueDepths() {
-  return Object.fromEntries(Object.entries(unrestrictQueues).map(([moch, queue]) => [moch, queue.length()]));
-}
-
 export function blacklistSize() {
   return tokenBlacklist.size;
 }
@@ -166,9 +162,7 @@ export async function resolve(parameters) {
           throw error;
         });
   };
-  const queueWaitEnd = mochQueueTimer(moch.key);
   const method = () => {
-    queueWaitEnd();
     return cacheWrapResolvedUrl(id, resolveApi)
         .catch(error => {
           console.warn(error);
