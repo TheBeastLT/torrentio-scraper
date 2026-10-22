@@ -1,4 +1,5 @@
 import client from 'prom-client';
+import cluster from 'node:cluster';
 import { performance } from 'node:perf_hooks';
 import { MochOptions, blacklistSize } from '../moch/moch.js';
 import { poolStats } from './repository.js';
@@ -7,11 +8,49 @@ const register = new client.Registry();
 register.setDefaultLabels({ app: 'torrentio-addon' });
 client.collectDefaultMetrics({ register });
 
+const MAX_AGGREGATED = /^nodejs_eventloop_lag_|^process_start_time_seconds$/;
+register.getMetricsAsArray()
+    .filter(metric => MAX_AGGREGATED.test(metric.name))
+    .forEach(metric => { metric.aggregator = 'max'; });
+register.getSingleMetric('nodejs_version_info').aggregator = 'first';
+
+const pendingClusterMetrics = new Map();
+let clusterRequestId = 0;
+
+if (cluster.isWorker) {
+  client.AggregatorRegistry.setRegistries(register);
+  new client.AggregatorRegistry();
+  process.on('message', message => {
+    if (message?.type !== 'metrics-response') {
+      return;
+    }
+    const request = pendingClusterMetrics.get(message.id);
+    pendingClusterMetrics.delete(message.id);
+    if (message.error) {
+      request?.reject(new Error(message.error));
+    } else {
+      request?.resolve(message.metrics);
+    }
+  });
+}
+
+function renderMetrics() {
+  if (!cluster.isWorker) {
+    return register.metrics();
+  }
+  return new Promise((resolve, reject) => {
+    const id = clusterRequestId++;
+    pendingClusterMetrics.set(id, { resolve, reject });
+    process.send({ type: 'metrics-request', id });
+  });
+}
+
 let prevElu = performance.eventLoopUtilization();
 new client.Gauge({
   name: 'nodejs_eventloop_utilization',
   help: 'Event loop utilization over the scrape interval (0-1)',
   registers: [register],
+  aggregator: 'max',
   collect() {
     const current = performance.eventLoopUtilization();
     this.set(performance.eventLoopUtilization(current, prevElu).utilization);
@@ -213,7 +252,7 @@ export async function metricsHandler(req, res) {
   }
   try {
     res.setHeader('Content-Type', register.contentType);
-    res.end(await register.metrics());
+    res.end(await renderMetrics());
   } catch (error) {
     console.error('Failed rendering metrics', error?.message || error);
     res.statusCode = 500;

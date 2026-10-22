@@ -24,13 +24,15 @@ const MONGO_URI = process.env.MONGODB_URI;
 
 const STREAM_ENTRY_BYTES = 40 * 1024;
 const STREAM_MEM_FRACTION = Number(process.env.CACHE_MEM_FRACTION) || 0.25;
-const availableMem = availableMemoryBytes();
+const WORKERS = Number(process.env.ADDON_WORKERS) || 1;
+const RESOLVED_LRU_SIZE = Math.ceil(20000 / WORKERS);
+const availableMem = availableMemoryBytes() / WORKERS;
 const streamLruSize = Number(process.env.STREAM_LRU_SIZE)
     || Math.min(15000, Math.max(5000, Math.floor(availableMem * STREAM_MEM_FRACTION / STREAM_ENTRY_BYTES)));
 
 const streamMemoryCache = new KeyvCacheableMemory({ lruSize: streamLruSize });
-const resolvedMemoryCache = new KeyvCacheableMemory({ lruSize: 20000 });
-console.log(`Cache LRU sizes: stream=${streamLruSize} resolved=20000 (availMem=${(availableMem / 1024 ** 3).toFixed(1)}GB)`);
+const resolvedMemoryCache = new KeyvCacheableMemory({ lruSize: RESOLVED_LRU_SIZE });
+console.log(`Cache LRU sizes: stream=${streamLruSize} resolved=${RESOLVED_LRU_SIZE} (availMem=${(availableMem / 1024 ** 3).toFixed(1)}GB)`);
 const mongoClient = MONGO_URI && createMongoClient(MONGO_URI);
 const streamStore = mongoClient && createMongoStore(mongoClient, 'torrentio_addon_stream', { compressValues: true });
 const availabilityStore = mongoClient && createMongoStore(mongoClient, 'torrentio_addon_availability');
