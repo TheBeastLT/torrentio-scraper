@@ -4,7 +4,6 @@ import rateLimit from "express-rate-limit";
 import requestIp from 'request-ip';
 import userAgentParser from 'ua-parser-js';
 import { createClient } from 'redis'
-import { RedisStore } from 'rate-limit-redis'
 import addonInterface from './addon.js';
 import qs from 'querystring';
 import { manifest } from './lib/manifest.js';
@@ -12,6 +11,7 @@ import { parseConfiguration } from './lib/configuration.js';
 import landingTemplate from './lib/landingTemplate.js';
 import * as moch from './moch/moch.js';
 import { recordRateLimiterStoreError } from './lib/metrics.js';
+import SyncedRateLimitStore from './lib/rateLimitStore.js';
 
 const router = new Router();
 export const redisClient = createClient({
@@ -22,15 +22,18 @@ redisClient.on('error', (err) => {
   console.error('Redis client error:', err?.message || err);
 })
 redisClient.connect().catch((err) => console.error('Redis initial connect failed:', err?.message || err))
+export const rateLimitStore = new SyncedRateLimitStore(redisClient, {
+  onError: (err) => {
+    recordRateLimiterStoreError();
+    console.error('Rate limiter sync failed:', err?.message || err);
+  }
+});
 const limiter = rateLimit({
   windowMs: 24 * 60 * 60 * 1000, // 1 day
   limit: 5000,
   legacyHeaders: false,
-  passOnStoreError: true,
   keyGenerator: (req) => requestIp.getClientIp(req),
-  store: new RedisStore({
-    sendCommand: (...args) => redisClient.sendCommand(args),
-  }),
+  store: rateLimitStore,
 })
 const resolvedUrlMaxAge = 6 * 60 * 60; // 6 hours
 

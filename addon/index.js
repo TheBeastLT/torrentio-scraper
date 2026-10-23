@@ -1,6 +1,6 @@
 import './lib/httpAgent.js';
 import express from 'express';
-import serverless, { redisClient } from './serverless.js';
+import serverless, { redisClient, rateLimitStore } from './serverless.js';
 import { initBestTrackers } from './lib/magnetHelper.js';
 import { closeDatabase } from './lib/repository.js';
 import { closeCache } from './lib/cache.js';
@@ -23,7 +23,7 @@ async function shutdown(signal) {
   const closed = new Promise(resolve => server.close(resolve));
   server.closeIdleConnections();
   await closed;
-  await Promise.allSettled([closeDatabase(), closeCache(), redisClient.quit()]);
+  await Promise.allSettled([closeDatabase(), closeCache(), rateLimitStore.flush().then(() => redisClient.quit())]);
   clearTimeout(forced);
   process.exit(0);
 }
