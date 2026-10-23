@@ -1,0 +1,26 @@
+[package]
+name = "torrentio-debrid"
+description = "Minimal HTTP clients for the debrid providers used by the Torrentio addon"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[lib]
+name = "debrid"
+
+[dependencies]
+reqwest.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+url.workspace = true
+base64.workspace = true
+
+[lints]
+workspace = true
+
+[dev-dependencies]
+wiremock.workspace = true
+tokio.workspace = true

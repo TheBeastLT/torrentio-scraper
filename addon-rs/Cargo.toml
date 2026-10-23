@@ -1,0 +1,75 @@
+[workspace]
+resolver = "3"
+members = ["crates/*"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+repository = "https://github.com/TheBeastLT/stremio-torrentio"
+rust-version = "1.89"
+
+[workspace.dependencies]
+askama = "0.16"
+addon = { path = "crates/addon", package = "torrentio-addon" }
+debrid = { path = "crates/debrid", package = "torrentio-debrid" }
+parse-torrent-title = { git = "https://github.com/TheBeastLT/parse-torrent-title", branch = "rust" }
+anyhow = "1"
+indexmap = "2"
+log = "0.4"
+failsafe = "1"
+singleflight-async = "0.2"
+woothee = "0.13"
+async-trait = "0.1"
+axum = "0.8"
+axum-extra = { version = "0.12", features = ["typed-header"] }
+base64 = "0.22"
+bytes = "1"
+futures = "0.3"
+mimalloc = "0.1"
+parking_lot = "0.12"
+moka = { version = "0.12", features = ["future"] }
+mongodb = { version = "3", features = ["zstd-compression"] }
+percent-encoding = "2"
+sysinfo = { version = "0.37", default-features = false, features = ["system"] }
+prometheus = { version = "0.14", features = ["process"] }
+rand = "0.9"
+redis = { version = "0.32", features = ["tokio-comp", "connection-manager"] }
+regex = "1"
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "gzip", "multipart"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["preserve_order"] }
+sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio", "postgres", "chrono", "macros"] }
+chrono = { version = "0.4", default-features = false, features = ["clock", "serde"] }
+thiserror = "2"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["json", "env-filter"] }
+tokio = { version = "1", features = ["full"] }
+tokio-util = { version = "0.7", features = ["rt"] }
+tower-http = { version = "0.6", features = ["cors", "fs", "set-header", "normalize-path"] }
+tower = "0.5"
+url = "2"
+zstd = "0.13"
+wiremock = "0.6"
+rstest = "0.26"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+rust_2018_idioms = { level = "warn", priority = -1 }
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+module_name_repetitions = "allow"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+must_use_candidate = "allow"
+cast_possible_truncation = "allow"
+cast_sign_loss = "allow"
+cast_precision_loss = "allow"
+cast_possible_wrap = "allow"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true

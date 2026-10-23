@@ -1,0 +1,57 @@
+[package]
+name = "torrentio-addon"
+description = "Torrentio Stremio addon server"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[lib]
+name = "addon"
+
+[[bin]]
+name = "torrentio-addon"
+path = "src/main.rs"
+
+[dependencies]
+askama.workspace = true
+debrid.workspace = true
+parse-torrent-title.workspace = true
+anyhow.workspace = true
+failsafe.workspace = true
+singleflight-async.workspace = true
+woothee.workspace = true
+async-trait.workspace = true
+axum.workspace = true
+axum-extra.workspace = true
+chrono.workspace = true
+futures.workspace = true
+indexmap.workspace = true
+log.workspace = true
+mimalloc.workspace = true
+moka.workspace = true
+mongodb.workspace = true
+parking_lot.workspace = true
+percent-encoding.workspace = true
+prometheus.workspace = true
+rand.workspace = true
+redis.workspace = true
+regex.workspace = true
+reqwest.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sqlx.workspace = true
+sysinfo.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+tokio.workspace = true
+tokio-util.workspace = true
+tower.workspace = true
+tower-http.workspace = true
+url.workspace = true
+zstd.workspace = true
+
+[lints]
+workspace = true

@@ -1,0 +1,58 @@
+version: "3.8"
+
+services:
+  addon-rs:
+    image: torrentio-addon-rs:${RS_TAG:?set RS_TAG to the loaded image tag}
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.hostname == addon1
+      resources:
+        limits:
+          cpus: "0.4"
+          memory: 256M
+        reservations:
+          memory: 64M
+      restart_policy:
+        condition: on-failure
+        max_attempts: 3
+    stop_grace_period: 20s
+    environment:
+      PORT: "19786"
+      HOST: "127.0.0.1"
+      MONGODB_DATABASE: torrentio_rs_shadow
+      RUST_LOG: info
+    secrets:
+      - database_uri
+      - mongodb_uri
+      - metrics_user
+      - metrics_password
+    networks:
+      host: {}
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-T", "10", "-O", "/dev/null", "http://127.0.0.1:19786/manifest.json"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+networks:
+  host:
+    external: true
+    name: host
+
+secrets:
+  database_uri:
+    external: true
+  mongodb_uri:
+    external: true
+  metrics_user:
+    external: true
+  metrics_password:
+    external: true
