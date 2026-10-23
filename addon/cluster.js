@@ -5,6 +5,8 @@ import client from 'prom-client';
 const WORKERS = Math.min(Number(process.env.ADDON_WORKERS) || 1, availableParallelism());
 const RESTART_DELAY = 1000;
 
+process.env.ADDON_WORKERS = String(WORKERS);
+
 if (WORKERS <= 1 || cluster.isWorker) {
   await import('./index.js');
 } else {
