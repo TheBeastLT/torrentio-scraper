@@ -1,6 +1,7 @@
 import titleParser from 'parse-torrent-title';
 import { Type } from './types.js';
 import { mapLanguages } from './languages.js';
+import { detectPolishRelease } from './polishDetection.js';
 import { enrichStreamSources, getSources } from './magnetHelper.js';
 import { getSubtitles } from './subtitles.js';
 
@@ -74,6 +75,9 @@ function getLanguages(record, torrentInfo, fileInfo) {
   const fileLanguages = fileInfo.languages || [];
   const dubbed = torrentInfo.dubbed || fileInfo.dubbed;
   let languages = Array.from(new Set([].concat(torrentLanguages).concat(fileLanguages).concat(providerLanguages)));
+  if (!languages.includes('polish') && isPolishRelease(record)) {
+    languages = languages.concat('polish');
+  }
   if (record.kitsuId || record.torrent.type === Type.ANIME) {
     // no need to display japanese for anime
     languages = languages.concat(dubbed ? ['dubbed'] : [])
@@ -88,6 +92,13 @@ function getLanguages(record, torrentInfo, fileInfo) {
     languages = ['dubbed'];
   }
   return mapLanguages(languages);
+}
+
+function isPolishRelease(record) {
+  // parse-torrent-title only catches explicit tags, so additionally check
+  // weaker Polish signals (release groups, MULTi context, diacritics, etc.)
+  return [record.torrent.title, record.title]
+      .some(title => detectPolishRelease(title, { provider: record.torrent.provider }).isPolish);
 }
 
 function joinDetailParts(parts, prefix = '', delimiter = ' ') {
