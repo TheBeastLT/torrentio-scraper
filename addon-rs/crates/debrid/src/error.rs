@@ -1,3 +1,5 @@
+use std::fmt::Write;
+
 use serde_json::{Value, json};
 
 use crate::http::truncate;
@@ -8,7 +10,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     #[error("{}", display_body(.body))]
     Api { status: Option<u16>, body: Value },
-    #[error(transparent)]
+    #[error("{}", transport_message(.0))]
     Transport(#[from] reqwest::Error),
     #[error("{0}")]
     Other(String),
@@ -55,6 +57,32 @@ impl Error {
     }
 }
 
+fn transport_message(error: &reqwest::Error) -> String {
+    let kind = if error.is_timeout() {
+        "timeout"
+    } else if error.is_connect() {
+        "connect"
+    } else if error.is_decode() {
+        "decode"
+    } else if error.is_body() {
+        "body"
+    } else if error.is_request() {
+        "request"
+    } else {
+        "other"
+    };
+    let mut message = format!("{kind} error");
+    if let Some(url) = error.url() {
+        let _ = write!(message, " for {}", url.path());
+    }
+    let mut source = std::error::Error::source(error);
+    while let Some(cause) = source {
+        let _ = write!(message, ": {cause}");
+        source = cause.source();
+    }
+    message
+}
+
 fn display_body(body: &Value) -> String {
     body.to_string()
 }
@@ -65,7 +93,28 @@ fn invalid_response_message(status: u16, text: &str) -> String {
 
 #[cfg(test)]
 mod tests {
+    use std::time::Duration;
+
     use super::*;
+
+    #[tokio::test]
+    async fn refused_connection_reports_kind_cause_and_no_query() {
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").expect("bind");
+        let address = listener.local_addr().expect("address");
+        drop(listener);
+        let client = reqwest::Client::new();
+        let error = client
+            .get(format!("http://{address}/rest/info"))
+            .query(&[("apikey", "secret")])
+            .timeout(Duration::from_secs(2))
+            .send()
+            .await
+            .expect_err("refused");
+        let message = Error::from(error).to_string();
+        assert!(message.starts_with("connect error for /rest/info: "), "{message}");
+        assert!(message.to_lowercase().contains("refused"), "{message}");
+        assert!(!message.contains("secret"));
+    }
 
     #[test]
     fn invalid_response_shapes() {

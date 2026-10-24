@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use url::Url;
 
-use crate::{Error, Http, Result};
+use crate::{Error, Http, Result, util::null_default};
 
 const BASE_URL: &str = "https://api.torbox.app/v1";
 const PAGE_LIMIT: u32 = 100;
@@ -47,13 +47,13 @@ impl Kind {
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct File {
     pub id: i64,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "null_default")]
     pub name: String,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "null_default")]
     pub short_name: String,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "null_default")]
     pub size: i64,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "null_default")]
     pub zipped: bool,
     #[serde(default)]
     pub opensubtitles_hash: Option<String>,
@@ -61,23 +61,23 @@ pub struct File {
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct Item {
-    #[serde(default)]
+    #[serde(default, deserialize_with = "null_default")]
     pub id: i64,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "null_default")]
     pub name: String,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "null_default")]
     pub hash: String,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "null_default")]
     pub created_at: String,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "null_default")]
     pub files: Vec<File>,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "null_default")]
     pub active: bool,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "null_default")]
     pub download_present: bool,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "null_default")]
     pub download_finished: bool,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "null_default")]
     pub download_state: String,
     #[serde(default)]
     pub queued_id: Option<i64>,
@@ -86,7 +86,7 @@ pub struct Item {
 #[derive(Clone, Debug, Default, Deserialize)]
 pub struct CachedTorrent {
     pub hash: String,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "null_default")]
     pub files: Vec<File>,
 }
 
@@ -188,11 +188,12 @@ impl Client {
             Body::Json(value) => request.json(&value),
             Body::Form(pairs) => request.form(pairs),
         };
-        let response = request.send().await?;
-        let status = response.status().as_u16();
-        let result: Value = response.json().await.map_err(Error::from)?;
+        let reply = self.http.send_json_or(request, Error::invalid_response_body).await?;
+        let Some(result) = &reply.data else {
+            return Err(reply.request_failed());
+        };
         if result.get("success").and_then(Value::as_bool) != Some(true) {
-            return Err(Error::api(Some(status), result));
+            return Err(Error::api(Some(reply.status), result.clone()));
         }
         Ok(result.get("data").cloned().unwrap_or(Value::Null))
     }
@@ -213,4 +214,81 @@ fn from_data<T: serde::de::DeserializeOwned>(data: Value) -> Result<Option<T>> {
 
 pub fn index_by_hash(cached: Vec<CachedTorrent>) -> HashMap<String, CachedTorrent> {
     cached.into_iter().map(|torrent| (torrent.hash.clone(), torrent)).collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+    use wiremock::{
+        Mock, MockServer, ResponseTemplate,
+        matchers::{method, path},
+    };
+
+    use super::*;
+
+    const KEY: &str = "secret-key";
+
+    fn client(server: &MockServer) -> Client {
+        let http = Http::new(std::time::Duration::from_secs(5)).expect("http client");
+        Client::with_base_url(http, server.uri())
+    }
+
+    async fn serve(route: &str, template: ResponseTemplate, verb: &str) -> MockServer {
+        let server = MockServer::start().await;
+        Mock::given(method(verb)).and(path(route)).respond_with(template).mount(&server).await;
+        server
+    }
+
+    #[tokio::test]
+    async fn item_with_null_fields_is_listed() {
+        let body = json!({
+            "success": true,
+            "data": [{ "id": 7, "name": null, "hash": "abc", "files": null, "download_state": null, "active": null }]
+        });
+        let server = serve("/api/torrents/mylist", ResponseTemplate::new(200).set_body_json(body), "GET").await;
+        let items = client(&server).list(KEY, Kind::Torrents, 0).await.expect("list");
+        assert_eq!(items.len(), 1);
+        assert!(items[0].files.is_empty() && items[0].name.is_empty() && !items[0].active);
+    }
+
+    #[tokio::test]
+    async fn cached_torrent_with_null_files_is_parsed() {
+        let body = json!({ "success": true, "data": [{ "hash": "abc", "files": null }] });
+        let server = serve("/api/torrents/checkcached", ResponseTemplate::new(200).set_body_json(body), "POST").await;
+        let cached = client(&server).check_cached(KEY, &["abc".to_owned()]).await.expect("cached");
+        assert!(cached[0].files.is_empty());
+    }
+
+    #[tokio::test]
+    async fn null_data_is_an_empty_result() {
+        let body = json!({ "success": true, "data": null });
+        let server = serve("/api/torrents/checkcached", ResponseTemplate::new(200).set_body_json(body), "POST").await;
+        assert!(client(&server).check_cached(KEY, &["abc".to_owned()]).await.expect("cached").is_empty());
+    }
+
+    #[tokio::test]
+    async fn api_failure_keeps_the_error_body() {
+        let body = json!({ "success": false, "error": "RATE_LIMIT_EXCEEDED", "detail": "300 per 1 minute" });
+        let server = serve("/api/torrents/checkcached", ResponseTemplate::new(429).set_body_json(body), "POST").await;
+        let error = client(&server).check_cached(KEY, &["abc".to_owned()]).await.expect_err("rate limited");
+        assert_eq!(error.status(), Some(429));
+        assert_eq!(error.code(), Some("RATE_LIMIT_EXCEEDED"));
+    }
+
+    #[tokio::test]
+    async fn non_json_body_reports_status_and_text() {
+        let server =
+            serve("/api/torrents/checkcached", ResponseTemplate::new(502).set_body_string("<html>bad gateway"), "POST")
+                .await;
+        let error = client(&server).check_cached(KEY, &["abc".to_owned()]).await.expect_err("bad body");
+        assert_eq!(error.status(), Some(502));
+        assert!(error.to_string().contains("bad gateway"));
+    }
+
+    #[tokio::test]
+    async fn empty_body_reports_the_status() {
+        let server = serve("/api/torrents/checkcached", ResponseTemplate::new(524), "POST").await;
+        let error = client(&server).check_cached(KEY, &["abc".to_owned()]).await.expect_err("empty body");
+        assert_eq!(error.status(), Some(524));
+    }
 }
