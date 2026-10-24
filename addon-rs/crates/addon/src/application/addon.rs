@@ -287,8 +287,12 @@ mod tests {
             Ok(Vec::new())
         }
 
-        async fn item_meta(&self, _: &str, _: &str, _: Option<&str>) -> MochResult<ItemMeta> {
-            Err(CommonError::NotFound.into())
+        async fn item_meta(&self, item_id: &str, _: &str, _: Option<&str>) -> MochResult<ItemMeta> {
+            Err(match item_id {
+                "bad-token" => CommonError::BadToken.into(),
+                "boom" => MochError::message("boom"),
+                _ => CommonError::NotFound.into(),
+            })
         }
 
         async fn resolve(&self, params: &ResolveParams) -> MochResult<Resolved> {
@@ -299,8 +303,11 @@ mod tests {
             Ok(Resolved::Url(format!("https://cdn.example/{}", params.info_hash)))
         }
 
-        fn to_common_error(&self, _error: &MochError) -> Option<CommonError> {
-            None
+        fn to_common_error(&self, error: &MochError) -> Option<CommonError> {
+            match error {
+                MochError::Common(common) => Some(*common),
+                _ => None,
+            }
         }
     }
 
@@ -476,5 +483,43 @@ mod tests {
         let mut params = resolve_params("aaa", "abcdefghijklmnopqrstuvwxyz");
         params.moch_key = "nope".to_owned();
         assert!(harness.addon.mochs().resolve(params).await.is_none());
+    }
+
+    #[tokio::test]
+    async fn catalogs_without_a_known_provider_are_not_found() {
+        let harness = harness(sample());
+        let config = Config::default();
+        assert!(matches!(harness.addon.catalog("sports", &config).await, Err(HandlerError::NotFound)));
+        assert!(matches!(harness.addon.catalog("torrentio-nope-torrents", &config).await, Err(HandlerError::NotFound)));
+    }
+
+    #[tokio::test]
+    async fn meta_with_an_unusable_token_is_not_found() {
+        let harness = harness(sample());
+        let result = harness.addon.meta("torbox:anything", &config("torbox=short")).await;
+        assert!(matches!(result, Err(HandlerError::NotFound)));
+    }
+
+    #[tokio::test]
+    async fn bad_token_on_meta_blacklists_the_token() {
+        let harness = harness(sample());
+        let config = config("torbox=a-valid-looking-token");
+        assert!(matches!(harness.addon.meta("torbox:bad-token", &config).await, Err(HandlerError::NotFound)));
+        assert_eq!(harness.addon.mochs().blacklist_size(), 1);
+        assert!(matches!(harness.addon.meta("torbox:boom", &config).await, Err(HandlerError::NotFound)));
+    }
+
+    #[tokio::test]
+    async fn other_meta_failures_are_still_errors() {
+        let harness = harness(sample());
+        let result = harness.addon.meta("torbox:boom", &config("torbox=a-valid-looking-token")).await;
+        assert!(matches!(result, Err(HandlerError::Failed(_))));
+    }
+
+    #[tokio::test]
+    async fn catalog_with_an_unusable_token_is_not_found() {
+        let harness = harness(sample());
+        let result = harness.addon.catalog("torrentio-torbox-torrents", &config("torbox=short")).await;
+        assert!(matches!(result, Err(HandlerError::NotFound)));
     }
 }

@@ -8,6 +8,7 @@ use crate::{Error, Result};
 pub const USER_AGENT: &str = "torrentio";
 
 const ERROR_BODY_LIMIT: usize = 200;
+const POOL_IDLE_TIMEOUT: Duration = Duration::from_secs(5);
 
 #[derive(Clone, Debug)]
 pub struct Http {
@@ -42,7 +43,12 @@ impl Reply {
 
 impl Http {
     pub fn new(timeout: Duration) -> reqwest::Result<Self> {
-        let client = Client::builder().user_agent(USER_AGENT).http1_only().pool_max_idle_per_host(64).build()?;
+        let client = Client::builder()
+            .user_agent(USER_AGENT)
+            .http1_only()
+            .pool_max_idle_per_host(64)
+            .pool_idle_timeout(POOL_IDLE_TIMEOUT)
+            .build()?;
         Ok(Self { client, timeout })
     }
 

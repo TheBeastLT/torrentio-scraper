@@ -9,7 +9,7 @@ use tokio_util::task::TaskTracker;
 use crate::{
     domain::stream::Stream,
     infrastructure::metrics::Metrics,
-    infrastructure::store::{Packed, Store},
+    infrastructure::store::{Packed, Store, StoreError},
     providers::{Resolved, support::is_truthy},
 };
 
@@ -216,7 +216,7 @@ impl Cache {
         let file_ids = file_ids.to_vec();
         self.background(async move {
             let result = async {
-                let mut entries = store.get::<Vec<Vec<i64>>>(&key).await?.unwrap_or_default();
+                let mut entries = stored_entries(&store, &key).await?.unwrap_or_default();
                 if !entries.contains(&file_ids) {
                     entries.push(file_ids);
                     entries.sort_by_key(|ids| std::cmp::Reverse(ids.len()));
@@ -237,7 +237,7 @@ impl Cache {
                 let Some(file_ids) = file_ids else {
                     return store.delete(&key).await;
                 };
-                let Some(mut entries) = store.get::<Vec<Vec<i64>>>(&key).await? else {
+                let Some(mut entries) = stored_entries(&store, &key).await? else {
                     return Ok(());
                 };
                 if let Some(index) = entries.iter().position(|ids| *ids == file_ids) {
@@ -298,6 +298,14 @@ impl Cache {
             }
         }
     }
+}
+
+async fn stored_entries(store: &Store, key: &str) -> Result<Option<Vec<Vec<i64>>>, StoreError> {
+    Ok(store.get::<Value>(key).await?.and_then(availability_entries))
+}
+
+fn availability_entries(value: Value) -> Option<Vec<Vec<i64>>> {
+    serde_json::from_value(value).ok()
 }
 
 fn log_write_error<E: std::fmt::Display>(key: &str, result: Result<(), E>) {
@@ -384,6 +392,13 @@ mod tests {
         assert!((gauge("memory_cache_entries") - 1.0).abs() < f64::EPSILON, "{rendered}");
         let bytes = gauge("memory_cache_bytes");
         assert!(bytes > 0.0 && bytes < 20_000.0, "{bytes}");
+    }
+
+    #[test]
+    fn availability_entries_ignore_values_that_are_not_lists() {
+        assert_eq!(availability_entries(serde_json::json!([[1, 2], [3]])), Some(vec![vec![1, 2], vec![3]]));
+        assert_eq!(availability_entries(serde_json::json!({ "infringing": true })), None);
+        assert_eq!(availability_entries(serde_json::json!({ "cached": true })), None);
     }
 
     #[tokio::test]

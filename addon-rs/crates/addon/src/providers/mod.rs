@@ -372,11 +372,10 @@ impl Mochs {
         catalog_id: &str,
         config: &Config,
     ) -> Result<Vec<CatalogMeta>, HandlerError> {
-        let entry =
-            self.entry(moch_key).ok_or_else(|| HandlerError::message(format!("Unknown debrid provider {moch_key}")))?;
+        let entry = self.entry(moch_key).ok_or(HandlerError::NotFound)?;
         let api_key = config.credentials().get(moch_key).unwrap_or_default();
         if self.is_invalid_token(api_key, moch_key) {
-            return Err(HandlerError::message(format!("Invalid API key for moch provider: {moch_key}")));
+            return Err(HandlerError::NotFound);
         }
         if !entry.resolve_breaker.is_closed() {
             return Ok(Vec::new());
@@ -384,12 +383,11 @@ impl Mochs {
         match entry.instance.catalog(api_key, catalog_id, config).await {
             Ok(metas) => Ok(metas),
             Err(error) => match entry.instance.to_common_error(&error) {
-                Some(common) => {
-                    if common == CommonError::BadToken {
-                        self.blacklist_token(api_key, moch_key);
-                    }
-                    Ok(Vec::new())
+                Some(CommonError::BadToken) => {
+                    self.blacklist_token(api_key, moch_key);
+                    Err(HandlerError::NotFound)
                 }
+                Some(_) => Ok(Vec::new()),
                 None => Err(HandlerError::message(error)),
             },
         }
@@ -397,10 +395,13 @@ impl Mochs {
 
     pub async fn item_meta(&self, moch_key: &str, item_id: &str, config: &Config) -> Result<ItemMeta, HandlerError> {
         let entry = self.entry(moch_key).ok_or(HandlerError::NotFound)?;
+        let api_key = config.credentials().get(moch_key).unwrap_or_default().to_owned();
+        if self.is_invalid_token(&api_key, moch_key) {
+            return Err(HandlerError::NotFound);
+        }
         if !entry.resolve_breaker.is_closed() {
             return Ok(unavailable_meta(moch_key, item_id));
         }
-        let api_key = config.credentials().get(moch_key).unwrap_or_default().to_owned();
         let meta_key = format!("{moch_key}:{item_id}:{api_key}");
         let meta = self
             .meta_queue
@@ -409,9 +410,13 @@ impl Mochs {
                 Ok(enrich_meta(self.context.repository.as_ref(), meta).await)
             })
             .await
-            .map_err(|error| match error {
-                MochError::Common(CommonError::NotFound) => HandlerError::NotFound,
-                other => HandlerError::message(other),
+            .map_err(|error| match entry.instance.to_common_error(&error) {
+                Some(CommonError::BadToken) => {
+                    self.blacklist_token(&api_key, moch_key);
+                    HandlerError::NotFound
+                }
+                Some(CommonError::NotFound) => HandlerError::NotFound,
+                _ => HandlerError::message(error),
             })?;
         Ok(rewrite_meta_urls(meta, moch_key, item_id, config.host()))
     }

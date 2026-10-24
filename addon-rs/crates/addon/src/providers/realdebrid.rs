@@ -119,7 +119,10 @@ impl Moch for RealDebrid {
                 ..ItemMeta::default()
             });
         }
-        let torrent = session.torrent_info(item_id).await?;
+        let torrent = session
+            .torrent_info(item_id)
+            .await
+            .map_err(|error| if is_not_found(&error) { CommonError::NotFound.into() } else { error })?;
         let info_hash = torrent.hash.to_lowercase();
         let videos = torrent
             .files
