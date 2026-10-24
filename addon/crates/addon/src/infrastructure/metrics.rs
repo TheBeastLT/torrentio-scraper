@@ -23,6 +23,7 @@ pub struct Metrics {
     db_duration: HistogramVec,
     cache_duration: HistogramVec,
     cache_requests: CounterVec,
+    cache_invalidations: CounterVec,
     moch_resolve: HistogramVec,
     moch_availability: HistogramVec,
     token_blacklist_events: CounterVec,
@@ -217,6 +218,12 @@ impl Metrics {
                 "Cache lookups by serving tier",
                 &["cache", "result"],
             ),
+            cache_invalidations: counter(
+                &registry,
+                "cache_invalidations_total",
+                "Stream cache invalidations polled from the scraper by result",
+                &["result"],
+            ),
             moch_resolve: histogram(
                 &registry,
                 "moch_resolve_duration_seconds",
@@ -262,6 +269,10 @@ impl Metrics {
 
     pub fn cache_result(&self, cache: &str, result: &str) {
         self.cache_requests.with_label_values(&[cache, result]).inc();
+    }
+
+    pub fn cache_invalidation(&self, result: &str) {
+        self.cache_invalidations.with_label_values(&[result]).inc();
     }
 
     pub fn resolve_timer(&self, moch: &str) -> Timer {

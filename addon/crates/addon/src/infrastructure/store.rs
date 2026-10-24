@@ -8,7 +8,7 @@ use mongodb::{
 };
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
-const MIN_POOL_SIZE: u32 = 50;
+const MIN_POOL_SIZE: u32 = 10;
 const MAX_POOL_SIZE: u32 = 200;
 const MAX_CONNECTING: u32 = 5;
 const ZSTD_LEVEL: i32 = 0;

@@ -17,6 +17,7 @@ use percent_encoding::percent_decode_str;
 use serde::Serialize;
 use tower::Layer;
 use tower_http::{
+    compression::CompressionLayer,
     cors::{AllowHeaders, Any, CorsLayer},
     normalize_path::{NormalizePath, NormalizePathLayer},
     services::ServeDir,
@@ -69,6 +70,7 @@ pub fn app(state: Arc<AppState>, static_dir: &FsPath) -> NormalizePath<Router> {
         .route("/resolve/{moch}/{api_key}/{info_hash}/{entry}/{index}", get(resolve))
         .route("/resolve/{moch}/{api_key}/{info_hash}/{entry}/{index}/{filename}", get(resolve_named))
         .layer(cors)
+        .layer(CompressionLayer::new())
         .with_state(Arc::clone(&state));
     let mut app = Router::new().fallback_service(dynamic);
     for entry in std::fs::read_dir(static_dir).into_iter().flatten().flatten() {
@@ -495,6 +497,19 @@ mod tests {
             assert_eq!(response.status(), StatusCode::OK);
             assert_eq!(response.headers()[header::CONTENT_TYPE], "application/json; charset=utf-8");
         }
+    }
+
+    #[tokio::test]
+    async fn compresses_responses_for_clients_that_accept_gzip() {
+        let mut request = HttpRequest::builder()
+            .uri("/manifest.json")
+            .header(header::ACCEPT_ENCODING, "gzip")
+            .body(Body::empty())
+            .unwrap();
+        request.extensions_mut().insert(ConnectInfo(SocketAddr::from(([127, 0, 0, 1], 4000))));
+        let response = test_app().oneshot(request).await.unwrap();
+        assert_eq!(response.headers()[header::CONTENT_ENCODING], "gzip");
+        assert!(call(Method::GET, "/manifest.json").await.headers().get(header::CONTENT_ENCODING).is_none());
     }
 
     #[tokio::test]

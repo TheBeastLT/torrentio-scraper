@@ -24,15 +24,15 @@ const AVAILABILITY_KEY_PREFIX: &str = "torrentio-addon|availability";
 const RESOLVED_URL_KEY_PREFIX: &str = "torrentio-addon|resolved";
 
 const STREAM_TTL: Duration = Duration::from_secs(3 * 24 * 60 * 60);
-const STREAM_MEM_TTL: Duration = Duration::from_secs(6 * 60 * 60);
-const STREAM_EMPTY_TTL: Duration = Duration::from_secs(60);
+const STREAM_MEM_TTL: Duration = Duration::from_secs(24 * 60 * 60);
+const STREAM_EMPTY_TTL: Duration = Duration::from_secs(60 * 60);
 const RESOLVED_URL_TTL: Duration = Duration::from_secs(3 * 60 * 60);
 const AVAILABILITY_TTL: Duration = Duration::from_secs(14 * 24 * 60 * 60);
 const INFRINGING_TTL: Duration = Duration::from_secs(60 * 24 * 60 * 60);
 const MESSAGE_VIDEO_URL_TTL: Duration = Duration::from_secs(60);
 
 const DEFAULT_STREAM_CACHE_MB: u64 = 600;
-const RESOLVED_LRU_SIZE: u64 = 20_000;
+const RESOLVED_LRU_SIZE: u64 = 200_000;
 
 #[derive(Clone)]
 struct Timed<T> {
@@ -113,12 +113,19 @@ impl Cache {
                         }
                         last_synced = std::time::Instant::now();
                         for (key, expires_at) in invalidated {
-                            cache.streams.invalidate(&key).await;
+                            let result = if cache.streams.remove(&key).await.is_some() { "evicted" } else { "absent" };
+                            cache.metrics.cache_invalidation(result);
                             cursor = cursor.max(expires_at);
                         }
                     }
-                    Ok(Err(error)) => tracing::warn!(%error, "Failed to poll cache invalidations"),
-                    Err(_) => tracing::warn!("Timed out polling cache invalidations"),
+                    Ok(Err(error)) => {
+                        cache.metrics.cache_invalidation("error");
+                        tracing::warn!(%error, "Failed to poll cache invalidations");
+                    }
+                    Err(_) => {
+                        cache.metrics.cache_invalidation("error");
+                        tracing::warn!("Timed out polling cache invalidations");
+                    }
                 }
             }
         })
