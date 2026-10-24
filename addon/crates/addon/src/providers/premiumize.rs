@@ -82,7 +82,8 @@ impl Moch for Premiumize {
     }
 
     async fn item_meta(&self, item_id: &str, api_key: &str, ip: Option<&str>) -> MochResult<ItemMeta> {
-        let root_folder = self.client.list_folder(api_key, Some(item_id), None).await?;
+        let root_folder =
+            self.client.list_folder(api_key, Some(item_id), None).await.map_err(|error| meta_error(error.into()))?;
         let info_hash = self.find_info_hash(api_key, item_id).await?;
         let contents = walk_folders(item_id, |folder_id| async move {
             let folder = self.client.list_folder(api_key, Some(&folder_id), ip).await?;
@@ -320,6 +321,10 @@ fn error_message(error: &MochError) -> String {
     }
 }
 
+fn meta_error(error: MochError) -> MochError {
+    if provider_message_contains(&error, &["Folder not found"]) { CommonError::NotFound.into() } else { error }
+}
+
 fn provider_message_contains(error: &MochError, values: &[&str]) -> bool {
     error.provider().is_some() && {
         let message = error_message(error);
@@ -507,5 +512,12 @@ mod tests {
         assert_eq!(listing.folders, vec![("1".to_owned(), "Sub".to_owned())]);
         assert_eq!(listing.videos.len(), 1);
         assert_eq!(listing.videos[0].0, "a.mkv");
+    }
+
+    #[test]
+    fn missing_folder_on_meta_is_not_found() {
+        let missing = api_error("Folder not found or not owned by user.");
+        assert!(matches!(meta_error(missing), MochError::Common(CommonError::NotFound)));
+        assert!(matches!(meta_error(api_error("Rate limit exceeded")), MochError::Provider(_)));
     }
 }

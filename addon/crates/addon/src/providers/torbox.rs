@@ -22,7 +22,7 @@ use crate::{
 };
 
 const KEY: &str = "torbox";
-const ACCESS_DENIED: &[&str] = &["AUTH_ERROR", "BAD_TOKEN", "PLAN_RESTRICTED_FEATURE"];
+const ACCESS_DENIED: &[&str] = &["AUTH_ERROR", "BAD_TOKEN", "PLAN_RESTRICTED_FEATURE", "PLAN_ID_FEATURE"];
 const LIMIT_EXCEEDED: &[&str] = &["MONTHLY_LIMIT", "COOLDOWN_LIMIT", "ACTIVE_LIMIT", "RATE_LIMIT_EXCEEDED"];
 const SEEDING_STATES: &[&str] = &["seeding", "uploading", "uploading (no peers)"];
 
@@ -368,6 +368,7 @@ mod tests {
     fn only_bad_token_is_a_bad_token() {
         assert_eq!(common_error(&api_error("BAD_TOKEN")), Some(CommonError::BadToken));
         assert_eq!(common_error(&api_error("AUTH_ERROR")), Some(CommonError::AccessDenied));
+        assert_eq!(common_error(&api_error("PLAN_ID_FEATURE")), Some(CommonError::AccessDenied));
         assert_eq!(common_error(&api_error("NO_AUTH")), None);
     }
 

@@ -81,7 +81,7 @@ impl Moch for Offcloud {
     }
 
     async fn item_meta(&self, item_id: &str, api_key: &str, _ip: Option<&str>) -> MochResult<ItemMeta> {
-        let files = self.client.cloud_explore(api_key, item_id).await?;
+        let files = self.client.cloud_explore(api_key, item_id).await.map_err(meta_error)?;
         let Some(first) = files.first() else {
             return Err(CommonError::NotFound.into());
         };
@@ -180,6 +180,10 @@ impl Offcloud {
         }
         Err(adding_error("Offcloud", json_text(&download)))
     }
+}
+
+fn meta_error(error: debrid::Error) -> MochError {
+    if error.to_string().contains("Request not found") { CommonError::NotFound.into() } else { error.into() }
 }
 
 fn static_for_error(error: &MochError, params: &ResolveParams) -> MochResult<Resolved> {

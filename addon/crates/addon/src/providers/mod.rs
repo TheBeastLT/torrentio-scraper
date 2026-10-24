@@ -415,7 +415,9 @@ impl Mochs {
                     self.blacklist_token(&api_key, moch_key);
                     HandlerError::NotFound
                 }
-                Some(CommonError::NotFound) => HandlerError::NotFound,
+                Some(CommonError::NotFound | CommonError::AccessDenied | CommonError::AccessBlocked) => {
+                    HandlerError::NotFound
+                }
                 _ => HandlerError::message(error),
             })?;
         Ok(rewrite_meta_urls(meta, moch_key, item_id, config.host()))

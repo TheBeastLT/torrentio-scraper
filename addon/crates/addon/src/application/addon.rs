@@ -182,6 +182,9 @@ impl Addon {
         let mut parts = meta_id.split(':');
         let moch_key = parts.next().unwrap_or_default();
         let item_id = parts.next().unwrap_or_default();
+        if item_id.is_empty() {
+            return Err(HandlerError::NotFound);
+        }
         let meta = self.mochs.item_meta(moch_key, item_id, config).await?;
         let cache_max_age = if meta.no_cache { 0 } else { self.cache_max_age };
         Ok(MetaResponse { meta, cache_max_age })
@@ -289,7 +292,9 @@ mod tests {
 
         async fn item_meta(&self, item_id: &str, _: &str, _: Option<&str>) -> MochResult<ItemMeta> {
             Err(match item_id {
+                "" => MochError::message("must not be called"),
                 "bad-token" => CommonError::BadToken.into(),
+                "denied" => CommonError::AccessDenied.into(),
                 "boom" => MochError::message("boom"),
                 _ => CommonError::NotFound.into(),
             })
@@ -521,5 +526,22 @@ mod tests {
         let harness = harness(sample());
         let result = harness.addon.catalog("torrentio-torbox-torrents", &config("torbox=short")).await;
         assert!(matches!(result, Err(HandlerError::NotFound)));
+    }
+
+    #[tokio::test]
+    async fn meta_without_an_item_id_is_not_found_without_calling_the_provider() {
+        let harness = harness(sample());
+        let config = config("torbox=a-valid-looking-token");
+        for id in ["torbox", "torbox:", "realdebrid"] {
+            assert!(matches!(harness.addon.meta(id, &config).await, Err(HandlerError::NotFound)), "{id}");
+        }
+    }
+
+    #[tokio::test]
+    async fn access_denied_on_meta_is_not_found_and_does_not_blacklist() {
+        let harness = harness(sample());
+        let config = config("torbox=a-valid-looking-token");
+        assert!(matches!(harness.addon.meta("torbox:denied", &config).await, Err(HandlerError::NotFound)));
+        assert_eq!(harness.addon.mochs().blacklist_size(), 0);
     }
 }
