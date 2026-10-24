@@ -1,7 +1,7 @@
 import getRouter from 'stremio-addon-sdk/src/getRouter.js';
 import addonInterface from './addon.js';
 import qs from 'querystring';
-import { parseConfiguration } from '../addon/lib/configuration.js';
+import { parseConfiguration } from './shared/lib/configuration.js';
 import { createManifest } from './lib/manifest.js';
 
 const router = getRouter(addonInterface);

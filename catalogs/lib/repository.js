@@ -1,5 +1,5 @@
 import { Sequelize, QueryTypes } from 'sequelize';
-import { Type } from '../../addon/lib/types.js';
+import { Type } from '../shared/lib/types.js';
 
 const DATABASE_URI = process.env.DATABASE_URI;
 

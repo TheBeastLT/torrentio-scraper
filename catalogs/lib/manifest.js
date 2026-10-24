@@ -1,4 +1,4 @@
-import { Type } from '../../addon/lib/types.js';
+import { Type } from '../shared/lib/types.js';
 
 export const genres = [
     'Yesterday',

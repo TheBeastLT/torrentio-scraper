@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Type } from '../../addon/lib/types.js';
+import { Type } from '../shared/lib/types.js';
 
 const CINEMETA_URL = 'https://v3-cinemeta.strem.io';
 const KITSU_URL = 'https://anime-kitsu.strem.fun';

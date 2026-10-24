@@ -180,7 +180,7 @@ button:active {
   box-shadow: 0 0.5vh 1vh rgba(0, 0, 0, 0.2);
 }
 `;
-import { Providers } from '../../addon/lib/filter.js';
+import { Providers } from '../shared/lib/filter.js';
 
 export default function landingTemplate(manifest, config = {}) {
   const providers = config.providers || [];

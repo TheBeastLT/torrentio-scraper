@@ -1,7 +1,7 @@
 import Bottleneck from 'bottleneck';
 import moment from 'moment';
 import { addonBuilder } from 'stremio-addon-sdk';
-import { Providers } from '../addon/lib/filter.js';
+import { Providers } from './shared/lib/filter.js';
 import { createManifest, genres } from './lib/manifest.js';
 import { getMetas } from './lib/metadata.js';
 import { cacheWrapCatalog, cacheWrapIds } from './lib/cache.js';

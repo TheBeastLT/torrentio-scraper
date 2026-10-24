@@ -1,9 +1,9 @@
-# torrentio-addon (Rust)
+# torrentio-addon
 
-Rust port of the Torrentio Stremio addon in `../addon`. Same HTTP surface (`/manifest.json`, `/configure`,
-`/{config}/stream|meta|catalog/...`, `/resolve/...`, `/metrics`, static files), same Postgres schema, same Mongo
-cache collections (entries written by the Node addon are readable by this one and vice versa), same Redis rate limiter
-keys and the same Prometheus metric names for everything that still applies.
+The Torrentio Stremio addon in Rust. HTTP surface: `/manifest.json`, `/configure`, `/{config}/stream|meta|catalog/...`,
+`/resolve/...`, `/metrics` and the static files in `static/`. It uses the Postgres torrents schema, the Mongo cache
+collections and the Redis rate limiter keys shared with the other Torrentio services, and exports the same Prometheus
+metric names for everything that still applies.
 
 ## Layout
 
@@ -28,14 +28,16 @@ provider list (`default_providers` builds the real ones), so whole stream/resolv
 
 ```
 DATABASE_URI=postgres://... MONGODB_URI=mongodb://... REDIS_URL=redis://... \
-METRICS_USER=... METRICS_PASSWORD=... PORT=7000 STATIC_DIR=../addon/static \
+METRICS_USER=... METRICS_PASSWORD=... PORT=7000 STATIC_DIR=static \
 cargo run --release -p torrentio-addon
 ```
 
 `MONGODB_URI` and `REDIS_URL` are optional (no store cache / no rate limiting without them). `MONGODB_DATABASE` overrides
 the database of the Mongo cache collections, `HOST` the bind address (default `::`). `TORBOX_API_URL` and
-`HIGHWAY_API_BASE` override the provider API base urls. `RUST_LOG` sets the log filter (default `info`). The Docker image
-is built from the repository root: `docker build -f addon-rs/Dockerfile .`
+`HIGHWAY_API_BASE` override the provider API base urls. `RUST_LOG` sets the log filter (default `info`). `STREAM_CACHE_MB` sets the budget of
+the in-memory stream cache (default 600). The scraper records every stream cache deletion in the Mongo collection
+`torrentio_addon_invalidations`, which each node polls every 5 seconds to drop those keys from memory. The Docker image
+is built from this directory: `docker build -t torrentio-addon .`
 
 ## Logging
 
@@ -85,25 +87,10 @@ Results on one machine (14 cores), clean Redis, Node as deployed (1 worker) and 
 | Hot stream cache, req/s | 15.4k | 49.2k | 52.1k |
 | Cold, Postgres, req/s | 635 | 1,778 | 3,004 |
 | Hot + TorBox availability call, req/s | 5.1k | 14.0k | 30.2k |
-| Memory (RSS) | ~370 MB | ~1.5 GB | 60-80 MB |
+| Memory (RSS), benchmark | ~370 MB | ~1.5 GB | 60-80 MB (idle, small cache) |
 
 With Redis in the loop the hot path is bounded by Redis itself for both implementations (without Redis the Rust server does
 60-80k req/s); the gains show on the cold and debrid paths and in memory.
 
-## Shadow test against the running Node addon
-
-`deploy/shadow-stack.yml` runs this image as its own swarm service next to the Node addon on one node: loopback only
-(`127.0.0.1:19786`), no nginx routing, a separate Mongo database, no rate limiter, capped CPU and memory. The image is
-cross-compiled for amd64 and loaded onto the node, then deployed without registry resolution:
-
-```
-docker buildx build --platform linux/amd64 -f addon-rs/Dockerfile -t torrentio-addon-rs:rs-shadow-N --load .
-docker save torrentio-addon-rs:rs-shadow-N | gzip | ssh <node> 'gunzip | docker load'
-DOCKER_HOST=ssh://<manager> RS_TAG=rs-shadow-N docker stack deploy --resolve-image never -c deploy/shadow-stack.yml rs-shadow
-```
-
-`shadow/compare.mjs` talks to both addons through an ssh tunnel (`-L 19785:127.0.0.1:19785 -L 19786:127.0.0.1:19786`):
-it diffs the stream lists and, for every provider key present in the environment (`RD_KEY`, `AD_KEY`, `PM_KEY`, `DL_KEY`,
-`TB_KEY`, `OC_KEY`, `ED_KEY`, `PUTIO_KEY`, `HW_KEY`), resolves the same cached streams on both and compares which file
-each picked. Stream differences are expected from Node's up to 3 day old Mongo cache, ties at the 500 row limit and the
-newer title parser; a resolve difference is a finding. Remove with `docker stack rm rs-shadow`.
+In production a Node process sat at 0.8-1.7 GB. The Rust process starts around 0.25 GB and grows with the stream cache, which
+holds zstd-compressed JSON (about 5.5 KB per entry, a 600 MB budget by default).

@@ -6,7 +6,6 @@ RUN apk update && apk upgrade && \
 WORKDIR /home/node/app
 
 COPY ./catalogs .
-COPY ./addon ../addon
 RUN npm ci --only-production
 
 CMD [ "node", "index.js" ]
