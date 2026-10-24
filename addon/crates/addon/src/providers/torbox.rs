@@ -138,15 +138,19 @@ impl Moch for TorBox {
     }
 
     fn to_common_error(&self, error: &MochError) -> Option<CommonError> {
-        match error {
-            MochError::Common(common) => Some(*common),
-            MochError::Provider(error) => match error.code() {
-                Some("BAD_TOKEN") => Some(CommonError::BadToken),
-                Some(code) if ACCESS_DENIED.contains(&code) => Some(CommonError::AccessDenied),
-                _ => None,
-            },
+        common_error(error)
+    }
+}
+
+fn common_error(error: &MochError) -> Option<CommonError> {
+    match error {
+        MochError::Common(common) => Some(*common),
+        MochError::Provider(error) => match error.code() {
+            Some("BAD_TOKEN") => Some(CommonError::BadToken),
+            Some(code) if ACCESS_DENIED.contains(&code) => Some(CommonError::AccessDenied),
             _ => None,
-        }
+        },
+        _ => None,
     }
 }
 
@@ -354,6 +358,17 @@ mod tests {
             download_state: state.to_owned(),
             ..Item::default()
         }
+    }
+
+    fn api_error(code: &str) -> MochError {
+        debrid::Error::api(Some(401), serde_json::json!({ "success": false, "error": code })).into()
+    }
+
+    #[test]
+    fn only_bad_token_is_a_bad_token() {
+        assert_eq!(common_error(&api_error("BAD_TOKEN")), Some(CommonError::BadToken));
+        assert_eq!(common_error(&api_error("AUTH_ERROR")), Some(CommonError::AccessDenied));
+        assert_eq!(common_error(&api_error("NO_AUTH")), None);
     }
 
     #[test]
