@@ -8,7 +8,28 @@ on:
       - '.github/**'
 
 jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: ./addon
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: addon
+
+      - run: cargo fmt --all --check
+
+      - run: cargo clippy --all-targets --locked -- -D warnings
+
+      - run: cargo test --locked
+
   build-and-deploy:
+    needs: check
     runs-on: ubuntu-latest
     permissions:
       contents: read
