@@ -77,6 +77,10 @@ impl Addon {
         &self.mochs
     }
 
+    pub fn cache(&self) -> &Cache {
+        &self.cache
+    }
+
     pub fn repository(&self) -> &dyn TorrentRepository {
         &*self.repository
     }

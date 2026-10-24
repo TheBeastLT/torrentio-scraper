@@ -2,6 +2,7 @@ use std::time::{Duration, Instant};
 
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
+use futures::FutureExt;
 use log::LevelFilter;
 use sqlx::{
     ConnectOptions, FromRow, PgPool, Postgres,
@@ -175,8 +176,12 @@ impl Repository {
     }
 
     async fn connection(&self) -> Result<PoolConnection<Postgres>> {
+        let mut acquire = Box::pin(self.pool.acquire());
+        if let Some(connection) = (&mut acquire).now_or_never() {
+            return connection;
+        }
         let _waiting = self.metrics.pool_waiting();
-        self.pool.acquire().await
+        acquire.await
     }
 
     async fn fetch_all<'q, O>(&self, query: Query<'q, O>) -> Result<Vec<O>>

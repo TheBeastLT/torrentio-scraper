@@ -110,6 +110,7 @@ async fn metrics_handler(
     }
     let (size, idle) = state.addon.repository().pool_stats();
     state.metrics.pool(size, idle);
+    state.addon.cache().observe();
     state.metrics.observe_runtime();
     ([(header::CONTENT_TYPE, "text/plain; version=0.0.4; charset=utf-8")], state.metrics.render()).into_response()
 }
@@ -326,7 +327,7 @@ async fn resource_response(
     target: &Resource<'_>,
 ) -> Response {
     let ip = client_ip(headers, Some(peer));
-    if !state.rate_limiter.allow(ip.as_deref().unwrap_or_default()).await {
+    if !state.rate_limiter.allow(ip.as_deref().unwrap_or_default()) {
         return (StatusCode::TOO_MANY_REQUESTS, RATE_LIMITED).into_response();
     }
     let extra_values = target

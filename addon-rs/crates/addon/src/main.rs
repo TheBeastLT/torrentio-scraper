@@ -67,7 +67,9 @@ async fn main() -> anyhow::Result<()> {
     let rate_limiter = RateLimiter::new(env("REDIS_URL").as_deref(), metrics.clone());
     let credentials = env("METRICS_USER").zip(env("METRICS_PASSWORD"));
     let static_dir = PathBuf::from(env("STATIC_DIR").unwrap_or_else(|| "static".to_owned()));
-    let state = Arc::new(AppState { addon, metrics, rate_limiter, metrics_credentials: credentials });
+    let rate_limit_sync = rate_limiter.spawn_sync();
+    let state =
+        Arc::new(AppState { addon, metrics, rate_limiter: rate_limiter.clone(), metrics_credentials: credentials });
 
     let port = env("PORT").and_then(|port| port.parse().ok()).unwrap_or(DEFAULT_PORT);
     let host = env("HOST")
@@ -84,6 +86,8 @@ async fn main() -> anyhow::Result<()> {
     )
     .with_graceful_shutdown(shutdown())
     .await?;
+    rate_limit_sync.stop().await;
+    rate_limiter.flush().await;
     repository.close().await;
     cache.drain().await;
     Ok(())

@@ -1,4 +1,4 @@
-use std::{collections::HashMap, time::Duration};
+use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use futures::TryStreamExt;
 use mongodb::{
@@ -43,6 +43,35 @@ struct Entry<'a> {
     value: Bson,
     #[serde(rename = "expiresAt")]
     expires_at: DateTime,
+}
+
+#[derive(Clone)]
+pub struct Packed(Arc<[u8]>);
+
+impl Packed {
+    pub async fn encode<T: Serialize + Send + Sync + 'static + ?Sized>(value: Arc<T>) -> Result<Self> {
+        let bytes = tokio::task::spawn_blocking(move || -> Result<Vec<u8>> {
+            Ok(zstd::encode_all(serde_json::to_vec(value.as_ref())?.as_slice(), ZSTD_LEVEL)?)
+        })
+        .await??;
+        Ok(Self(bytes.into()))
+    }
+
+    pub async fn decode<T: DeserializeOwned + Send + 'static>(&self) -> Result<T> {
+        let bytes = Arc::clone(&self.0);
+        tokio::task::spawn_blocking(move || -> Result<T> {
+            Ok(serde_json::from_slice(&zstd::decode_all(bytes.as_ref())?)?)
+        })
+        .await?
+    }
+
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
 }
 
 pub async fn connect(uri: &str) -> Result<Client> {
@@ -112,6 +141,20 @@ impl Store {
         Ok(keys.iter().map(|key| values.remove(key)).collect())
     }
 
+    pub async fn get_packed(&self, key: &str) -> Result<Option<Packed>> {
+        let stored = self
+            .collection
+            .clone_with_type::<Stored>()
+            .find_one(doc! { "key": { "$eq": key } })
+            .projection(doc! { "_id": 0, "value": 1 })
+            .await?;
+        match stored.map(|stored| stored.value) {
+            Some(Bson::Binary(binary)) => Ok(Some(Packed(binary.bytes.into()))),
+            Some(other) => Ok(Some(Packed::encode(Arc::new(bson::from_bson::<serde_json::Value>(other)?)).await?)),
+            None => Ok(None),
+        }
+    }
+
     pub async fn set<T: Serialize>(&self, key: &str, value: &T, ttl: Duration) -> Result<()> {
         let value = if self.compress_values {
             let json = serde_json::to_vec(value)?;
@@ -121,6 +164,15 @@ impl Store {
         } else {
             bson::to_bson(value)?
         };
+        self.write(key, value, ttl).await
+    }
+
+    pub async fn set_packed(&self, key: &str, value: &Packed, ttl: Duration) -> Result<()> {
+        let binary = Binary { subtype: BinarySubtype::Generic, bytes: value.0.to_vec() };
+        self.write(key, Bson::Binary(binary), ttl).await
+    }
+
+    async fn write(&self, key: &str, value: Bson, ttl: Duration) -> Result<()> {
         let expires_at = DateTime::from_millis(DateTime::now().timestamp_millis() + ttl.as_millis() as i64);
         self.collection
             .clone_with_type::<Entry<'_>>()

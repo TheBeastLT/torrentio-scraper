@@ -1,7 +1,7 @@
 use serde::Deserialize;
 use serde_json::{Value, json};
 
-use crate::{Error, Http, Result};
+use crate::{Error, Http, Result, util::parse_value};
 
 const BASE_URL: &str = "https://easydebrid.com/api/v1";
 
@@ -53,17 +53,29 @@ impl Client {
     }
 
     async fn post<T: serde::de::DeserializeOwned>(&self, api_key: &str, path: &str, body: Value) -> Result<T> {
-        let response =
-            self.http.post(&format!("{}{path}", self.base_url)).bearer_auth(api_key).json(&body).send().await?;
-        let status = response.status();
-        if !status.is_success() {
-            let mut body: Value = response.json().await.unwrap_or(Value::Null);
+        let request = self.http.post(&format!("{}{path}", self.base_url)).bearer_auth(api_key).json(&body);
+        let reply = self.http.send_json_or(request, invalid_body).await?;
+        if !reply.is_success() {
+            let mut body = reply.data.unwrap_or(Value::Null);
             if body.get("message").and_then(Value::as_str).is_none_or(str::is_empty) {
-                body = json!({ "message": format!("Request failed with status code {}", status.as_u16()) });
+                body = json!({ "message": status_message(reply.status) });
             }
-            return Err(Error::api(Some(status.as_u16()), body));
+            return Err(Error::api(Some(reply.status), body));
         }
-        response.json().await.map_err(Error::from)
+        let data = reply.data.ok_or_else(|| Error::invalid_response(reply.status, &reply.text))?;
+        parse_value(data)
+    }
+}
+
+fn status_message(status: u16) -> String {
+    format!("Request failed with status code {status}")
+}
+
+fn invalid_body(status: u16, text: &str) -> Error {
+    if (200..300).contains(&status) {
+        Error::invalid_response(status, text)
+    } else {
+        Error::api(Some(status), json!({ "message": status_message(status) }))
     }
 }
 
@@ -144,5 +156,17 @@ mod tests {
             .await;
         let error = client(&server).generate_link("token", "x").await.expect_err("rejected");
         assert_eq!(error_message(&error), "Request failed with status code 500");
+    }
+
+    #[tokio::test]
+    async fn non_json_success_body_reports_status_and_text() {
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/link/lookup"))
+            .respond_with(ResponseTemplate::new(200).set_body_string("<html>maintenance"))
+            .mount(&server)
+            .await;
+        let error = client(&server).link_lookup("token", &[]).await.expect_err("not json");
+        assert_eq!(error.to_string(), "Invalid response (200): <html>maintenance");
     }
 }

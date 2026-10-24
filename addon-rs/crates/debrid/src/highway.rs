@@ -4,7 +4,7 @@ use reqwest::Method;
 use serde::{Deserialize, Deserializer};
 use serde_json::Value;
 
-use crate::{Error, Http, Result};
+use crate::{Error, Http, Result, util::parse_value};
 
 const BASE_URL: &str = "https://cloud.high-way.me/api/transfers.php";
 
@@ -80,14 +80,21 @@ impl Client {
     }
 
     async fn send<T: serde::de::DeserializeOwned>(&self, api_key: &str, request: reqwest::RequestBuilder) -> Result<T> {
-        let response = request.bearer_auth(api_key).send().await?;
-        let status = response.status();
-        if !status.is_success() {
-            let text = response.text().await.unwrap_or_default();
-            let body = serde_json::from_str::<Value>(&text).unwrap_or(Value::String(text));
-            return Err(Error::api(Some(status.as_u16()), body));
+        let reply = self.http.send_json_or(request.bearer_auth(api_key), invalid_body).await?;
+        if !reply.is_success() {
+            let body = reply.data.unwrap_or(Value::String(reply.text));
+            return Err(Error::api(Some(reply.status), body));
         }
-        Ok(response.json().await?)
+        let data = reply.data.ok_or_else(|| Error::invalid_response(reply.status, &reply.text))?;
+        parse_value(data)
+    }
+}
+
+fn invalid_body(status: u16, text: &str) -> Error {
+    if (200..300).contains(&status) {
+        Error::invalid_response(status, text)
+    } else {
+        Error::api(Some(status), Value::String(text.to_owned()))
     }
 }
 
@@ -194,6 +201,28 @@ mod tests {
             .await;
         let error = client.add("key", "aa").await.expect_err("forbidden");
         assert_eq!(error.code(), Some("forbidden"));
+    }
+
+    #[tokio::test]
+    async fn non_json_success_body_reports_status_and_text() {
+        let (server, client) = setup().await;
+        Mock::given(method("GET"))
+            .respond_with(ResponseTemplate::new(200).set_body_string("<html>"))
+            .mount(&server)
+            .await;
+        let error = client.check("key", &["aa".to_owned()]).await.expect_err("not json");
+        assert_eq!(error.to_string(), "Invalid response (200): <html>");
+    }
+
+    #[tokio::test]
+    async fn non_json_error_body_is_kept_as_text() {
+        let (server, client) = setup().await;
+        Mock::given(method("GET"))
+            .respond_with(ResponseTemplate::new(502).set_body_string("bad gateway"))
+            .mount(&server)
+            .await;
+        let error = client.check("key", &["aa".to_owned()]).await.expect_err("bad gateway");
+        assert_eq!(error.body(), Some(&Value::String("bad gateway".to_owned())));
     }
 
     #[test]

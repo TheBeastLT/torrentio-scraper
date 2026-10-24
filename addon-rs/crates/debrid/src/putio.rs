@@ -147,7 +147,7 @@ impl Client {
         let status = response.status();
         let text = response.text().await?;
         if status.is_success() {
-            return serde_json::from_str(&text).map_err(|error| Error::Other(error.to_string()));
+            return serde_json::from_str(&text).map_err(|_| Error::invalid_response(status.as_u16(), &text));
         }
         let mut error = serde_json::from_str::<Value>(&text).unwrap_or_else(|_| json!({ "error_message": text }));
         if let Some(object) = error.as_object_mut() {

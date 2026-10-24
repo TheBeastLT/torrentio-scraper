@@ -30,6 +30,8 @@ pub struct Metrics {
     rate_limiter_store_errors: prometheus::Counter,
     breaker_events: CounterVec,
     db_pool_connections: GaugeVec,
+    memory_cache_bytes: GaugeVec,
+    memory_cache_entries: GaugeVec,
     runtime: RuntimeMetrics,
 }
 
@@ -170,6 +172,14 @@ impl Metrics {
             GaugeVec::new(Opts::new("db_pool_connections", "Postgres connection pool state"), &["state"])
                 .expect("valid gauge");
         registry.register(Box::new(db_pool_connections.clone())).expect("unique metric");
+        let memory_cache_bytes =
+            GaugeVec::new(Opts::new("memory_cache_bytes", "Weighted size of the in-memory caches"), &["cache"])
+                .expect("valid gauge");
+        registry.register(Box::new(memory_cache_bytes.clone())).expect("unique metric");
+        let memory_cache_entries =
+            GaugeVec::new(Opts::new("memory_cache_entries", "Entries in the in-memory caches"), &["cache"])
+                .expect("valid gauge");
+        registry.register(Box::new(memory_cache_entries.clone())).expect("unique metric");
         let token_blacklist_size =
             gauge(&registry, "moch_token_blacklist_size", "Size of the in-memory moch token blacklist");
         Self {
@@ -236,6 +246,8 @@ impl Metrics {
             token_blacklist_size,
             rate_limiter_store_errors,
             db_pool_connections,
+            memory_cache_bytes,
+            memory_cache_entries,
             registry,
         }
     }
@@ -282,6 +294,14 @@ impl Metrics {
         self.db_pool_connections.with_label_values(&["size"]).set(f64::from(size));
         self.db_pool_connections.with_label_values(&["available"]).set(f64::from(idle));
         self.db_pool_connections.with_label_values(&["using"]).set(f64::from(size.saturating_sub(idle)));
+    }
+
+    #[allow(clippy::cast_precision_loss)]
+    pub fn memory_cache(&self, cache: &str, bytes: Option<u64>, entries: u64) {
+        if let Some(bytes) = bytes {
+            self.memory_cache_bytes.with_label_values(&[cache]).set(bytes as f64);
+        }
+        self.memory_cache_entries.with_label_values(&[cache]).set(entries as f64);
     }
 
     pub fn pool_waiting(&self) -> WaitingGuard {
