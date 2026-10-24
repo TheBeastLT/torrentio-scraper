@@ -121,7 +121,7 @@ const tokenBlacklistEvents = new client.Counter({
 
 const rateLimiterStoreErrors = new client.Counter({
   name: 'rate_limiter_store_errors_total',
-  help: 'Rate limiter Redis store errors (requests pass un-limited while these occur)',
+  help: 'Rate limiter Redis errors (counts are not shared across processes while these occur)',
   registers: [register]
 });
 
