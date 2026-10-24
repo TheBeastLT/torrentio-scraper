@@ -23,8 +23,16 @@ use crate::{
 
 const KEY: &str = "debridlink";
 const ACCESS_DENIED: &[&str] = &["badToken", "accountLocked", "unverifiedEmail"];
-const LIMITS_EXCEEDED: &[&str] =
-    &["freeServerOverload", "maxTorrent", "maxLink", "maxLinkHost", "maxData", "maxDataHost", "floodDetected"];
+const LIMITS_EXCEEDED: &[&str] = &[
+    "freeServerOverload",
+    "maxTorrent",
+    "maxLink",
+    "maxLinkHost",
+    "maxData",
+    "maxDataHost",
+    "maxTransfer",
+    "floodDetected",
+];
 const TORRENT_TOO_BIG: &str = "torrentTooBig";
 const FAILED_OPENING: &str = "notAddTorrent";
 const BAD_TOKEN: &str = "badToken";
@@ -297,9 +305,16 @@ mod tests {
 
     #[test]
     fn limit_codes_resolve_to_limits_exceeded() {
-        for code in
-            ["freeServerOverload", "maxTorrent", "maxLink", "maxLinkHost", "maxData", "maxDataHost", "floodDetected"]
-        {
+        for code in [
+            "freeServerOverload",
+            "maxTorrent",
+            "maxLink",
+            "maxLinkHost",
+            "maxData",
+            "maxDataHost",
+            "maxTransfer",
+            "floodDetected",
+        ] {
             let url = static_for_error(&api_error(code), &params()).expect("static video");
             assert_eq!(url, Resolved::Message(StaticResponse::LimitsExceeded));
         }
