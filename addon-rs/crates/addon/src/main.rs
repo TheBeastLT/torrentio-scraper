@@ -35,6 +35,7 @@ async fn main() -> anyhow::Result<()> {
     let database_url = env("DATABASE_URI").context("DATABASE_URI is required")?;
     let repository = Arc::new(Repository::connect(&database_url, metrics.clone())?);
 
+    let mut invalidations = None;
     let stores = match env("MONGODB_URI") {
         Some(uri) => {
             let client = store::connect(&uri).await?;
@@ -47,11 +48,14 @@ async fn main() -> anyhow::Result<()> {
                     tokio::join!(streams.ensure_indexes(), availability.ensure_indexes());
                 }
             });
+            invalidations =
+                Some(store::Store::new(&client, database.as_deref(), "torrentio_addon_invalidations", false));
             Stores { streams: Some(streams), availability: Some(availability) }
         }
         None => Stores { streams: None, availability: None },
     };
     let cache = Arc::new(Cache::new(metrics.clone(), stores));
+    let invalidation_watch = invalidations.map(|store| cache.watch_invalidations(store));
     let context = Arc::new(Context {
         endpoints: Endpoints { torbox: env("TORBOX_API_URL"), highway: env("HIGHWAY_API_BASE") },
         repository: Arc::clone(&repository) as Arc<dyn TorrentRepository>,
@@ -86,6 +90,9 @@ async fn main() -> anyhow::Result<()> {
     )
     .with_graceful_shutdown(shutdown())
     .await?;
+    if let Some(watch) = invalidation_watch {
+        watch.abort();
+    }
     rate_limit_sync.stop().await;
     rate_limiter.flush().await;
     repository.close().await;

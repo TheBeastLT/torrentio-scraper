@@ -37,6 +37,13 @@ struct Stored {
     value: Bson,
 }
 
+#[derive(Deserialize)]
+struct Expiring {
+    key: String,
+    #[serde(rename = "expiresAt")]
+    expires_at: DateTime,
+}
+
 #[derive(Serialize)]
 struct Entry<'a> {
     key: &'a str,
@@ -183,6 +190,19 @@ impl Store {
             .upsert(true)
             .await?;
         Ok(())
+    }
+
+    pub async fn expiring_after(&self, after: DateTime) -> Result<Vec<(String, DateTime)>> {
+        let found: Vec<Expiring> = self
+            .collection
+            .clone_with_type::<Expiring>()
+            .find(doc! { "expiresAt": { "$gt": after } })
+            .projection(doc! { "_id": 0, "key": 1, "expiresAt": 1 })
+            .sort(doc! { "expiresAt": 1 })
+            .await?
+            .try_collect()
+            .await?;
+        Ok(found.into_iter().map(|entry| (entry.key, entry.expires_at)).collect())
     }
 
     pub async fn delete(&self, key: &str) -> Result<()> {

@@ -1,8 +1,9 @@
 use std::{collections::HashMap, future::Future, sync::Arc, time::Duration};
 
 use moka::{Expiry, future::Cache as Moka};
+use mongodb::bson::DateTime;
 use serde_json::Value;
-use tokio::{sync::Semaphore, time::timeout};
+use tokio::{sync::Semaphore, task::JoinHandle, time::timeout};
 use tokio_util::task::TaskTracker;
 
 use crate::{
@@ -15,13 +16,15 @@ use crate::{
 const CACHE_READ_TIMEOUT: Duration = Duration::from_secs(3);
 const MAX_BACKGROUND_WRITES: usize = 256;
 const DRAIN_TIMEOUT: Duration = Duration::from_secs(10);
+const INVALIDATION_POLL: Duration = Duration::from_secs(5);
+const INVALIDATION_RETENTION: Duration = Duration::from_secs(45 * 60);
 
 const STREAM_KEY_PREFIX: &str = "torrentio-addon|stream";
 const AVAILABILITY_KEY_PREFIX: &str = "torrentio-addon|availability";
 const RESOLVED_URL_KEY_PREFIX: &str = "torrentio-addon|resolved";
 
 const STREAM_TTL: Duration = Duration::from_secs(3 * 24 * 60 * 60);
-const STREAM_MEM_TTL: Duration = Duration::from_secs(2 * 60 * 60);
+const STREAM_MEM_TTL: Duration = Duration::from_secs(6 * 60 * 60);
 const STREAM_EMPTY_TTL: Duration = Duration::from_secs(60);
 const RESOLVED_URL_TTL: Duration = Duration::from_secs(3 * 60 * 60);
 const AVAILABILITY_TTL: Duration = Duration::from_secs(14 * 24 * 60 * 60);
@@ -92,6 +95,33 @@ impl Cache {
             work.await;
             drop(permit);
         });
+    }
+
+    pub fn watch_invalidations(self: &Arc<Self>, store: Store) -> JoinHandle<()> {
+        let cache = Arc::clone(self);
+        tokio::spawn(async move {
+            let mut cursor = DateTime::now();
+            let mut last_synced = std::time::Instant::now();
+            let mut ticker = tokio::time::interval(INVALIDATION_POLL);
+            ticker.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+            loop {
+                ticker.tick().await;
+                match timeout(CACHE_READ_TIMEOUT, store.expiring_after(cursor)).await {
+                    Ok(Ok(invalidated)) => {
+                        if last_synced.elapsed() > INVALIDATION_RETENTION {
+                            cache.streams.invalidate_all();
+                        }
+                        last_synced = std::time::Instant::now();
+                        for (key, expires_at) in invalidated {
+                            cache.streams.invalidate(&key).await;
+                            cursor = cursor.max(expires_at);
+                        }
+                    }
+                    Ok(Err(error)) => tracing::warn!(%error, "Failed to poll cache invalidations"),
+                    Err(_) => tracing::warn!("Timed out polling cache invalidations"),
+                }
+            }
+        })
     }
 
     pub fn observe(&self) {
