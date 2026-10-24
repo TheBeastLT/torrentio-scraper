@@ -61,6 +61,6 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           port: ${{ secrets.SSH_PORT }}
           script: |
-            docker service update --with-registry-auth \
+            docker service update --detach=false --update-failure-action pause --with-registry-auth \
               --image ghcr.io/thebeastlt/torrentio-addon:${{ github.sha }} \
               torrentio_addon
