@@ -46,6 +46,8 @@ jobs:
       - uses: docker/build-push-action@v6
         with:
           context: ./addon
+          cache-from: type=gha,scope=addon
+          cache-to: type=gha,scope=addon,mode=max
           push: true
           tags: |
             ghcr.io/thebeastlt/torrentio-addon:${{ github.sha }}

@@ -46,6 +46,8 @@ jobs:
       - uses: docker/build-push-action@v6
         with:
           context: ./catalogs
+          cache-from: type=gha,scope=catalogs
+          cache-to: type=gha,scope=catalogs,mode=max
           push: true
           tags: |
             ghcr.io/thebeastlt/torrentio-catalogs:${{ github.sha }}
