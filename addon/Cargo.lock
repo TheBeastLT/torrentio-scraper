@@ -2079,8 +2079,9 @@ dependencies = [
 
 [[package]]
 name = "parse-torrent-title"
-version = "0.1.0"
-source = "git+https://github.com/TheBeastLT/parse-torrent-title?branch=rust#895639f7272736e8359052ad2cfca352d7f735d4"
+version = "2.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c8e0347d8f2e688778d3396c8f7780d96ae42404c23065ace15cf1644e81bd68"
 dependencies = [
  "aho-corasick",
  "chrono",

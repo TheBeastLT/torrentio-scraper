@@ -1,6 +1,6 @@
 FROM --platform=$BUILDPLATFORM rust:1-alpine AS build
 ARG TARGETARCH
-RUN apk add --no-cache git musl-dev build-base cmake zig
+RUN apk add --no-cache musl-dev build-base cmake zig
 RUN cargo install --locked cargo-zigbuild
 RUN case "$TARGETARCH" in \
       amd64) echo x86_64-unknown-linux-musl ;; \

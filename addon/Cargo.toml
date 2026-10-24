@@ -13,7 +13,7 @@ rust-version = "1.89"
 askama = "0.16"
 addon = { path = "crates/addon", package = "torrentio-addon" }
 debrid = { path = "crates/debrid", package = "torrentio-debrid" }
-parse-torrent-title = { git = "https://github.com/TheBeastLT/parse-torrent-title", branch = "rust" }
+parse-torrent-title = "2.0.1"
 anyhow = "1"
 indexmap = "2"
 log = "0.4"

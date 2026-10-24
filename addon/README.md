@@ -18,7 +18,7 @@ crates/debrid   minimal HTTP clients, one module per debrid provider, only the e
 bench/load.js   k6 scenario used for the Node vs Rust comparison
 ```
 
-Torrent titles are parsed with the Rust `parse-torrent-title` crate (git dependency on its `rust` branch).
+Torrent titles are parsed with the Rust `parse-torrent-title` crate.
 
 Dependencies are injected at the seams: the workflows depend on the `TorrentRepository` trait, and `Mochs::new` takes the
 provider list (`default_providers` builds the real ones), so whole stream/resolve flows are tested against fakes in
@@ -34,37 +34,14 @@ cargo run --release -p torrentio-addon
 
 `MONGODB_URI` and `REDIS_URL` are optional (no store cache / no rate limiting without them). `MONGODB_DATABASE` overrides
 the database of the Mongo cache collections, `HOST` the bind address (default `::`). `TORBOX_API_URL` and
-`HIGHWAY_API_BASE` override the provider API base urls. `RUST_LOG` sets the log filter (default `info`). `STREAM_CACHE_MB` sets the budget of
-the in-memory stream cache (default 600). The scraper records every stream cache deletion in the Mongo collection
-`torrentio_addon_invalidations`, which each node polls every 5 seconds to drop those keys from memory. The Docker image
-is built from this directory: `docker build -t torrentio-addon .`
+`HIGHWAY_API_BASE` override the provider API base urls. The Docker image is built from this directory: 
+`docker build -t torrentio-addon .`
 
 ## Logging
 
 One JSON object per line, flat fields, no timestamp (the Docker/Alloy pipeline adds it): warnings and errors go to
 stderr, the rest to stdout. Message prefixes match the Node addon so existing Loki greps keep working
 (`{service="torrentio_addon"} |= "Failed RealDebrid"`), and the details are fields (`| json | moch="torbox"`).
-
-## Metrics
-
-Same names as the Node addon except the runtime ones, which are Rust-native:
-
-| Node | Rust |
-|---|---|
-| `nodejs_eventloop_utilization` | `runtime_utilization` |
-| `nodejs_eventloop_lag_p90/p99_seconds` | `histogram_quantile(q, rate(runtime_scheduling_lag_seconds_bucket[..]))` |
-| `nodejs_heap_size_used_bytes`, `nodejs_gc_duration_seconds_sum` | none (no GC); use `process_resident_memory_bytes` |
-| `db_pool_connections{state="waiting"}` | same name, counts in-flight connection acquires |
-
-Also exported: `runtime_alive_tasks`, `runtime_global_queue_depth`.
-
-## Checks
-
-```
-cargo fmt --all --check
-cargo clippy --workspace --all-targets
-cargo test --workspace
-```
 
 ## Benchmark
 
