@@ -27,6 +27,7 @@ const BAD_TOKEN: &[&str] = &["AUTH_BAD_APIKEY"];
 const ACCESS_DENIED: &[&str] =
     &["MUST_BE_PREMIUM", "MAGNET_MUST_BE_PREMIUM", "FREE_TRIAL_LIMIT_REACHED", "AUTH_USER_BANNED"];
 const BLOCKED_ACCESS: &[&str] = &["AUTH_BLOCKED"];
+const UNKNOWN_MAGNET: &[&str] = &["MAGNET_INVALID_ID"];
 const FAILED_DOWNLOAD: &[&str] = &["MAGNET_INVALID_FILE", "MAGNET_PROCESSING_COOLDOWN", "MAGNET_PROCESSING_FAILED"];
 const TOO_MANY_TORRENTS: &[&str] = &["MAGNET_TOO_MANY"];
 const LIMIT_EXCEEDED: &[&str] = &["MAGNET_TOO_MANY_ACTIVE"];
@@ -75,7 +76,12 @@ impl Moch for AllDebrid {
 
     async fn item_meta(&self, item_id: &str, api_key: &str, ip: Option<&str>) -> MochResult<ItemMeta> {
         let id: i64 = item_id.parse().map_err(|_| CommonError::NotFound)?;
-        let magnet = self.client.magnet(Auth { api_key, ip }, id).await?.ok_or(CommonError::NotFound)?;
+        let magnet = self
+            .client
+            .magnet(Auth { api_key, ip }, id)
+            .await
+            .map_err(|error| meta_error(error.into()))?
+            .ok_or(CommonError::NotFound)?;
         let hash = magnet.hash.to_lowercase();
         let videos = magnet
             .links
@@ -237,6 +243,10 @@ fn static_for_error(error: &MochError, params: &ResolveParams) -> MochResult<Res
         ),
     ];
     static_or_err(&rules, &resolve_target(params), || adding_error("AllDebrid", quoted(alldebrid_text(error))))
+}
+
+fn meta_error(error: MochError) -> MochError {
+    if has_code(&error, UNKNOWN_MAGNET) { CommonError::NotFound.into() } else { error }
 }
 
 fn common_error(error: &MochError) -> Option<CommonError> {
@@ -435,5 +445,11 @@ mod tests {
             host: String::new(),
             is_browser: false,
         }
+    }
+
+    #[test]
+    fn unknown_magnet_on_meta_is_not_found() {
+        assert!(matches!(meta_error(provider_error("MAGNET_INVALID_ID")), MochError::Common(CommonError::NotFound)));
+        assert!(matches!(meta_error(provider_error("AUTH_BAD_APIKEY")), MochError::Provider(_)));
     }
 }
