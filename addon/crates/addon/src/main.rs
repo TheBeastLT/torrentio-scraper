@@ -22,13 +22,25 @@ static ALLOCATOR: mimalloc::MiMalloc = mimalloc::MiMalloc;
 const DEFAULT_PORT: u16 = 7000;
 const DEBRID_TIMEOUT: Duration = Duration::from_secs(10);
 const FORCE_EXIT: Duration = Duration::from_secs(40);
+const DEFAULT_BLOCKING_THREADS: usize = 8;
 
 fn env(name: &str) -> Option<String> {
     std::env::var(name).ok().filter(|value| !value.is_empty())
 }
 
-#[tokio::main]
-async fn main() -> anyhow::Result<()> {
+fn blocking_threads(configured: Option<String>) -> usize {
+    configured.and_then(|value| value.parse().ok()).filter(|threads| *threads > 0).unwrap_or(DEFAULT_BLOCKING_THREADS)
+}
+
+fn main() -> anyhow::Result<()> {
+    tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .max_blocking_threads(blocking_threads(env("TOKIO_MAX_BLOCKING_THREADS")))
+        .build()?
+        .block_on(run())
+}
+
+async fn run() -> anyhow::Result<()> {
     logging::init();
     let metrics = Metrics::new();
     metrics.spawn_lag_sampler();
@@ -117,4 +129,17 @@ async fn shutdown() {
         tokio::time::sleep(FORCE_EXIT).await;
         std::process::exit(1);
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn blocking_thread_cap_defaults_when_unset_or_invalid() {
+        assert_eq!(blocking_threads(None), DEFAULT_BLOCKING_THREADS);
+        assert_eq!(blocking_threads(Some("abc".to_owned())), DEFAULT_BLOCKING_THREADS);
+        assert_eq!(blocking_threads(Some("0".to_owned())), DEFAULT_BLOCKING_THREADS);
+        assert_eq!(blocking_threads(Some("16".to_owned())), 16);
+    }
 }

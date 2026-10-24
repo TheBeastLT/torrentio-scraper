@@ -56,20 +56,13 @@ struct Entry<'a> {
 pub struct Packed(Arc<[u8]>);
 
 impl Packed {
-    pub async fn encode<T: Serialize + Send + Sync + 'static + ?Sized>(value: Arc<T>) -> Result<Self> {
-        let bytes = tokio::task::spawn_blocking(move || -> Result<Vec<u8>> {
-            Ok(zstd::encode_all(serde_json::to_vec(value.as_ref())?.as_slice(), ZSTD_LEVEL)?)
-        })
-        .await??;
+    pub fn encode<T: Serialize + ?Sized>(value: &T) -> Result<Self> {
+        let bytes = zstd::encode_all(serde_json::to_vec(value)?.as_slice(), ZSTD_LEVEL)?;
         Ok(Self(bytes.into()))
     }
 
-    pub async fn decode<T: DeserializeOwned + Send + 'static>(&self) -> Result<T> {
-        let bytes = Arc::clone(&self.0);
-        tokio::task::spawn_blocking(move || -> Result<T> {
-            Ok(serde_json::from_slice(&zstd::decode_all(bytes.as_ref())?)?)
-        })
-        .await?
+    pub fn decode<T: DeserializeOwned>(&self) -> Result<T> {
+        Ok(serde_json::from_slice(&zstd::decode_all(self.0.as_ref())?)?)
     }
 
     pub fn len(&self) -> usize {
@@ -157,7 +150,7 @@ impl Store {
             .await?;
         match stored.map(|stored| stored.value) {
             Some(Bson::Binary(binary)) => Ok(Some(Packed(binary.bytes.into()))),
-            Some(other) => Ok(Some(Packed::encode(Arc::new(bson::from_bson::<serde_json::Value>(other)?)).await?)),
+            Some(other) => Ok(Some(Packed::encode(&bson::from_bson::<serde_json::Value>(other)?)?)),
             None => Ok(None),
         }
     }

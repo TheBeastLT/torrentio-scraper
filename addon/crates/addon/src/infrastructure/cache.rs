@@ -142,7 +142,7 @@ impl Cache {
     {
         let key = format!("{STREAM_KEY_PREFIX}:{id}");
         if let Some(found) = self.streams.get(&key).await {
-            match found.value.decode::<Vec<Stream>>().await {
+            match found.value.decode::<Vec<Stream>>() {
                 Ok(streams) => {
                     self.metrics.cache_result("stream", "memory");
                     return Ok(Arc::new(streams));
@@ -158,7 +158,7 @@ impl Cache {
             let stored = timeout(CACHE_READ_TIMEOUT, store.get_packed(&key)).await.ok().and_then(Result::ok).flatten();
             timer.finish();
             if let Some(packed) = stored
-                && let Ok(streams) = packed.decode::<Vec<Stream>>().await
+                && let Ok(streams) = packed.decode::<Vec<Stream>>()
             {
                 self.metrics.cache_result("stream", "store");
                 self.remember_streams(key, packed, streams.is_empty()).await;
@@ -167,7 +167,7 @@ impl Cache {
         }
         self.metrics.cache_result("stream", "miss");
         let streams = Arc::new(method().await?);
-        match Packed::encode(Arc::clone(&streams)).await {
+        match Packed::encode(streams.as_ref()) {
             Ok(packed) => {
                 if let Some(store) = &self.stores.streams {
                     let ttl = if streams.is_empty() { STREAM_EMPTY_TTL } else { STREAM_TTL };
@@ -368,7 +368,7 @@ mod tests {
     #[tokio::test]
     async fn stream_entries_are_smaller_in_memory_than_their_json() {
         let streams: Arc<Vec<Stream>> = Arc::new((0..100).map(stream).collect());
-        let packed = Packed::encode(Arc::clone(&streams)).await.unwrap();
+        let packed = Packed::encode(streams.as_ref()).unwrap();
         let json = serde_json::to_vec(streams.as_ref()).unwrap();
         assert!(packed.len() * 3 < json.len(), "{} vs {}", packed.len(), json.len());
     }
