@@ -16,6 +16,7 @@ use axum_extra::{
 use serde::Serialize;
 use tower::Layer;
 use tower_http::{
+    compression::CompressionLayer,
     cors::{AllowHeaders, Any, CorsLayer},
     normalize_path::{NormalizePath, NormalizePathLayer},
 };
@@ -49,6 +50,7 @@ pub fn app(state: Arc<AppState>) -> NormalizePath<Router> {
         .route("/{first}/{second}/{third}/{fourth}", get(catalog_medium))
         .route("/{first}/{second}/{third}/{fourth}/{fifth}", get(catalog_long))
         .layer(cors)
+        .layer(CompressionLayer::new())
         .layer(middleware::from_fn_with_state(Arc::clone(&state), record_metrics))
         .with_state(Arc::clone(&state));
     let router = Router::new().route("/metrics", get(metrics_handler)).fallback_service(dynamic).with_state(state);
@@ -239,6 +241,18 @@ mod tests {
             assert_eq!(response.status(), StatusCode::OK);
             assert_eq!(response.headers()[header::CONTENT_TYPE], JSON_CONTENT_TYPE);
         }
+    }
+
+    #[tokio::test]
+    async fn compresses_responses_for_clients_that_accept_gzip() {
+        let request = HttpRequest::builder()
+            .uri("/manifest.json")
+            .header(header::ACCEPT_ENCODING, "gzip")
+            .body(Body::empty())
+            .unwrap();
+        let response = test_app().oneshot(request).await.unwrap();
+        assert_eq!(response.headers()[header::CONTENT_ENCODING], "gzip");
+        assert!(call(Method::GET, "/manifest.json").await.headers().get(header::CONTENT_ENCODING).is_none());
     }
 
     #[tokio::test]
