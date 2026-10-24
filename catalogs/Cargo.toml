@@ -1,0 +1,65 @@
+[package]
+name = "torrentio-catalogs"
+description = "Torrentio Stremio catalogs addon server"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+repository = "https://github.com/TheBeastLT/stremio-torrentio"
+rust-version = "1.89"
+
+[lib]
+name = "catalogs"
+
+[[bin]]
+name = "torrentio-catalogs"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1"
+async-trait = "0.1"
+axum = "0.8"
+axum-extra = { version = "0.12", features = ["typed-header"] }
+chrono = { version = "0.4", default-features = false, features = ["clock", "serde"] }
+log = "0.4"
+mimalloc = "0.1"
+parking_lot = "0.12"
+mongodb = { version = "3", features = ["zstd-compression"] }
+prometheus = { version = "0.14", features = ["process"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "gzip"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["preserve_order"] }
+sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio", "postgres", "chrono", "macros"] }
+thiserror = "2"
+tokio = { version = "1", features = ["full"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["cors", "normalize-path"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["json", "env-filter"] }
+url = "2"
+
+[dev-dependencies]
+wiremock = "0.6"
+
+[lints.rust]
+unsafe_code = "forbid"
+rust_2018_idioms = { level = "warn", priority = -1 }
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+module_name_repetitions = "allow"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+must_use_candidate = "allow"
+cast_possible_truncation = "allow"
+cast_sign_loss = "allow"
+cast_precision_loss = "allow"
+cast_possible_wrap = "allow"
+
+[profile.dev]
+debug = "line-tables-only"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true
