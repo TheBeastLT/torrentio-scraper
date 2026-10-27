@@ -1,5 +1,6 @@
 mod alldebrid;
 mod debridlink;
+mod deepbrid;
 mod easydebrid;
 pub(crate) mod helper;
 mod highway;
@@ -186,6 +187,7 @@ pub const MOCHS: &[MochInfo] = &[
     },
     MochInfo { key: "putio", name: "Put.io", short_name: "Putio", catalogs: &[""], no_downloads: false },
     MochInfo { key: "highway", name: "HighWay", short_name: "HW", catalogs: &[], no_downloads: false },
+    MochInfo { key: "deepbrid", name: "Deepbrid", short_name: "DB", catalogs: &[], no_downloads: false },
 ];
 
 pub fn moch_info(key: &str) -> Option<&'static MochInfo> {
@@ -227,6 +229,7 @@ pub fn default_providers(context: &Arc<Context>) -> Vec<Provider> {
                 "offcloud" => offcloud::build(context),
                 "torbox" => torbox::build(context),
                 "putio" => putio::build(context),
+                "deepbrid" => deepbrid::build(context),
                 _ => highway::build(context),
             };
             (info, instance)
