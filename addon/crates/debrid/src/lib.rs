@@ -4,6 +4,7 @@ mod util;
 
 pub mod alldebrid;
 pub mod debridlink;
+pub mod deepbrid;
 pub mod easydebrid;
 pub mod highway;
 pub mod offcloud;
