@@ -70,4 +70,4 @@ With Redis in the loop the hot path is bounded by Redis itself for both implemen
 60-80k req/s); the gains show on the cold and debrid paths and in memory.
 
 In production a Node process sat at 0.8-1.7 GB. The Rust process starts around 0.25 GB and grows with the stream cache, which
-holds zstd-compressed JSON (about 5.5 KB per entry, a 600 MB budget by default).
+holds zstd-compressed JSON (about 5.5 KB per entry, an 800 MB budget by default).

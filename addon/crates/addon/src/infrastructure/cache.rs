@@ -31,7 +31,7 @@ const AVAILABILITY_TTL: Duration = Duration::from_secs(14 * 24 * 60 * 60);
 const INFRINGING_TTL: Duration = Duration::from_secs(60 * 24 * 60 * 60);
 const MESSAGE_VIDEO_URL_TTL: Duration = Duration::from_secs(60);
 
-const DEFAULT_STREAM_CACHE_MB: u64 = 600;
+const DEFAULT_STREAM_CACHE_MB: u64 = 800;
 const RESOLVED_LRU_SIZE: u64 = 200_000;
 
 #[derive(Clone)]
