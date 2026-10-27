@@ -65,4 +65,4 @@ jobs:
           script: |
             docker service update --detach=false --update-failure-action pause --with-registry-auth \
               --image ghcr.io/thebeastlt/torrentio-catalogs:${{ github.sha }} \
-              catalogs_catalogs
+              torrentio_catalogs
