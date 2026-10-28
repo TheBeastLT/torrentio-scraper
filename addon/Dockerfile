@@ -27,6 +27,7 @@ RUN cargo zigbuild --release --locked --target "$(cat /rust-target)" -p torrenti
 FROM alpine:3
 RUN apk add --no-cache ca-certificates
 WORKDIR /home/app
+ENV MIMALLOC_ALLOW_THP=0
 COPY --from=build /torrentio-addon /usr/local/bin/torrentio-addon
 COPY static static
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
