@@ -2,7 +2,7 @@ use chrono::{DateTime, Datelike, Days, NaiveDate, TimeDelta, Utc};
 
 pub const GENRES: [&str; 6] = ["Yesterday", "This Week", "Last Week", "This Month", "Last Month", "All Time"];
 
-pub const DEFAULT_PROVIDERS: [&str; 16] = [
+pub const DEFAULT_PROVIDERS: [&str; 17] = [
     "1337x",
     "AniDex",
     "AnimeTosho",
@@ -10,6 +10,7 @@ pub const DEFAULT_PROVIDERS: [&str; 16] = [
     "EZTV",
     "HorribleSubs",
     "KickassTorrents",
+    "Knaben",
     "MagnetDL",
     "NyaaSi",
     "RARBG",

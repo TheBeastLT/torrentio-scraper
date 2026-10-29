@@ -38,6 +38,7 @@ pub const PROVIDERS: &[Provider] = &[
     provider("kickasstorrents", "KickassTorrents"),
     provider("torrentgalaxy", "TorrentGalaxy"),
     provider("uindex", "UIndex"),
+    provider("knaben", "Knaben"),
     provider("magnetdl", "MagnetDL"),
     anime("horriblesubs", "HorribleSubs"),
     anime("nyaasi", "NyaaSi"),
