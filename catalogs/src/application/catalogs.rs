@@ -306,7 +306,7 @@ mod tests {
     async fn anime_cursors_drop_the_kitsu_prefix() {
         let fixture = fixture(0, true);
         fixture.store.entries.lock().unwrap().insert(
-            "top-anime|1337x,AniDex,EXT,EZTV,HorribleSubs,KickassTorrents,MagnetDL,NyaaSi,RARBG,ThePirateBay,TokyoTosho,TorrentGalaxy,YTS,nekoBT|default|2026-10-24|0".to_owned(),
+            "top-anime|1337x,AniDex,AnimeTosho,EXT,EZTV,HorribleSubs,KickassTorrents,MagnetDL,NyaaSi,RARBG,ThePirateBay,TokyoTosho,TorrentGalaxy,UIndex,YTS,nekoBT|default|2026-10-24|0".to_owned(),
             json!([{ "id": "kitsu:7" }]),
         );
         let ids = Arc::new(FakeIds { ids: vec!["5".into(), "7".into(), "9".into()], ..FakeIds::default() });
