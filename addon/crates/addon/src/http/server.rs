@@ -451,7 +451,7 @@ mod tests {
     use crate::{
         domain::repository::TorrentRepository,
         infrastructure::cache::{Cache, Stores},
-        infrastructure::ratelimit::{Budgets, Mode},
+        infrastructure::ratelimit::Budgets,
         infrastructure::repository::Repository,
         providers::static_videos::StaticResponse,
         providers::{Context, Endpoints, Mochs, default_providers},
@@ -473,7 +473,7 @@ mod tests {
             metrics: metrics.clone(),
             http: debrid::Http::new(std::time::Duration::from_secs(1)).unwrap(),
         });
-        let rate_limiter = RateLimiter::pinned(budgets, metrics.clone());
+        let rate_limiter = RateLimiter::new(None, budgets, metrics.clone());
         let mochs = Mochs::new(Arc::clone(&context), default_providers(&context));
         let state = Arc::new(AppState {
             addon: Addon::new(repository, cache, mochs, rate_limiter.clone()),
@@ -492,7 +492,7 @@ mod tests {
 
     #[tokio::test]
     async fn over_budget_streams_answer_the_rate_limited_text() {
-        let app = test_app_with(Budgets { mode: Mode::Enforce, misses: 0, ..Budgets::default() });
+        let app = test_app_with(Budgets { enforce: true, misses: 0, ..Budgets::default() });
         let mut responses = Vec::new();
         for id in ["tt1", "tt2"] {
             let mut request =

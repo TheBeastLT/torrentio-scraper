@@ -1,14 +1,12 @@
 use std::collections::VecDeque;
 
 const WINDOW_MS: u64 = 2 * 60 * 1000;
-const HISTORY_MS: u64 = 60 * 60 * 1000;
-const BASELINE_MS: u64 = 30 * 60 * 1000;
+const HISTORY_MS: u64 = 2 * WINDOW_MS;
 const HOLD_MS: u64 = 30 * 60 * 1000;
 const QUIET_MS: u64 = 10 * 60 * 1000;
-const SPIKE_FACTOR: f64 = 3.0;
 const QUIET_FACTOR: f64 = 0.5;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug)]
 pub struct Reading {
     pub rate: f64,
     pub threshold: f64,
@@ -18,7 +16,7 @@ pub struct Reading {
 #[derive(Clone, Copy)]
 enum Status {
     Calm,
-    Pressured { since: u64, threshold: f64, quiet_since: Option<u64> },
+    Pressured { since: u64, quiet_since: Option<u64> },
 }
 
 pub struct Pressure {
@@ -32,37 +30,24 @@ impl Pressure {
         Self { floor, samples: VecDeque::new(), status: Status::Calm }
     }
 
-    pub fn active(&self) -> bool {
-        matches!(self.status, Status::Pressured { .. })
-    }
-
     pub fn observe(&mut self, now: u64, misses: f64, forced: Option<bool>) -> Reading {
         self.samples.push_back((now, misses));
         while self.samples.front().is_some_and(|(at, _)| now.saturating_sub(*at) > HISTORY_MS) {
             self.samples.pop_front();
         }
         let rate = self.rate(now.saturating_sub(WINDOW_MS));
-        let threshold = self.floor.max(SPIKE_FACTOR * self.median_rate(now));
-        self.status = match (forced, self.status) {
-            (Some(true), Status::Calm) => Status::Pressured { since: now, threshold, quiet_since: None },
-            (None, Status::Calm) if rate > threshold => Status::Pressured { since: now, threshold, quiet_since: None },
-            (Some(false), _) | (None, Status::Calm) => Status::Calm,
-            (_, Status::Pressured { since, threshold, quiet_since }) => {
-                let quiet_since = (rate < threshold * QUIET_FACTOR).then(|| quiet_since.unwrap_or(now));
+        self.status = match self.status {
+            _ if forced == Some(false) => Status::Calm,
+            Status::Calm if forced.unwrap_or(rate > self.floor) => Status::Pressured { since: now, quiet_since: None },
+            Status::Calm => Status::Calm,
+            Status::Pressured { since, quiet_since } => {
+                let quiet_since = (rate < self.floor * QUIET_FACTOR).then(|| quiet_since.unwrap_or(now));
                 let held = now.saturating_sub(since) < HOLD_MS;
                 let quiet = quiet_since.is_some_and(|at| now.saturating_sub(at) >= QUIET_MS);
-                if forced.is_none() && !held && quiet {
-                    Status::Calm
-                } else {
-                    Status::Pressured { since, threshold, quiet_since }
-                }
+                if forced.is_none() && !held && quiet { Status::Calm } else { Status::Pressured { since, quiet_since } }
             }
         };
-        let threshold = match self.status {
-            Status::Pressured { threshold, .. } => threshold,
-            Status::Calm => threshold,
-        };
-        Reading { rate, threshold, active: self.active() }
+        Reading { rate, threshold: self.floor, active: matches!(self.status, Status::Pressured { .. }) }
     }
 
     fn rate(&self, from: u64) -> f64 {
@@ -74,24 +59,6 @@ impl Pressure {
             .rev()
             .find(|(at, _)| *at <= from)
             .map_or(0.0, |(at, count)| (latest - count) * 1000.0 / (latest_at - at) as f64)
-    }
-
-    fn median_rate(&self, now: u64) -> f64 {
-        if self.samples.front().is_none_or(|(at, _)| now.saturating_sub(*at) < BASELINE_MS) {
-            return 0.0;
-        }
-        let mut rates: Vec<f64> = self
-            .samples
-            .iter()
-            .zip(self.samples.iter().skip(1))
-            .filter(|((from_at, _), (to_at, _))| to_at > from_at)
-            .map(|((from_at, from), (to_at, to))| (to - from) * 1000.0 / (to_at - from_at) as f64)
-            .collect();
-        if rates.is_empty() {
-            return 0.0;
-        }
-        rates.sort_by(f64::total_cmp);
-        rates[rates.len() / 2]
     }
 }
 
@@ -137,23 +104,6 @@ mod tests {
         let reading = clock.run(400.0, 3);
         assert!(reading.active);
         assert!((reading.threshold - 100.0).abs() < f64::EPSILON);
-    }
-
-    #[test]
-    fn trips_at_three_times_the_trailing_median() {
-        let mut clock = Clock::new(100.0);
-        clock.run(50.0, 40);
-        assert!(!clock.run(140.0, 3).active);
-        let reading = clock.run(200.0, 3);
-        assert!(reading.active);
-        assert!((reading.threshold - 150.0).abs() < f64::EPSILON);
-    }
-
-    #[test]
-    fn median_only_counts_after_half_an_hour_of_history() {
-        let mut clock = Clock::new(100.0);
-        clock.run(50.0, 20);
-        assert!(clock.run(140.0, 3).active);
     }
 
     #[test]

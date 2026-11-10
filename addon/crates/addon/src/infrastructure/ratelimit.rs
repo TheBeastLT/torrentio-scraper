@@ -6,7 +6,7 @@ use std::{
         Arc,
         atomic::{AtomicBool, Ordering},
     },
-    time::{Duration, SystemTime, UNIX_EPOCH},
+    time::Duration,
 };
 
 use parking_lot::Mutex;
@@ -22,12 +22,11 @@ use crate::infrastructure::{metrics::Metrics, pressure::Pressure};
 const DAY_MS: u64 = 24 * 60 * 60 * 1000;
 const BUDGET_PERIOD_MS: u64 = 10 * 60 * 1000;
 const LIMIT: i64 = 5000;
-const DEFAULT_MISS_BUDGET: i64 = 100;
-const DEFAULT_EMPTY_BUDGET: i64 = 30;
-const DEFAULT_PRESSURE_MISS_RATE: f64 = 100.0;
 const KEYED_MULTIPLIER: i64 = 3;
 const PRESSURE_DIVISOR: i64 = 3;
 const KEY_PREFIX: &str = "torrentio:ratelimit:";
+const MISS_KEY_PREFIX: &str = "torrentio:ratelimit:miss:";
+const EMPTY_KEY_PREFIX: &str = "torrentio:ratelimit:empty:";
 const PRESSURE_KEY: &str = "torrentio:pressure";
 const FLUSH_INTERVAL: Duration = Duration::from_secs(30);
 const CONNECTION_TIMEOUT: Duration = Duration::from_millis(500);
@@ -41,22 +40,7 @@ enum SyncError {
     TimedOut,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Mode {
-    Observe,
-    Enforce,
-}
-
-impl Mode {
-    fn label(self) -> &'static str {
-        match self {
-            Self::Observe => "observe",
-            Self::Enforce => "enforce",
-        }
-    }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug)]
 pub enum Budget {
     Miss,
     Empty,
@@ -73,7 +57,7 @@ impl Budget {
 
 #[derive(Clone, Copy, Debug)]
 pub struct Budgets {
-    pub mode: Mode,
+    pub enforce: bool,
     pub misses: i64,
     pub empties: i64,
     pub pressure_miss_rate: f64,
@@ -81,28 +65,23 @@ pub struct Budgets {
 
 impl Default for Budgets {
     fn default() -> Self {
-        Self {
-            mode: Mode::Observe,
-            misses: DEFAULT_MISS_BUDGET,
-            empties: DEFAULT_EMPTY_BUDGET,
-            pressure_miss_rate: DEFAULT_PRESSURE_MISS_RATE,
-        }
+        Self { enforce: false, misses: 100, empties: 30, pressure_miss_rate: 100.0 }
     }
 }
 
 impl Budgets {
     pub fn from_env() -> Self {
         let defaults = Self::default();
-        let mode = match std::env::var("STREAM_BUDGET_MODE").as_deref() {
-            Ok("enforce") => Mode::Enforce,
-            _ => Mode::Observe,
-        };
         Self {
-            mode,
+            enforce: std::env::var("STREAM_BUDGET_MODE").as_deref() == Ok("enforce"),
             misses: env_number("STREAM_MISS_BUDGET", defaults.misses),
             empties: env_number("STREAM_EMPTY_BUDGET", defaults.empties),
             pressure_miss_rate: env_number("STREAM_PRESSURE_MISS_RATE", defaults.pressure_miss_rate),
         }
+    }
+
+    fn mode(&self) -> &'static str {
+        if self.enforce { "enforce" } else { "observe" }
     }
 
     fn limit(&self, budget: Budget, caller: Caller<'_>, pressure: bool) -> i64 {
@@ -148,10 +127,6 @@ struct Batch {
 impl Window {
     fn new(slot: u64) -> Self {
         Self { slot, clients: HashMap::new(), dirty: Vec::new() }
-    }
-
-    fn total(&self, client: &str) -> i64 {
-        self.clients.get(client).map_or(0, |hits| hits.total)
     }
 
     fn hit(&mut self, client: &str) -> i64 {
@@ -204,16 +179,16 @@ struct State {
 }
 
 struct Counter {
-    prefix: String,
+    prefix: &'static str,
     period: u64,
     shared: bool,
     state: Mutex<State>,
 }
 
 impl Counter {
-    fn new(prefix: impl Into<String>, period: u64, shared: bool, now: u64) -> Self {
+    fn new(prefix: &'static str, period: u64, shared: bool, now: u64) -> Self {
         let state = State { window: Window::new(now / period), retired: Vec::new() };
-        Self { prefix: prefix.into(), period, shared, state: Mutex::new(state) }
+        Self { prefix, period, shared, state: Mutex::new(state) }
     }
 
     fn window<'a>(&self, state: &'a mut State, now: u64) -> &'a mut Window {
@@ -230,14 +205,12 @@ impl Counter {
 
     fn total(&self, client: &str, now: u64) -> i64 {
         let mut state = self.state.lock();
-        self.window(&mut state, now).total(client)
+        self.window(&mut state, now).clients.get(client).map_or(0, |hits| hits.total)
     }
 
-    fn hit(&self, client: &str, now: u64) -> (i64, i64) {
+    fn hit(&self, client: &str, now: u64) -> i64 {
         let mut state = self.state.lock();
-        let window = self.window(&mut state, now);
-        let previous = window.total(client);
-        (previous, window.hit(client))
+        self.window(&mut state, now).hit(client)
     }
 
     fn take(&self, now: u64) -> Vec<Batch> {
@@ -246,10 +219,6 @@ impl Counter {
         batches.push(state.window.take());
         batches.retain(|batch| !batch.items.is_empty() && self.expiry(batch.slot) > now);
         batches
-    }
-
-    fn hash(&self, slot: u64) -> String {
-        format!("{}{slot}", self.prefix)
     }
 
     fn expiry(&self, slot: u64) -> u64 {
@@ -287,7 +256,6 @@ struct Inner {
     under_pressure: AtomicBool,
     redis: Option<Redis>,
     metrics: Metrics,
-    clock: fn() -> u64,
 }
 
 impl Inner {
@@ -320,8 +288,11 @@ pub struct RateLimiter {
     inner: Arc<Inner>,
 }
 
+#[cfg(not(test))]
 fn now_ms() -> u64 {
-    SystemTime::now().duration_since(UNIX_EPOCH).map_or(0, |elapsed| u64::try_from(elapsed.as_millis()).unwrap_or(0))
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |elapsed| u64::try_from(elapsed.as_millis()).unwrap_or(0))
 }
 
 fn budget_key(ip: &str) -> Cow<'_, str> {
@@ -335,49 +306,34 @@ fn budget_key(ip: &str) -> Cow<'_, str> {
 
 impl RateLimiter {
     pub fn new(url: Option<&str>, budgets: Budgets, metrics: Metrics) -> Self {
-        Self::with_clock(url, budgets, metrics, now_ms)
-    }
-
-    #[cfg(test)]
-    pub(crate) fn pinned(budgets: Budgets, metrics: Metrics) -> Self {
-        Self::with_clock(None, budgets, metrics, || PINNED_NOW)
-    }
-
-    fn with_clock(url: Option<&str>, budgets: Budgets, metrics: Metrics, clock: fn() -> u64) -> Self {
         let redis = url
             .and_then(|url| Client::open(url).inspect_err(|error| tracing::error!(%error, "Redis client error")).ok())
             .map(|client| Redis { client, connection: OnceCell::new() });
         let shared = redis.is_some();
-        let now = clock();
+        let now = now_ms();
         let inner = Inner {
             requests: Counter::new(KEY_PREFIX, DAY_MS, shared, now),
-            misses: Counter::new(format!("{KEY_PREFIX}miss:"), BUDGET_PERIOD_MS, shared, now),
-            empties: Counter::new(format!("{KEY_PREFIX}empty:"), BUDGET_PERIOD_MS, shared, now),
+            misses: Counter::new(MISS_KEY_PREFIX, BUDGET_PERIOD_MS, shared, now),
+            empties: Counter::new(EMPTY_KEY_PREFIX, BUDGET_PERIOD_MS, shared, now),
             budgets,
             pressure: Mutex::new(Pressure::new(budgets.pressure_miss_rate)),
             under_pressure: AtomicBool::new(false),
             redis,
             metrics,
-            clock,
         };
         Self { inner: Arc::new(inner) }
     }
 
-    fn now(&self) -> u64 {
-        (self.inner.clock)()
-    }
-
     pub fn allow(&self, client: &str) -> bool {
-        self.allow_at(client, self.now())
+        self.allow_at(client, now_ms())
     }
 
     fn allow_at(&self, client: &str, now: u64) -> bool {
-        let (_, total) = self.inner.requests.hit(client, now);
-        total <= LIMIT
+        self.inner.requests.hit(client, now) <= LIMIT
     }
 
     pub fn stream_allowed(&self, caller: Caller<'_>) -> bool {
-        self.stream_allowed_at(caller, self.now())
+        self.stream_allowed_at(caller, now_ms())
     }
 
     fn stream_allowed_at(&self, caller: Caller<'_>, now: u64) -> bool {
@@ -389,27 +345,26 @@ impl RateLimiter {
         let Some(budget) = exceeded else {
             return true;
         };
-        let mode = self.inner.budgets.mode;
-        self.inner.metrics.stream_budget_exceeded(budget.label(), mode.label());
-        mode == Mode::Observe
+        self.inner.metrics.stream_budget_exceeded(budget.label(), self.inner.budgets.mode());
+        !self.inner.budgets.enforce
     }
 
     pub fn charge(&self, caller: Caller<'_>, budget: Budget) {
-        self.charge_at(caller, budget, self.now());
+        self.charge_at(caller, budget, now_ms());
     }
 
     fn charge_at(&self, caller: Caller<'_>, budget: Budget, now: u64) {
         let key = budget_key(caller.ip);
-        let (previous, total) = self.inner.counter(budget).hit(&key, now);
+        let total = self.inner.counter(budget).hit(&key, now);
         let limit = self.inner.budgets.limit(budget, caller, self.inner.under_pressure.load(Ordering::Relaxed));
-        if previous <= limit && total > limit {
+        if total == limit + 1 {
             tracing::info!(
                 client = %key,
                 keyed = caller.keyed,
                 budget = budget.label(),
                 total,
                 limit,
-                mode = self.inner.budgets.mode.label(),
+                mode = self.inner.budgets.mode(),
                 "Stream budget exceeded"
             );
         }
@@ -434,7 +389,7 @@ impl RateLimiter {
     }
 
     pub async fn flush(&self) {
-        let now = self.now();
+        let now = now_ms();
         let forced = match &self.inner.redis {
             Some(redis) => timeout(OPERATION_TIMEOUT, read_override(redis)).await.ok().and_then(Result::ok).flatten(),
             None => None,
@@ -450,13 +405,8 @@ impl RateLimiter {
     }
 
     fn update_pressure(&self, now: u64, forced: Option<bool>) {
-        let misses = self.inner.metrics.stream_misses();
-        let mut pressure = self.inner.pressure.lock();
-        let was = pressure.active();
-        let reading = pressure.observe(now, misses, forced);
-        drop(pressure);
-        self.inner.under_pressure.store(reading.active, Ordering::Relaxed);
-        if reading.active != was {
+        let reading = self.inner.pressure.lock().observe(now, self.inner.metrics.stream_misses(), forced);
+        if self.inner.under_pressure.swap(reading.active, Ordering::Relaxed) != reading.active {
             tracing::warn!(
                 active = reading.active,
                 rate = reading.rate,
@@ -499,7 +449,7 @@ async fn connect(redis: &Redis) -> Result<ConnectionManager, SyncError> {
 
 async fn send(redis: &Redis, counter: &Counter, batch: &Batch) -> Result<Vec<i64>, SyncError> {
     let mut connection = connect(redis).await?;
-    let hash = counter.hash(batch.slot);
+    let hash = format!("{}{}", counter.prefix, batch.slot);
     let mut pipeline = redis::pipe();
     pipeline.atomic();
     for (client, sent) in &batch.items {
@@ -520,7 +470,9 @@ async fn read_override(redis: &Redis) -> Result<Option<bool>, SyncError> {
 }
 
 #[cfg(test)]
-const PINNED_NOW: u64 = 1_800_000_000_000;
+fn now_ms() -> u64 {
+    1_800_000_000_000
+}
 
 #[cfg(test)]
 mod tests {
@@ -528,18 +480,15 @@ mod tests {
 
     const ANON: Caller<'static> = Caller { ip: "1.1.1.1", keyed: false };
     const KEYED: Caller<'static> = Caller { ip: "1.1.1.1", keyed: true };
+    const UNREACHABLE: Option<&str> = Some("redis://127.0.0.1:1");
 
     fn limiter(url: Option<&str>) -> RateLimiter {
         RateLimiter::new(url, Budgets::default(), Metrics::new())
     }
 
-    fn pinned() -> RateLimiter {
-        RateLimiter::pinned(Budgets::default(), Metrics::new())
-    }
-
     fn enforcing(misses: i64, empties: i64) -> RateLimiter {
-        let budgets = Budgets { mode: Mode::Enforce, misses, empties, ..Budgets::default() };
-        RateLimiter::pinned(budgets, Metrics::new())
+        let budgets = Budgets { enforce: true, misses, empties, ..Budgets::default() };
+        RateLimiter::new(None, budgets, Metrics::new())
     }
 
     fn today() -> u64 {
@@ -551,17 +500,21 @@ mod tests {
     }
 
     fn period() -> u64 {
-        PINNED_NOW / BUDGET_PERIOD_MS
+        now_ms() / BUDGET_PERIOD_MS
     }
 
     fn in_period(period: u64) -> u64 {
         period * BUDGET_PERIOD_MS
     }
 
-    fn charge(limiter: &RateLimiter, caller: Caller<'_>, budget: Budget, times: i64, now: u64) {
+    fn charge(limiter: &RateLimiter, caller: Caller<'_>, budget: Budget, times: i64) {
         for _ in 0..times {
-            limiter.charge_at(caller, budget, now);
+            limiter.charge(caller, budget);
         }
+    }
+
+    fn ip(ip: &'static str) -> Caller<'static> {
+        Caller { ip, keyed: false }
     }
 
     #[test]
@@ -576,7 +529,7 @@ mod tests {
 
     #[test]
     fn next_day_starts_a_fresh_count_and_retires_the_old_one() {
-        let limiter = limiter(Some("redis://127.0.0.1:1"));
+        let limiter = limiter(UNREACHABLE);
         for _ in 0..=LIMIT {
             limiter.allow_at("1.1.1.1", at(today()));
         }
@@ -607,8 +560,7 @@ mod tests {
 
     #[test]
     fn expired_retired_batches_are_dropped() {
-        let limiter =
-            RateLimiter::with_clock(Some("redis://127.0.0.1:1"), Budgets::default(), Metrics::new(), || PINNED_NOW);
+        let limiter = limiter(UNREACHABLE);
         for offset in 0..3 {
             limiter.charge_at(ANON, Budget::Miss, in_period(period() + offset));
         }
@@ -644,41 +596,23 @@ mod tests {
     }
 
     #[test]
-    fn misses_within_budget_are_allowed() {
-        let limiter = enforcing(3, 3);
-        charge(&limiter, ANON, Budget::Miss, 3, PINNED_NOW);
-        assert!(limiter.stream_allowed(ANON));
-    }
-
-    #[test]
-    fn misses_over_budget_are_rejected_when_enforcing() {
-        let limiter = enforcing(3, 3);
-        charge(&limiter, ANON, Budget::Miss, 4, PINNED_NOW);
-        assert!(!limiter.stream_allowed(ANON));
-        assert!(limiter.stream_allowed(Caller { ip: "2.2.2.2", keyed: false }));
-    }
-
-    #[test]
-    fn empties_over_budget_are_rejected_when_enforcing() {
-        let limiter = enforcing(100, 2);
-        charge(&limiter, ANON, Budget::Empty, 3, PINNED_NOW);
-        assert!(!limiter.stream_allowed(ANON));
+    fn budgets_allow_their_size_then_reject_when_enforcing() {
+        for budget in [Budget::Miss, Budget::Empty] {
+            let limiter = enforcing(3, 3);
+            charge(&limiter, ANON, budget, 3);
+            assert!(limiter.stream_allowed(ANON), "{budget:?}");
+            charge(&limiter, ANON, budget, 1);
+            assert!(!limiter.stream_allowed(ANON), "{budget:?}");
+            assert!(limiter.stream_allowed(ip("2.2.2.2")), "{budget:?}");
+        }
     }
 
     #[test]
     fn ipv6_clients_share_a_budget_per_64_prefix() {
         let limiter = enforcing(2, 100);
-        charge(&limiter, Caller { ip: "2001:db8:1:2::1", keyed: false }, Budget::Miss, 3, PINNED_NOW);
-        assert!(!limiter.stream_allowed(Caller { ip: "2001:db8:1:2:ffff::9", keyed: false }));
-        assert!(limiter.stream_allowed(Caller { ip: "2001:db8:1:3::1", keyed: false }));
-    }
-
-    #[test]
-    fn ipv4_clients_keep_their_own_budget() {
-        let limiter = enforcing(2, 100);
-        charge(&limiter, Caller { ip: "203.0.113.7", keyed: false }, Budget::Miss, 3, PINNED_NOW);
-        assert!(!limiter.stream_allowed(Caller { ip: "203.0.113.7", keyed: false }));
-        assert!(limiter.stream_allowed(Caller { ip: "203.0.113.8", keyed: false }));
+        charge(&limiter, ip("2001:db8:1:2::1"), Budget::Miss, 3);
+        assert!(!limiter.stream_allowed(ip("2001:db8:1:2:ffff::9")));
+        assert!(limiter.stream_allowed(ip("2001:db8:1:3::1")));
     }
 
     #[test]
@@ -691,8 +625,8 @@ mod tests {
 
     #[test]
     fn observe_mode_allows_but_counts_the_excess() {
-        let limiter = pinned();
-        charge(&limiter, ANON, Budget::Empty, DEFAULT_EMPTY_BUDGET + 1, PINNED_NOW);
+        let limiter = limiter(None);
+        charge(&limiter, ANON, Budget::Empty, Budgets::default().empties + 1);
         assert!(limiter.stream_allowed(ANON));
         let rendered = limiter.inner.metrics.render();
         let line = rendered.lines().find(|line| line.starts_with("stream_budget_exceeded_total{")).expect("counted");
@@ -705,16 +639,18 @@ mod tests {
     #[test]
     fn keyed_callers_get_three_times_the_budget() {
         let limiter = enforcing(3, 3);
-        charge(&limiter, KEYED, Budget::Miss, 9, PINNED_NOW);
+        charge(&limiter, KEYED, Budget::Miss, 9);
         assert!(limiter.stream_allowed(KEYED));
-        charge(&limiter, KEYED, Budget::Miss, 1, PINNED_NOW);
+        charge(&limiter, KEYED, Budget::Miss, 1);
         assert!(!limiter.stream_allowed(KEYED));
     }
 
     #[test]
     fn budgets_reset_in_the_next_period() {
         let limiter = enforcing(3, 3);
-        charge(&limiter, ANON, Budget::Miss, 4, in_period(period()));
+        for _ in 0..4 {
+            limiter.charge_at(ANON, Budget::Miss, in_period(period()));
+        }
         assert!(!limiter.stream_allowed_at(ANON, in_period(period() + 1) - 1));
         assert!(limiter.stream_allowed_at(ANON, in_period(period() + 1)));
     }
@@ -722,36 +658,37 @@ mod tests {
     #[test]
     fn pressure_divides_the_anonymous_budget() {
         let limiter = enforcing(9, 9);
-        charge(&limiter, ANON, Budget::Miss, 4, PINNED_NOW);
+        charge(&limiter, ANON, Budget::Miss, 4);
         assert!(limiter.stream_allowed(ANON));
-        limiter.update_pressure(PINNED_NOW, Some(true));
+        limiter.update_pressure(now_ms(), Some(true));
         assert!(!limiter.stream_allowed(ANON));
     }
 
     #[test]
     fn pressure_leaves_the_keyed_budget_alone() {
         let limiter = enforcing(9, 9);
-        charge(&limiter, KEYED, Budget::Miss, 20, PINNED_NOW);
-        limiter.update_pressure(PINNED_NOW, Some(true));
+        charge(&limiter, KEYED, Budget::Miss, 20);
+        limiter.update_pressure(now_ms(), Some(true));
         assert!(limiter.stream_allowed(KEYED));
     }
 
     #[test]
     fn pressure_is_exposed_as_a_gauge() {
-        let limiter = pinned();
-        limiter.update_pressure(PINNED_NOW, Some(true));
+        let limiter = limiter(None);
+        limiter.update_pressure(now_ms(), Some(true));
         assert!(limiter.inner.metrics.render().contains("stream_pressure_mode{app=\"torrentio-addon\"} 1"));
-        limiter.update_pressure(PINNED_NOW + 1, Some(false));
+        limiter.update_pressure(now_ms() + 1, Some(false));
         assert!(limiter.inner.metrics.render().contains("stream_pressure_mode{app=\"torrentio-addon\"} 0"));
     }
 
     #[test]
     fn budgets_read_their_defaults() {
         let budgets = Budgets::default();
-        assert_eq!(budgets.mode, Mode::Observe);
-        assert_eq!(budgets.limit(Budget::Miss, ANON, false), DEFAULT_MISS_BUDGET);
-        assert_eq!(budgets.limit(Budget::Empty, ANON, true), DEFAULT_EMPTY_BUDGET / PRESSURE_DIVISOR);
-        assert_eq!(budgets.limit(Budget::Empty, KEYED, true), DEFAULT_EMPTY_BUDGET * KEYED_MULTIPLIER);
+        assert!(!budgets.enforce);
+        assert_eq!(budgets.limit(Budget::Miss, ANON, false), 100);
+        assert_eq!(budgets.limit(Budget::Empty, ANON, true), 10);
+        assert_eq!(budgets.limit(Budget::Empty, KEYED, true), 90);
+        assert!((budgets.pressure_miss_rate - 100.0).abs() < f64::EPSILON);
     }
 
     #[tokio::test]
@@ -763,7 +700,7 @@ mod tests {
 
     #[tokio::test]
     async fn failed_flush_keeps_counts_and_records_the_error() {
-        let limiter = limiter(Some("redis://127.0.0.1:1"));
+        let limiter = limiter(UNREACHABLE);
         limiter.allow("1.1.1.1");
         limiter.allow("1.1.1.1");
         limiter.flush().await;
