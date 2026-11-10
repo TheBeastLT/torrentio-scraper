@@ -178,6 +178,10 @@ impl Config {
         &self.credentials
     }
 
+    pub fn keyed(&self) -> bool {
+        self.credentials.configured().any(|provider| self.credentials.is_set(provider))
+    }
+
     pub fn skip(&self) -> u32 {
         self.request.extra.get("skip").and_then(|skip| skip.parse().ok()).unwrap_or(0)
     }
@@ -253,6 +257,14 @@ mod tests {
         assert_eq!(preferences.sort, SortOrder::QualitySeeders);
         assert_eq!(preferences.limit, None);
         assert_eq!(preferences.qualities, [Quality::P720]);
+    }
+
+    #[test]
+    fn keyed_only_with_a_non_empty_debrid_key() {
+        assert!(Config::parse("realdebrid=abc|sort=size").keyed());
+        assert!(!Config::parse("realdebrid=|sort=size").keyed());
+        assert!(!Config::parse("sort=size").keyed());
+        assert!(!Config::parse("").keyed());
     }
 
     #[test]

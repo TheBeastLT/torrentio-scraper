@@ -9,7 +9,7 @@ use addon::{
     application::Addon,
     domain::TorrentRepository,
     http::{AppState, app},
-    infrastructure::{Cache, Metrics, RateLimiter, Repository, Stores, init_best_trackers, logging, store},
+    infrastructure::{Budgets, Cache, Metrics, RateLimiter, Repository, Stores, init_best_trackers, logging, store},
     providers::{Context, Endpoints, Mochs, default_providers},
 };
 use anyhow::Context as _;
@@ -75,12 +75,13 @@ async fn run() -> anyhow::Result<()> {
         metrics: metrics.clone(),
         http: debrid::Http::new(DEBRID_TIMEOUT)?,
     });
+    let rate_limiter = RateLimiter::new(env("REDIS_URL").as_deref(), Budgets::from_env(), metrics.clone());
     let addon = Addon::new(
         Arc::clone(&repository) as Arc<dyn TorrentRepository>,
         Arc::clone(&cache),
         Mochs::new(Arc::clone(&context), default_providers(&context)),
+        rate_limiter.clone(),
     );
-    let rate_limiter = RateLimiter::new(env("REDIS_URL").as_deref(), metrics.clone());
     let credentials = env("METRICS_USER").zip(env("METRICS_PASSWORD"));
     let static_dir = PathBuf::from(env("STATIC_DIR").unwrap_or_else(|| "static".to_owned()));
     let rate_limit_sync = rate_limiter.spawn_sync();

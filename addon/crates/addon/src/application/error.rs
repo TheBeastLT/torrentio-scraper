@@ -4,6 +4,8 @@ use std::{fmt::Display, sync::Arc};
 pub enum HandlerError {
     #[error("not found")]
     NotFound,
+    #[error("rate limited")]
+    RateLimited,
     #[error("{0:#}")]
     Failed(Arc<anyhow::Error>),
 }

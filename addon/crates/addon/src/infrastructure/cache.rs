@@ -143,23 +143,27 @@ impl Cache {
         }
     }
 
+    pub async fn streams_in_memory(&self, id: &str) -> Option<Arc<Vec<Stream>>> {
+        let key = stream_key(id);
+        let found = self.streams.get(&key).await?;
+        match found.value.decode::<Vec<Stream>>() {
+            Ok(streams) => {
+                self.metrics.cache_result("stream", "memory");
+                Some(Arc::new(streams))
+            }
+            Err(error) => {
+                tracing::warn!(key, %error, "Failed to decode cached streams");
+                self.streams.invalidate(&key).await;
+                None
+            }
+        }
+    }
+
     pub async fn wrap_stream<E, Fut>(&self, id: &str, method: impl FnOnce() -> Fut) -> Result<Arc<Vec<Stream>>, E>
     where
         Fut: Future<Output = Result<Vec<Stream>, E>>,
     {
-        let key = format!("{STREAM_KEY_PREFIX}:{id}");
-        if let Some(found) = self.streams.get(&key).await {
-            match found.value.decode::<Vec<Stream>>() {
-                Ok(streams) => {
-                    self.metrics.cache_result("stream", "memory");
-                    return Ok(Arc::new(streams));
-                }
-                Err(error) => {
-                    tracing::warn!(key, %error, "Failed to decode cached streams");
-                    self.streams.invalidate(&key).await;
-                }
-            }
-        }
+        let key = stream_key(id);
         if let Some(store) = &self.stores.streams {
             let timer = self.metrics.cache_timer("get");
             let stored = timeout(CACHE_READ_TIMEOUT, store.get_packed(&key)).await.ok().and_then(Result::ok).flatten();
@@ -307,6 +311,10 @@ impl Cache {
     }
 }
 
+fn stream_key(id: &str) -> String {
+    format!("{STREAM_KEY_PREFIX}:{id}")
+}
+
 async fn stored_entries(store: &Store, key: &str) -> Result<Option<Vec<Vec<i64>>>, StoreError> {
     Ok(store.get::<Value>(key).await?.and_then(availability_entries))
 }
@@ -367,9 +375,14 @@ mod tests {
         let cache = cache();
         let streams: Vec<Stream> = (0..50).map(stream).collect();
         let first = cache.wrap_stream("tt1", || async { Ok::<_, String>(streams.clone()) }).await.unwrap();
-        let second = cache.wrap_stream("tt1", || async { Err::<Vec<Stream>, _>("not called".to_owned()) }).await;
+        let second = cache.streams_in_memory("tt1").await.unwrap();
         assert_eq!(*first, streams);
-        assert_eq!(*second.unwrap(), streams);
+        assert_eq!(*second, streams);
+    }
+
+    #[tokio::test]
+    async fn unknown_streams_are_not_in_memory() {
+        assert!(cache().streams_in_memory("tt404").await.is_none());
     }
 
     #[tokio::test]

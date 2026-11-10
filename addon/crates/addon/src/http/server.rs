@@ -376,6 +376,7 @@ async fn resource_response(
     match outcome {
         Ok(response) => response,
         Err(HandlerError::NotFound) => StatusCode::NOT_FOUND.into_response(),
+        Err(HandlerError::RateLimited) => (StatusCode::TOO_MANY_REQUESTS, RATE_LIMITED).into_response(),
         Err(HandlerError::Failed(cause)) => {
             tracing::error!(resource = target.name, kind, id, cause = %format!("{cause:#}"), "handler error: {failure}");
             (StatusCode::INTERNAL_SERVER_ERROR, HANDLER_ERROR).into_response()
@@ -450,12 +451,17 @@ mod tests {
     use crate::{
         domain::repository::TorrentRepository,
         infrastructure::cache::{Cache, Stores},
+        infrastructure::ratelimit::{Budgets, Mode},
         infrastructure::repository::Repository,
         providers::static_videos::StaticResponse,
         providers::{Context, Endpoints, Mochs, default_providers},
     };
 
     fn test_app() -> NormalizePath<Router> {
+        test_app_with(Budgets::default())
+    }
+
+    fn test_app_with(budgets: Budgets) -> NormalizePath<Router> {
         let metrics = Metrics::new();
         let repository: Arc<dyn TorrentRepository> =
             Arc::new(Repository::connect("postgres://nobody:nobody@127.0.0.1:1/none", metrics.clone()).unwrap());
@@ -467,9 +473,10 @@ mod tests {
             metrics: metrics.clone(),
             http: debrid::Http::new(std::time::Duration::from_secs(1)).unwrap(),
         });
-        let rate_limiter = RateLimiter::new(None, metrics.clone());
+        let rate_limiter = RateLimiter::pinned(budgets, metrics.clone());
+        let mochs = Mochs::new(Arc::clone(&context), default_providers(&context));
         let state = Arc::new(AppState {
-            addon: Addon::new(repository, cache, Mochs::new(Arc::clone(&context), default_providers(&context))),
+            addon: Addon::new(repository, cache, mochs, rate_limiter.clone()),
             metrics,
             rate_limiter,
             metrics_credentials: Some(("user".to_owned(), "secret".to_owned())),
@@ -481,6 +488,23 @@ mod tests {
         let mut request = HttpRequest::builder().method(method).uri(path).body(Body::empty()).unwrap();
         request.extensions_mut().insert(ConnectInfo(SocketAddr::from(([127, 0, 0, 1], 4000))));
         test_app().oneshot(request).await.unwrap()
+    }
+
+    #[tokio::test]
+    async fn over_budget_streams_answer_the_rate_limited_text() {
+        let app = test_app_with(Budgets { mode: Mode::Enforce, misses: 0, ..Budgets::default() });
+        let mut responses = Vec::new();
+        for id in ["tt1", "tt2"] {
+            let mut request =
+                HttpRequest::builder().uri(format!("/stream/movie/{id}.json")).body(Body::empty()).unwrap();
+            request.extensions_mut().insert(ConnectInfo(SocketAddr::from(([127, 0, 0, 1], 4000))));
+            responses.push(app.clone().oneshot(request).await.unwrap());
+        }
+        assert_ne!(responses[0].status(), StatusCode::TOO_MANY_REQUESTS);
+        let limited = responses.pop().unwrap();
+        assert_eq!(limited.status(), StatusCode::TOO_MANY_REQUESTS);
+        let body = axum::body::to_bytes(limited.into_body(), 1024).await.unwrap();
+        assert_eq!(&body[..], RATE_LIMITED.as_bytes());
     }
 
     #[tokio::test]

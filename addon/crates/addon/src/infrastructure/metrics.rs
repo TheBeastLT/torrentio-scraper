@@ -28,12 +28,44 @@ pub struct Metrics {
     moch_availability: HistogramVec,
     token_blacklist_events: CounterVec,
     token_blacklist_size: Gauge,
-    rate_limiter_store_errors: prometheus::Counter,
     breaker_events: CounterVec,
     db_pool_connections: GaugeVec,
     memory_cache_bytes: GaugeVec,
     memory_cache_entries: GaugeVec,
+    rate_limiter: RateLimiterMetrics,
     runtime: RuntimeMetrics,
+}
+
+#[derive(Clone)]
+struct RateLimiterMetrics {
+    store_errors: prometheus::Counter,
+    budget_exceeded: CounterVec,
+    pressure_mode: IntGauge,
+}
+
+impl RateLimiterMetrics {
+    fn new(registry: &Registry) -> Self {
+        let store_errors = prometheus::Counter::new(
+            "rate_limiter_store_errors_total",
+            "Rate limiter Redis store errors (requests pass un-limited while these occur)",
+        )
+        .expect("valid counter");
+        registry.register(Box::new(store_errors.clone())).expect("unique metric");
+        Self {
+            store_errors,
+            budget_exceeded: counter(
+                registry,
+                "stream_budget_exceeded_total",
+                "Stream requests over the per-client miss or empty budget (rejected only in enforce mode)",
+                &["budget", "mode"],
+            ),
+            pressure_mode: int_gauge(
+                registry,
+                "stream_pressure_mode",
+                "1 while the miss-rate watchdog has tightened the anonymous stream budgets",
+            ),
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -163,12 +195,6 @@ impl Metrics {
         registry
             .register(Box::new(prometheus::process_collector::ProcessCollector::for_self()))
             .expect("process collector");
-        let rate_limiter_store_errors = prometheus::Counter::new(
-            "rate_limiter_store_errors_total",
-            "Rate limiter Redis store errors (requests pass un-limited while these occur)",
-        )
-        .expect("valid counter");
-        registry.register(Box::new(rate_limiter_store_errors.clone())).expect("unique metric");
         let db_pool_connections =
             GaugeVec::new(Opts::new("db_pool_connections", "Postgres connection pool state"), &["state"])
                 .expect("valid gauge");
@@ -184,6 +210,7 @@ impl Metrics {
         let token_blacklist_size =
             gauge(&registry, "moch_token_blacklist_size", "Size of the in-memory moch token blacklist");
         Self {
+            rate_limiter: RateLimiterMetrics::new(&registry),
             runtime: RuntimeMetrics::new(&registry),
             http_duration: histogram(
                 &registry,
@@ -251,7 +278,6 @@ impl Metrics {
                 &["moch", "event"],
             ),
             token_blacklist_size,
-            rate_limiter_store_errors,
             db_pool_connections,
             memory_cache_bytes,
             memory_cache_entries,
@@ -289,7 +315,19 @@ impl Metrics {
     }
 
     pub fn rate_limiter_store_error(&self) {
-        self.rate_limiter_store_errors.inc();
+        self.rate_limiter.store_errors.inc();
+    }
+
+    pub fn stream_budget_exceeded(&self, budget: &str, mode: &str) {
+        self.rate_limiter.budget_exceeded.with_label_values(&[budget, mode]).inc();
+    }
+
+    pub fn stream_pressure(&self, active: bool) {
+        self.rate_limiter.pressure_mode.set(i64::from(active));
+    }
+
+    pub fn stream_misses(&self) -> f64 {
+        self.cache_requests.with_label_values(&["stream", "miss"]).get()
     }
 
     pub fn breaker_event(&self, moch: &str, event: &str) {

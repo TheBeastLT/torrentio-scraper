@@ -2,46 +2,61 @@ use std::net::{IpAddr, SocketAddr};
 
 use axum::http::HeaderMap;
 
-const HEADERS: &[&str] = &[
-    "x-client-ip",
-    "x-forwarded-for",
-    "cf-connecting-ip",
-    "fastly-client-ip",
-    "true-client-ip",
-    "x-real-ip",
-    "x-cluster-client-ip",
-    "x-forwarded",
-    "forwarded-for",
-    "forwarded",
-];
+const HEADER: &str = "x-real-ip";
 
 pub fn client_ip(headers: &HeaderMap, peer: Option<SocketAddr>) -> Option<String> {
-    HEADERS
-        .iter()
-        .filter_map(|name| headers.get(*name)?.to_str().ok())
-        .find_map(first_ip)
+    headers
+        .get(HEADER)
+        .and_then(|value| value.to_str().ok())
+        .and_then(parse_ip)
         .or_else(|| peer.map(|peer| peer.ip().to_string()))
 }
 
-fn first_ip(value: &str) -> Option<String> {
-    value.split(',').map(str::trim).find_map(|candidate| {
-        candidate
-            .parse::<IpAddr>()
-            .ok()
-            .or_else(|| candidate.parse::<SocketAddr>().ok().map(|socket| socket.ip()))
-            .map(|ip| ip.to_string())
-    })
+fn parse_ip(value: &str) -> Option<String> {
+    let candidate = value.trim();
+    candidate
+        .parse::<IpAddr>()
+        .ok()
+        .or_else(|| candidate.parse::<SocketAddr>().ok().map(|socket| socket.ip()))
+        .map(|ip| ip.to_string())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    #[test]
-    fn prefers_leftmost_forwarded_address() {
+    fn headers(pairs: &[(&'static str, &str)]) -> HeaderMap {
         let mut headers = HeaderMap::new();
-        headers.insert("x-forwarded-for", "203.0.113.7, 10.0.0.1".parse().unwrap());
+        for (name, value) in pairs {
+            headers.insert(*name, value.parse().unwrap());
+        }
+        headers
+    }
+
+    #[test]
+    fn uses_the_real_ip_header() {
+        let headers = headers(&[("x-real-ip", "203.0.113.7")]);
         assert_eq!(client_ip(&headers, None).as_deref(), Some("203.0.113.7"));
+    }
+
+    #[test]
+    fn real_ip_header_wins_over_the_peer_address() {
+        let headers = headers(&[("x-real-ip", "2001:db8::1")]);
+        let peer: SocketAddr = "198.51.100.2:4000".parse().unwrap();
+        assert_eq!(client_ip(&headers, Some(peer)).as_deref(), Some("2001:db8::1"));
+    }
+
+    #[test]
+    fn ignores_client_supplied_forwarding_headers() {
+        let headers = headers(&[
+            ("x-client-ip", "203.0.113.7"),
+            ("x-forwarded-for", "203.0.113.8, 10.0.0.1"),
+            ("cf-connecting-ip", "203.0.113.9"),
+            ("true-client-ip", "203.0.113.10"),
+            ("forwarded", "for=203.0.113.11"),
+        ]);
+        let peer: SocketAddr = "198.51.100.2:4000".parse().unwrap();
+        assert_eq!(client_ip(&headers, Some(peer)).as_deref(), Some("198.51.100.2"));
     }
 
     #[test]
@@ -52,8 +67,25 @@ mod tests {
 
     #[test]
     fn ignores_garbage_values() {
-        let mut headers = HeaderMap::new();
-        headers.insert("x-forwarded-for", "unknown".parse().unwrap());
+        let headers = headers(&[("x-real-ip", "unknown")]);
         assert_eq!(client_ip(&headers, None), None);
+    }
+
+    #[test]
+    fn accepts_a_socket_address() {
+        let headers = headers(&[("x-real-ip", " 203.0.113.7:5000 ")]);
+        assert_eq!(client_ip(&headers, None).as_deref(), Some("203.0.113.7"));
+    }
+
+    #[test]
+    fn accepts_a_bracketed_ipv6_socket_address() {
+        let headers = headers(&[("x-real-ip", "[2001:db8::1]:5000")]);
+        assert_eq!(client_ip(&headers, None).as_deref(), Some("2001:db8::1"));
+    }
+
+    #[test]
+    fn keeps_a_bare_ipv6_address_canonical() {
+        let headers = headers(&[("x-real-ip", "2001:0db8:0000:0000:0000:0000:0000:0001")]);
+        assert_eq!(client_ip(&headers, None).as_deref(), Some("2001:db8::1"));
     }
 }

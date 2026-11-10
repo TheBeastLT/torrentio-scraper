@@ -16,6 +16,7 @@ use crate::{
     infrastructure::cache::Cache,
     infrastructure::flight::{Limiter, NamedQueue},
     infrastructure::magnet::enrich_stream_sources,
+    infrastructure::ratelimit::{Budget, Caller, RateLimiter},
     providers::{Mochs, static_videos::is_static_url},
 };
 
@@ -53,11 +54,17 @@ pub struct Addon {
     mochs: Mochs,
     request_queue: NamedQueue<Result<Arc<Vec<Stream>>, HandlerError>>,
     db_limiter: Limiter,
+    rate_limiter: RateLimiter,
     cache_max_age: u32,
 }
 
 impl Addon {
-    pub fn new(repository: Arc<dyn TorrentRepository>, cache: Arc<Cache>, mochs: Mochs) -> Self {
+    pub fn new(
+        repository: Arc<dyn TorrentRepository>,
+        cache: Arc<Cache>,
+        mochs: Mochs,
+        rate_limiter: RateLimiter,
+    ) -> Self {
         let cache_max_age = std::env::var("CACHE_MAX_AGE")
             .ok()
             .and_then(|value| value.parse().ok())
@@ -69,6 +76,7 @@ impl Addon {
             mochs,
             request_queue: NamedQueue::new(REQUEST_QUEUE_CONCURRENCY),
             db_limiter: Limiter::new(DB_CONCURRENCY),
+            rate_limiter,
             cache_max_age,
         }
     }
@@ -99,7 +107,15 @@ impl Addon {
         if !IMDB_ANYWHERE.is_match(id) && !KITSU_ANYWHERE.is_match(id) {
             return Ok(StreamsResponse::default());
         }
-        let cached = self.request_queue.wrap(id, || self.resolve_streams(content_type, id)).await?;
+        let cached = if let Some(streams) = self.cache.streams_in_memory(id).await {
+            streams
+        } else {
+            let caller = Caller { ip: config.ip().unwrap_or_default(), keyed: config.keyed() };
+            if !self.rate_limiter.stream_allowed(caller) {
+                return Err(HandlerError::RateLimited);
+            }
+            self.request_queue.wrap(id, || self.resolve_streams(content_type, id, caller)).await?
+        };
         let streams = filter::apply(&cached, config, content_type);
         let mut streams = sort_streams(streams, config);
         enrich_stream_sources(&mut streams);
@@ -107,10 +123,19 @@ impl Addon {
         Ok(self.with_cache_params(streams))
     }
 
-    async fn resolve_streams(&self, content_type: ContentType, id: &str) -> Result<Arc<Vec<Stream>>, HandlerError> {
+    async fn resolve_streams(
+        &self,
+        content_type: ContentType,
+        id: &str,
+        caller: Caller<'_>,
+    ) -> Result<Arc<Vec<Stream>>, HandlerError> {
         self.cache
             .wrap_stream(id, || async {
+                self.rate_limiter.charge(caller, Budget::Miss);
                 let records = self.db_limiter.run(self.records(content_type, id)).await?;
+                if records.is_empty() {
+                    self.rate_limiter.charge(caller, Budget::Empty);
+                }
                 tokio::task::spawn_blocking(move || to_streams(records)).await.map_err(HandlerError::failed)
             })
             .await
@@ -201,17 +226,22 @@ fn to_streams(mut records: Vec<Record>) -> Vec<Stream> {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::{
+        collections::HashMap,
+        sync::atomic::{AtomicUsize, Ordering},
+    };
 
     use async_trait::async_trait;
     use chrono::Utc;
 
     use super::*;
     use crate::{
+        domain::config::RequestContext,
         domain::models::{CatalogMeta, FileRow, ItemMeta, TorrentRow},
         infrastructure::{
             cache::{Cache, Stores},
             metrics::Metrics,
+            ratelimit::{Budgets, Mode},
         },
         providers::{
             CachedEntry, CachedStreams, CommonError, Context, Endpoints, Moch, MochError, MochResult, Provider,
@@ -346,6 +376,14 @@ mod tests {
     }
 
     fn harness(repository: FakeRepository) -> Harness {
+        harness_with(repository, Budgets::default())
+    }
+
+    fn enforcing(misses: i64, empties: i64) -> Budgets {
+        Budgets { mode: Mode::Enforce, misses, empties, ..Budgets::default() }
+    }
+
+    fn harness_with(repository: FakeRepository, budgets: Budgets) -> Harness {
         let repository = Arc::new(repository);
         let metrics = Metrics::new();
         let cache = Arc::new(Cache::new(metrics.clone(), Stores { streams: None, availability: None }));
@@ -359,12 +397,21 @@ mod tests {
         let resolves = Arc::new(AtomicUsize::new(0));
         let provider: Provider = (moch_info("torbox").unwrap(), Box::new(FakeMoch { resolves: Arc::clone(&resolves) }));
         let mochs = Mochs::new(Arc::clone(&context), vec![provider]);
-        let addon = Addon::new(Arc::clone(&repository) as Arc<dyn TorrentRepository>, cache, mochs);
+        let rate_limiter = RateLimiter::pinned(budgets, context.metrics.clone());
+        let addon = Addon::new(Arc::clone(&repository) as Arc<dyn TorrentRepository>, cache, mochs, rate_limiter);
         Harness { addon, repository, resolves }
     }
 
     fn config(configuration: &str) -> Config {
         Config::parse(configuration).with_host("http://localhost:7000")
+    }
+
+    fn config_from(ip: &str, configuration: &str) -> Config {
+        Config::parse(configuration).with_request(RequestContext {
+            ip: Some(ip.to_owned()),
+            host: "http://localhost:7000".to_owned(),
+            extra: HashMap::new(),
+        })
     }
 
     fn sample() -> FakeRepository {
@@ -401,6 +448,95 @@ mod tests {
         harness.addon.streams("movie", "tt0000001", &config("")).await.unwrap();
         harness.addon.streams("movie", "tt0000001", &config("sort=size")).await.unwrap();
         assert_eq!(harness.repository.lookups.load(Ordering::SeqCst), 1);
+    }
+
+    #[tokio::test]
+    async fn misses_over_budget_are_rate_limited_before_the_repository() {
+        let harness = harness_with(sample(), enforcing(2, 100));
+        let config = config_from("1.1.1.1", "");
+        for id in ["tt1", "tt2", "tt3"] {
+            harness.addon.streams("movie", id, &config).await.unwrap();
+        }
+        let result = harness.addon.streams("movie", "tt4", &config).await;
+        assert!(matches!(result, Err(HandlerError::RateLimited)));
+        assert_eq!(harness.repository.lookups.load(Ordering::SeqCst), 3);
+        harness.addon.streams("movie", "tt4", &config_from("2.2.2.2", "")).await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn over_budget_clients_still_get_cached_streams() {
+        let harness = harness_with(sample(), enforcing(1, 100));
+        let config = config_from("1.1.1.1", "");
+        harness.addon.streams("movie", "tt1", &config).await.unwrap();
+        harness.addon.streams("movie", "tt2", &config).await.unwrap();
+        assert!(matches!(harness.addon.streams("movie", "tt3", &config).await, Err(HandlerError::RateLimited)));
+        assert_eq!(harness.addon.streams("movie", "tt1", &config).await.unwrap().streams.len(), 2);
+    }
+
+    #[tokio::test]
+    async fn rejection_of_one_client_is_not_shared_with_another_asking_for_the_same_id() {
+        let harness = harness_with(sample(), enforcing(1, 100));
+        let (limited, other) = (config_from("1.1.1.1", ""), config_from("2.2.2.2", ""));
+        harness.addon.streams("movie", "tt1", &limited).await.unwrap();
+        harness.addon.streams("movie", "tt2", &limited).await.unwrap();
+        let (first, second) = tokio::join!(
+            harness.addon.streams("movie", "tt3", &limited),
+            harness.addon.streams("movie", "tt3", &other)
+        );
+        assert!(matches!(first, Err(HandlerError::RateLimited)));
+        assert_eq!(second.unwrap().streams.len(), 2);
+        assert!(matches!(harness.addon.streams("movie", "tt4", &limited).await, Err(HandlerError::RateLimited)));
+        assert_eq!(harness.addon.streams("movie", "tt4", &other).await.unwrap().streams.len(), 2);
+    }
+
+    #[tokio::test]
+    async fn cache_hits_are_not_charged_as_misses() {
+        let harness = harness_with(sample(), enforcing(1, 100));
+        let config = config_from("1.1.1.1", "");
+        harness.addon.streams("movie", "tt1", &config).await.unwrap();
+        harness.addon.streams("movie", "tt1", &config).await.unwrap();
+        harness.addon.streams("movie", "tt2", &config).await.unwrap();
+        assert!(matches!(harness.addon.streams("movie", "tt3", &config).await, Err(HandlerError::RateLimited)));
+        assert_eq!(harness.repository.lookups.load(Ordering::SeqCst), 2);
+    }
+
+    #[tokio::test]
+    async fn empty_results_count_against_the_empty_budget() {
+        let harness = harness_with(FakeRepository::default(), enforcing(100, 1));
+        let config = config_from("1.1.1.1", "");
+        harness.addon.streams("movie", "tt1", &config).await.unwrap();
+        harness.addon.streams("movie", "tt2", &config).await.unwrap();
+        assert!(matches!(harness.addon.streams("movie", "tt3", &config).await, Err(HandlerError::RateLimited)));
+    }
+
+    #[tokio::test]
+    async fn non_empty_results_leave_the_empty_budget_alone() {
+        let harness = harness_with(sample(), enforcing(100, 1));
+        let config = config_from("1.1.1.1", "");
+        for id in ["tt1", "tt2", "tt3"] {
+            harness.addon.streams("movie", id, &config).await.unwrap();
+        }
+    }
+
+    #[tokio::test]
+    async fn keyed_clients_get_a_larger_budget() {
+        let harness = harness_with(sample(), enforcing(1, 100));
+        let config = config_from("1.1.1.1", "torbox=abcdefghijklmnopqrstuvwxyz");
+        for id in ["tt1", "tt2", "tt3", "tt4"] {
+            harness.addon.streams("movie", id, &config).await.unwrap();
+        }
+        assert!(matches!(harness.addon.streams("movie", "tt5", &config).await, Err(HandlerError::RateLimited)));
+    }
+
+    #[tokio::test]
+    async fn observe_mode_never_rate_limits() {
+        let budgets = Budgets { misses: 1, empties: 1, ..Budgets::default() };
+        let harness = harness_with(FakeRepository::default(), budgets);
+        let config = config_from("1.1.1.1", "");
+        for id in ["tt1", "tt2", "tt3"] {
+            harness.addon.streams("movie", id, &config).await.unwrap();
+        }
+        assert_eq!(harness.repository.lookups.load(Ordering::SeqCst), 3);
     }
 
     #[tokio::test]
