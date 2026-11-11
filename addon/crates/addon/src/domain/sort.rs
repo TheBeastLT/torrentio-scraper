@@ -1,4 +1,4 @@
-use std::{cmp::Ordering, sync::LazyLock};
+use std::{cmp::Ordering, collections::HashMap, sync::LazyLock};
 
 use regex::Regex;
 
@@ -37,6 +37,13 @@ impl SortOrder {
         }
     }
 
+    fn limit_bucket(self, stream: &Stream) -> String {
+        match self {
+            Self::QualitySeeders | Self::QualitySize => extract_quality(&stream.name),
+            Self::Seeders | Self::Size => String::new(),
+        }
+    }
+
     pub fn key(self) -> &'static str {
         match self {
             Self::QualitySeeders => "quality",
@@ -69,32 +76,39 @@ pub fn sort_streams(streams: Vec<Stream>, config: &Config) -> Vec<Stream> {
     let languages = Some(preferences.languages.as_slice())
         .filter(|languages| languages.first().is_some_and(|first| first != "english"));
     let Some(languages) = languages else {
-        return sort_group(streams, config);
+        return apply_limit(sort_group(streams, config), config);
     };
     let (with_language, without_language): (Vec<Stream>, Vec<Stream>) =
         streams.into_iter().partition(|stream| languages::contains_language(&stream.title, languages));
     let mut sorted = sort_group(with_language, config);
     sorted.extend(sort_group(without_language, config));
-    sorted
+    apply_limit(sorted, config)
 }
 
 fn sort_group(streams: Vec<Stream>, config: &Config) -> Vec<Stream> {
-    let preferences = config.preferences();
-    let limit = preferences.limit;
     let sorted = sort_by_seeders(streams, config);
-    match preferences.sort {
-        SortOrder::Seeders => truncate(sorted, limit),
-        SortOrder::Size => sort_by_size(sorted, limit),
-        SortOrder::QualitySize => sort_by_quality(sorted, true, limit),
-        SortOrder::QualitySeeders => sort_by_quality(sorted, false, limit),
+    match config.preferences().sort {
+        SortOrder::Seeders => sorted,
+        SortOrder::Size => sort_by_size(sorted),
+        SortOrder::QualitySize => sort_by_quality(sorted, true),
+        SortOrder::QualitySeeders => sort_by_quality(sorted, false),
     }
 }
 
-fn truncate(mut streams: Vec<Stream>, limit: Option<usize>) -> Vec<Stream> {
-    if let Some(limit) = limit {
-        streams.truncate(limit);
-    }
+fn apply_limit(streams: Vec<Stream>, config: &Config) -> Vec<Stream> {
+    let preferences = config.preferences();
+    let Some(limit) = preferences.limit else {
+        return streams;
+    };
+    let mut counts: HashMap<String, usize> = HashMap::new();
     streams
+        .into_iter()
+        .filter(|stream| {
+            let count = counts.entry(preferences.sort.limit_bucket(stream)).or_default();
+            *count += 1;
+            *count <= limit
+        })
+        .collect()
 }
 
 fn sort_by_seeders(mut streams: Vec<Stream>, config: &Config) -> Vec<Stream> {
@@ -118,14 +132,14 @@ fn sort_by_seeders(mut streams: Vec<Stream>, config: &Config) -> Vec<Stream> {
     streams
 }
 
-fn sort_by_size(streams: Vec<Stream>, limit: Option<usize>) -> Vec<Stream> {
+fn sort_by_size(streams: Vec<Stream>) -> Vec<Stream> {
     let mut keyed: Vec<(u64, Stream)> =
         streams.into_iter().map(|stream| (extract_size(&stream.title), stream)).collect();
     keyed.sort_by_key(|entry| std::cmp::Reverse(entry.0));
-    truncate(keyed.into_iter().map(|(_, stream)| stream).collect(), limit)
+    keyed.into_iter().map(|(_, stream)| stream).collect()
 }
 
-fn sort_by_quality(streams: Vec<Stream>, nested_by_size: bool, limit: Option<usize>) -> Vec<Stream> {
+fn sort_by_quality(streams: Vec<Stream>, nested_by_size: bool) -> Vec<Stream> {
     let mut groups: Vec<(String, Vec<Stream>)> = Vec::new();
     for stream in streams {
         let quality = extract_quality(&stream.name);
@@ -135,13 +149,7 @@ fn sort_by_quality(streams: Vec<Stream>, nested_by_size: bool, limit: Option<usi
         }
     }
     groups.sort_by(|(a, _), (b, _)| compare_qualities(a, b));
-    groups
-        .into_iter()
-        .flat_map(|(_, members)| {
-            let members = if nested_by_size { sort_by_size(members, None) } else { members };
-            truncate(members, limit)
-        })
-        .collect()
+    groups.into_iter().flat_map(|(_, members)| if nested_by_size { sort_by_size(members) } else { members }).collect()
 }
 
 fn resolution_of(quality: &str) -> Option<u32> {
@@ -227,6 +235,22 @@ mod tests {
         let config = Config::parse("limit=1");
         let streams = vec![stream("T\n1080p", "a\n👤 9"), stream("T\n1080p", "b\n👤 9"), stream("T\n720p", "c\n👤 9")];
         assert_eq!(sort_streams(streams, &config).len(), 2);
+    }
+
+    #[test]
+    fn limit_applies_per_quality_across_language_groups() {
+        let config = Config::parse("language=portuguese|limit=2");
+        let streams = vec![
+            stream("T\n1080p", "a\n👤 9\n🇵🇹"),
+            stream("T\n1080p", "b\n👤 9"),
+            stream("T\n1080p", "c\n👤 9"),
+            stream("T\n720p", "d\n👤 9"),
+            stream("T\n720p", "e\n👤 9\n🇵🇹"),
+            stream("T\n720p", "f\n👤 9\n🇵🇹"),
+        ];
+        let titles: Vec<String> = sort_streams(streams, &config).into_iter().map(|stream| stream.title).collect();
+        assert_eq!(titles.len(), 4);
+        assert!(titles[0].starts_with('a') && titles[1].starts_with('e') && titles[2].starts_with('f'));
     }
 
     #[test]
