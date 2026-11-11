@@ -44,6 +44,7 @@ struct Landing {
     saved_languages: String,
     saved_quality: String,
     saved_limit: String,
+    saved_min_seeders: String,
     saved_size: String,
     saved_debrid_provider: String,
     saved_debrid_opts: String,
@@ -88,6 +89,10 @@ pub fn landing(manifest: &Value, config: &Config) -> String {
         .unwrap_or_else(|| PROVIDERS.iter().map(|provider| provider.key.to_owned()).collect());
     let saved_size = preferences.size_limits.iter().map(|limit| limit.label.as_str()).collect::<Vec<_>>().join(",");
     let saved_limit = preferences.limit.map(|limit| limit.to_string()).unwrap_or_default();
+    let saved_min_seeders = Some(preferences.min_seeders)
+        .filter(|minimum| *minimum > 0)
+        .map(|minimum| minimum.to_string())
+        .unwrap_or_default();
     let saved_qualities: Vec<&str> = preferences.qualities.iter().map(|quality| quality.key()).collect();
     let saved_debrid_provider = MOCHS.iter().find(|moch| credentials.is_set(moch.key)).map_or("none", |moch| moch.key);
     let api_keys: serde_json::Map<String, Value> = MOCHS
@@ -135,6 +140,7 @@ pub fn landing(manifest: &Value, config: &Config) -> String {
         saved_languages: script_json(&preferences.languages),
         saved_quality: script_json(&saved_qualities),
         saved_limit: script_json(&saved_limit),
+        saved_min_seeders: script_json(&saved_min_seeders),
         saved_size: script_json(&saved_size),
         saved_debrid_provider: script_json(saved_debrid_provider),
         saved_debrid_opts: script_json(&preferences.debrid.keys()),
@@ -171,19 +177,21 @@ mod tests {
         assert!(html.contains("sort: \"quality\","));
         assert!(html.contains("debridProvider: \"none\","));
         assert!(html.contains("limit: \"\","));
+        assert!(html.contains("minSeeders: \"\","));
         assert!(html.contains("<title>Torrentio - Configuration</title>"));
     }
 
     #[test]
     fn full_config_saves_every_preference() {
         let html = render(
-            "providers=yts,eztv|sort=size|language=portuguese,russian|qualityfilter=480p,scr|sizefilter=5gb,800mb|limit=5|debridoptions=nodownloadlinks,nocatalog|realdebrid=abcDEF123",
+            "providers=yts,eztv|sort=size|language=portuguese,russian|qualityfilter=480p,scr|sizefilter=5gb,800mb|limit=5|minseeders=3|debridoptions=nodownloadlinks,nocatalog|realdebrid=abcDEF123",
         );
         assert!(html.contains("providers: [\"yts\",\"eztv\"],"));
         assert!(html.contains("sort: \"size\","));
         assert!(html.contains("languages: [\"portuguese\",\"russian\"],"));
         assert!(html.contains("qualities: [\"480p\",\"scr\"],"));
         assert!(html.contains("limit: \"5\","));
+        assert!(html.contains("minSeeders: \"3\","));
         assert!(html.contains("sizeFilter: \"5GB,800MB\","));
         assert!(html.contains("debridProvider: \"realdebrid\","));
         assert!(html.contains("debridOpts: [\"nodownloadlinks\",\"nocatalog\"],"));

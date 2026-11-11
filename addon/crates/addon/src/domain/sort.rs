@@ -11,11 +11,6 @@ use crate::{
     providers,
 };
 
-const HEALTHY_SEEDERS: u64 = 5;
-const SEEDED_SEEDERS: u64 = 1;
-const MIN_HEALTHY_COUNT: usize = 50;
-const MAX_UNHEALTHY_COUNT: usize = 5;
-
 pub const SORT_KEY: &str = "sort";
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -86,7 +81,7 @@ pub fn sort_streams(streams: Vec<Stream>, config: &Config) -> Vec<Stream> {
 }
 
 fn sort_group(streams: Vec<Stream>, config: &Config) -> Vec<Stream> {
-    let sorted = sort_by_seeders(streams, config);
+    let sorted = filter_by_seeders(streams, config);
     match config.preferences().sort {
         SortOrder::Seeders => sorted,
         SortOrder::Size => sort_by_size(sorted),
@@ -111,25 +106,12 @@ fn apply_limit(streams: Vec<Stream>, config: &Config) -> Vec<Stream> {
         .collect()
 }
 
-fn sort_by_seeders(mut streams: Vec<Stream>, config: &Config) -> Vec<Stream> {
-    if providers::has_moch_configured(config) {
+fn filter_by_seeders(streams: Vec<Stream>, config: &Config) -> Vec<Stream> {
+    let minimum = config.preferences().min_seeders;
+    if minimum == 0 || providers::has_moch_configured(config) {
         return streams;
     }
-    let seeders: Vec<u64> = streams.iter().map(|stream| extract_seeders(&stream.title)).collect();
-    let at_least = |minimum: u64| seeders.iter().filter(|count| **count >= minimum).count();
-    let keep = |streams: Vec<Stream>, minimum: u64| -> Vec<Stream> {
-        streams.into_iter().zip(&seeders).filter(|(_, count)| **count >= minimum).map(|(stream, _)| stream).collect()
-    };
-    if at_least(HEALTHY_SEEDERS) >= MIN_HEALTHY_COUNT {
-        return keep(streams, HEALTHY_SEEDERS);
-    }
-    if at_least(SEEDED_SEEDERS) >= MAX_UNHEALTHY_COUNT {
-        let mut seeded = keep(streams, SEEDED_SEEDERS);
-        seeded.truncate(MIN_HEALTHY_COUNT);
-        return seeded;
-    }
-    streams.truncate(MAX_UNHEALTHY_COUNT);
-    streams
+    streams.into_iter().filter(|stream| extract_seeders(&stream.title) >= minimum).collect()
 }
 
 fn sort_by_size(streams: Vec<Stream>) -> Vec<Stream> {
@@ -254,9 +236,38 @@ mod tests {
     }
 
     #[test]
-    fn unhealthy_streams_are_trimmed_without_moch() {
+    fn low_seeder_streams_are_kept_by_default() {
         let config = Config::parse("");
         let streams: Vec<Stream> = (0..10).map(|index| stream("T\n720p", &format!("{index}\n👤 0"))).collect();
-        assert_eq!(sort_streams(streams, &config).len(), MAX_UNHEALTHY_COUNT);
+        assert_eq!(sort_streams(streams, &config).len(), 10);
+    }
+
+    #[test]
+    fn min_seeders_hides_streams_below_the_minimum() {
+        let config = Config::parse("minseeders=5");
+        let streams = vec![stream("T\n720p", "a\n👤 5"), stream("T\n720p", "b\n👤 4"), stream("T\n720p", "c\n👤 0")];
+        assert_eq!(sort_streams(streams, &config).len(), 1);
+    }
+
+    #[test]
+    fn min_seeders_applies_before_language_priority_and_limit() {
+        let config = Config::parse("language=portuguese|minseeders=5|limit=1");
+        let streams = vec![
+            stream("T\n1080p", "a\n👤 2\n🇵🇹"),
+            stream("T\n1080p", "b\n👤 9\n🇵🇹"),
+            stream("T\n1080p", "c\n👤 9"),
+            stream("T\n720p", "d\n👤 0"),
+            stream("T\n720p", "e\n👤 9"),
+        ];
+        let titles: Vec<String> = sort_streams(streams, &config).into_iter().map(|stream| stream.title).collect();
+        assert_eq!(titles.len(), 2);
+        assert!(titles[0].starts_with('b') && titles[1].starts_with('e'));
+    }
+
+    #[test]
+    fn min_seeders_is_ignored_with_a_debrid_key() {
+        let config = Config::parse("realdebrid=abcdefghijklmnopqrstuvwxyz|minseeders=5");
+        let streams = vec![stream("T\n720p", "a\n👤 5"), stream("T\n720p", "b\n👤 0")];
+        assert_eq!(sort_streams(streams, &config).len(), 2);
     }
 }

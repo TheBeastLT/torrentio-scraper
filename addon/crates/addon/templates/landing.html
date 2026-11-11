@@ -43,6 +43,7 @@
                   languages: {{ saved_languages|safe }},
                   qualities: {{ saved_quality|safe }},
                   limit: {{ saved_limit|safe }},
+                  minSeeders: {{ saved_min_seeders|safe }},
                   sizeFilter: {{ saved_size|safe }},
                   debridProvider: {{ saved_debrid_provider|safe }},
                   debridOpts: {{ saved_debrid_opts|safe }},
@@ -100,6 +101,7 @@
                       const sortStr = (this.sort !== 'quality') ? this.sort : '';
                       const langStr = this.languages.join(',');
                       const limitStr = (/^[1-9][0-9]{0,2}$/.test(this.limit)) ? this.limit : '';
+                      const minSeedersStr = (this.debridProvider === 'none' && /^[1-9][0-9]{0,3}$/.test(this.minSeeders)) ? this.minSeeders : '';
                       const sizeStr = this.sizeFilter;
                       const debridOptStr = this.debridOpts.join(',');
                       
@@ -120,6 +122,7 @@
                           ['{{ language_key }}', langStr],
                           ['{{ quality_key }}', qualityStr],
                           ['limit', limitStr],
+                          ['minseeders', minSeedersStr],
                           ['{{ size_key }}', sizeStr],
                           ['{{ debrid_options_key }}', debridOptStr],
                           [activeDebrid, activeKey]
@@ -222,6 +225,12 @@
                       <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2" x-text="['seeders', 'size'].includes(sort) ? 'Max Results' : 'Max Results per Quality'"></label>
                       <input x-model="limit" type="number" placeholder="All results" class="w-full bg-gray-800 border border-gray-700 text-xs md:text-sm text-white rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-indigo-500 outline-none">
                   </div>
+              </div>
+
+              <div x-show="debridProvider === 'none'" x-cloak>
+                  <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Minimum Seeders</label>
+                  <input x-model="minSeeders" type="number" min="0" placeholder="0 (show all)" class="w-full md:w-1/2 bg-gray-800 border border-gray-700 text-xs md:text-sm text-white rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-indigo-500 outline-none">
+                  <p class="mt-2 text-[10px] md:text-xs text-gray-500">Hide torrents with fewer seeders than this. Only applies when streaming torrents directly, without a debrid service.</p>
               </div>
 
               <div>

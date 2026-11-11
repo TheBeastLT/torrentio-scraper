@@ -17,6 +17,7 @@ const QUALITY_KEY: &str = "qualityfilter";
 const SIZE_KEY: &str = "sizefilter";
 const SORT_KEY: &str = "sort";
 const LIMIT_KEY: &str = "limit";
+const MIN_SEEDERS_KEY: &str = "minseeders";
 const DEBRID_OPTIONS_KEY: &str = "debridoptions";
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -48,6 +49,7 @@ pub struct UserPreferences {
     pub size_limits: Vec<SizeLimit>,
     pub sort: SortOrder,
     pub limit: Option<usize>,
+    pub min_seeders: u64,
     pub debrid: DebridOptions,
 }
 
@@ -119,6 +121,7 @@ impl Config {
             size_limits: list(SIZE_KEY, true).map(parse_size_limits).unwrap_or_default(),
             sort: values.get(SORT_KEY).map_or_else(SortOrder::default, |sort| SortOrder::parse(sort)),
             limit: values.get(LIMIT_KEY).and_then(|limit| parse_limit(limit)),
+            min_seeders: values.get(MIN_SEEDERS_KEY).and_then(|value| value.parse().ok()).unwrap_or(0),
             debrid: parse_debrid_options(&list(DEBRID_OPTIONS_KEY, false).unwrap_or_default()),
         };
         let credentials = ProviderCredentials(
@@ -257,6 +260,15 @@ mod tests {
         assert_eq!(preferences.sort, SortOrder::QualitySeeders);
         assert_eq!(preferences.limit, None);
         assert_eq!(preferences.qualities, [Quality::P720]);
+    }
+
+    #[test]
+    fn min_seeders_defaults_to_zero_and_ignores_invalid_values() {
+        assert_eq!(Config::parse("minseeders=5").preferences().min_seeders, 5);
+        assert_eq!(Config::parse("minseeders=0").preferences().min_seeders, 0);
+        assert_eq!(Config::parse("minseeders=-1").preferences().min_seeders, 0);
+        assert_eq!(Config::parse("minseeders=abc").preferences().min_seeders, 0);
+        assert_eq!(Config::parse("sort=size").preferences().min_seeders, 0);
     }
 
     #[test]
