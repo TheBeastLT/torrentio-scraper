@@ -339,7 +339,7 @@ fn status_ready(item: &Item) -> bool {
 }
 
 fn status_error(item: &Item) -> bool {
-    (!item.active && !item.download_finished) || item.download_state == "error"
+    item.id != 0 && ((!item.active && !item.download_finished) || item.download_state == "error")
 }
 
 fn status_downloading(item: &Item) -> bool {
@@ -352,6 +352,7 @@ mod tests {
 
     fn item(active: bool, finished: bool, present: bool, state: &str) -> Item {
         Item {
+            id: 1,
             active,
             download_finished: finished,
             download_present: present,
@@ -386,6 +387,13 @@ mod tests {
     fn inactive_unfinished_items_are_errors() {
         assert!(status_error(&item(false, false, false, "stalled")));
         assert!(status_error(&item(true, true, false, "error")));
+    }
+
+    #[test]
+    fn empty_items_are_downloading_not_errors() {
+        let empty = Item::default();
+        assert!(!status_error(&empty));
+        assert!(status_downloading(&empty));
     }
 
     #[test]
